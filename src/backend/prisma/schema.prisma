@@ -1,0 +1,194 @@
+generator client {
+  provider      = "prisma-client"
+  output        = "../generated/prisma"
+  moduleFormat  = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model activities {
+  activityid   Int       @id @default(autoincrement())
+  dealid       Int
+  userid       Int
+  activitytype String?   @db.VarChar(30)
+  subject      String?   @db.VarChar(200)
+  description  String?
+  activitytime DateTime? @db.Timestamp(6)
+  result       String?
+  deals        deals     @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_deal")
+  users        users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_user")
+}
+
+model activitylogs {
+  logid      Int          @id @default(autoincrement())
+  userid     Int?
+  action     action_type?
+  tablename  String?      @db.VarChar(100)
+  recordid   Int?
+  actiontime DateTime?    @default(now()) @db.Timestamp(6)
+  ipaddress  String?      @db.VarChar(50)
+  users      users?       @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_log_user")
+}
+
+model customers {
+  customerid   Int       @id @default(autoincrement())
+  leadid       Int?      @unique
+  fullname     String    @db.VarChar(100)
+  company      String?   @db.VarChar(150)
+  phone        String?   @db.VarChar(20)
+  email        String?   @db.VarChar(100)
+  address      String?
+  customertype String?   @db.VarChar(50)
+  createddate  DateTime? @default(now()) @db.Timestamp(6)
+  leads        leads?    @relation(fields: [leadid], references: [leadid], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_lead")
+  deals        deals[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model deals {
+  dealid            Int            @id @default(autoincrement())
+  customerid        Int
+  assigneduserid    Int
+  stageid           Int
+  dealname          String         @db.VarChar(200)
+  dealvalue         Decimal        @db.Decimal(18, 2)
+  probability       Int?
+  expectedrevenue   Decimal?       @db.Decimal(18, 2)
+  expectedclosedate DateTime?      @db.Date
+  status            String?        @db.VarChar(30)
+  createddate       DateTime?      @default(now()) @db.Timestamp(6)
+  activities        activities[]
+  customers         customers      @relation(fields: [customerid], references: [customerid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_customer")
+  pipelinestages    pipelinestages @relation(fields: [stageid], references: [stageid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_stage")
+  users             users          @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_user")
+  quotes            quotes[]
+  tasks             tasks[]
+}
+
+model leads {
+  leadid         Int          @id @default(autoincrement())
+  sourceid       Int?
+  assigneduserid Int?
+  fullname       String       @db.VarChar(100)
+  company        String?      @db.VarChar(150)
+  phone          String?      @db.VarChar(20)
+  email          String?      @db.VarChar(100)
+  address        String?
+  status         String?      @db.VarChar(30)
+  createddate    DateTime?    @default(now()) @db.Timestamp(6)
+  customers      customers?
+  leadsources    leadsources? @relation(fields: [sourceid], references: [sourceid], onDelete: NoAction, onUpdate: NoAction, map: "fk_lead_source")
+  users          users?       @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_lead_user")
+}
+
+model leadsources {
+  sourceid   Int     @id @default(autoincrement())
+  sourcename String  @unique @db.VarChar(100)
+  leads      leads[]
+}
+
+model notifications {
+  notificationid Int       @id @default(autoincrement())
+  userid         Int
+  title          String?   @db.VarChar(200)
+  content        String?
+  type           String?   @db.VarChar(30)
+  isread         Boolean?  @default(false)
+  createddate    DateTime? @default(now()) @db.Timestamp(6)
+  users          users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_notification_user")
+}
+
+model pipelinestages {
+  stageid    Int     @id @default(autoincrement())
+  stagename  String  @db.VarChar(100)
+  stageorder Int
+  deals      deals[]
+}
+
+model products {
+  productid    Int            @id @default(autoincrement())
+  productname  String         @db.VarChar(200)
+  category     String?        @db.VarChar(100)
+  price        Decimal?       @db.Decimal(18, 2)
+  description  String?
+  status       Boolean?       @default(true)
+  quotedetails quotedetails[]
+}
+
+model quotedetails {
+  quotedetailid Int      @id @default(autoincrement())
+  quoteid       Int
+  productid     Int
+  quantity      Int
+  unitprice     Decimal? @db.Decimal(18, 2)
+  discount      Decimal? @db.Decimal(5, 2)
+  total         Decimal? @db.Decimal(18, 2)
+  products      products @relation(fields: [productid], references: [productid], onDelete: NoAction, onUpdate: NoAction, map: "fk_qd_product")
+  quotes        quotes   @relation(fields: [quoteid], references: [quoteid], onDelete: NoAction, onUpdate: NoAction, map: "fk_qd_quote")
+}
+
+model quotes {
+  quoteid      Int            @id @default(autoincrement())
+  dealid       Int
+  quotedate    DateTime?      @db.Date
+  totalamount  Decimal?       @db.Decimal(18, 2)
+  status       String?        @db.VarChar(30)
+  createdby    Int?
+  quotedetails quotedetails[]
+  deals        deals          @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_quote_deal")
+  users        users?         @relation(fields: [createdby], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_quote_user")
+}
+
+model roles {
+  roleid      Int     @id @default(autoincrement())
+  rolename    String  @unique @db.VarChar(50)
+  description String?
+  users       users[]
+}
+
+model tasks {
+  taskid         Int       @id @default(autoincrement())
+  dealid         Int?
+  assigneduserid Int?
+  title          String?   @db.VarChar(200)
+  description    String?
+  duedate        DateTime? @db.Timestamp(6)
+  remindertime   DateTime? @db.Timestamp(6)
+  priority       String?   @db.VarChar(20)
+  status         String?   @db.VarChar(30)
+  deals          deals?    @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_task_deal")
+  users          users?    @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_task_user")
+}
+
+model users {
+  userid        Int             @id @default(autoincrement())
+  roleid        Int
+  fullname      String          @db.VarChar(100)
+  email         String          @unique @db.VarChar(100)
+  passwordhash  String          @db.VarChar(255)
+  phone         String?         @db.VarChar(20)
+  status        Boolean?        @default(true)
+  createdat     DateTime?       @default(now()) @db.Timestamp(6)
+  activities    activities[]
+  activitylogs  activitylogs[]
+  deals         deals[]
+  leads         leads[]
+  notifications notifications[]
+  quotes        quotes[]
+  tasks         tasks[]
+  roles         roles           @relation(fields: [roleid], references: [roleid], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_role")
+}
+
+enum action_type {
+  Login
+  Logout
+  Create
+  Update
+  Delete
+  Assign
+  Convert
+  Send_Quote   @map("Send Quote")
+  Change_Stage @map("Change Stage")
+}
