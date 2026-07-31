@@ -3,16 +3,19 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersService.findByEmail(loginDto.email);
+    const normalizedEmail = loginDto.email.trim().toLowerCase();
+
+    const user = await this.usersService.findByEmail(normalizedEmail);
 
     if (!user) {
       throw new UnauthorizedException(
@@ -35,7 +38,7 @@ export class AuthService {
       );
     }
 
-    const payload = {
+    const payload: JwtPayload = {
       sub: user.userid,
       email: user.email,
       role: user.roles.rolename,

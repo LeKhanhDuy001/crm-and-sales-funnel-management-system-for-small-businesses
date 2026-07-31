@@ -1,7 +1,16 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import {
+  FormEvent,
+  useEffect,
+  useState,
+} from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  getStoredUser,
+  saveAuth,
+} from '../../modules/auth/auth.storage';
+import { login } from '../../modules/auth/auth.service';
 import styles from './login.module.css';
 
 export default function LoginPage() {
@@ -9,160 +18,185 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberLogin, setRememberLogin] =
+    useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    const user = getStoredUser();
+
+    if (user?.role === 'Admin') {
+      router.replace('/admin/dashboard');
+    }
+  }, [router]);
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     event.preventDefault();
 
     setError('');
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch(
-        'http://localhost:3001/api/auth/login',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        },
+      const result = await login({
+        email,
+        password,
+      });
+
+      saveAuth(
+        result.accessToken,
+        result.user,
       );
 
-      const data = await response.json();
+      switch (result.user.role) {
+        case 'Admin':
+          router.replace('/admin/dashboard');
+          break;
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Đăng nhập thất bại');
+        case 'Sales Manager':
+          router.replace(
+            '/sales-manager/dashboard',
+          );
+          break;
+
+        case 'Sales':
+          router.replace('/sales/dashboard');
+          break;
+
+        case 'Marketing':
+          router.replace(
+            '/marketing/dashboard',
+          );
+          break;
+
+        case 'Customer Care':
+          router.replace(
+            '/customer-care/dashboard',
+          );
+          break;
+
+        default:
+          router.replace('/unauthorized');
       }
-
-      const storage = rememberMe ? localStorage : sessionStorage;
-
-      storage.setItem('accessToken', data.accessToken);
-      storage.setItem('user', JSON.stringify(data.user));
-
-      router.push('/dashboard');
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : 'Không thể kết nối đến máy chủ',
+          : 'Đã xảy ra lỗi khi đăng nhập',
       );
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   }
 
   return (
     <main className={styles.page}>
-      <section className={styles.introduction}>
-        <div className={styles.introductionContent}>
-          <div className={styles.logo}>CRM</div>
+      <section className={styles.loginCard}>
+        <div className={styles.logo}>
+          C
+        </div>
 
-          <h1>Quản lý khách hàng hiệu quả hơn</h1>
+        <div className={styles.heading}>
+          <h1>Đăng nhập hệ thống CRM</h1>
 
           <p>
-            Theo dõi khách hàng tiềm năng, cơ hội kinh doanh, báo giá và công
-            việc trên cùng một hệ thống.
+            Nhập thông tin tài khoản để tiếp tục
           </p>
-
-          <div className={styles.features}>
-            <div className={styles.featureItem}>
-              <span>✓</span>
-              <p>Quản lý khách hàng tập trung</p>
-            </div>
-
-            <div className={styles.featureItem}>
-              <span>✓</span>
-              <p>Theo dõi cơ hội bán hàng</p>
-            </div>
-
-            <div className={styles.featureItem}>
-              <span>✓</span>
-              <p>Quản lý công việc và báo giá</p>
-            </div>
-          </div>
         </div>
-      </section>
 
-      <section className={styles.loginSection}>
-        <form className={styles.loginForm} onSubmit={handleSubmit}>
-          <div className={styles.heading}>
-            <h2>Đăng nhập</h2>
-            <p>Nhập thông tin tài khoản để truy cập hệ thống CRM.</p>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="email">Email</label>
+        <form
+          className={styles.form}
+          onSubmit={handleSubmit}
+        >
+          <div className={styles.field}>
+            <label htmlFor="email">
+              Email
+            </label>
 
             <input
               id="email"
               type="email"
-              placeholder="admin@gmail.com"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
+              placeholder="admin@crm.com"
+              autoComplete="email"
+              disabled={isSubmitting}
               required
             />
           </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="password">Mật khẩu</label>
+          <div className={styles.field}>
+            <label htmlFor="password">
+              Mật khẩu
+            </label>
 
-            <div className={styles.passwordField}>
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Nhập mật khẩu"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-
-              <button
-                type="button"
-                className={styles.showPasswordButton}
-                onClick={() => setShowPassword((current) => !current)}
-              >
-                {showPassword ? 'Ẩn' : 'Hiện'}
-              </button>
-            </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
+              placeholder="Nhập mật khẩu"
+              autoComplete="current-password"
+              disabled={isSubmitting}
+              required
+            />
           </div>
 
           <div className={styles.options}>
             <label className={styles.remember}>
               <input
                 type="checkbox"
-                checked={rememberMe}
-                onChange={(event) => setRememberMe(event.target.checked)}
+                checked={rememberLogin}
+                onChange={(event) =>
+                  setRememberLogin(
+                    event.target.checked,
+                  )
+                }
+                disabled={isSubmitting}
               />
 
               <span>Ghi nhớ đăng nhập</span>
             </label>
 
-            <button type="button" className={styles.forgotPassword}>
+            <button
+              type="button"
+              className={styles.forgotPassword}
+              disabled={isSubmitting}
+            >
               Quên mật khẩu?
             </button>
           </div>
 
-          {error && <p className={styles.error}>{error}</p>}
+          {error && (
+            <p
+              className={styles.error}
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
-            className={styles.loginButton}
-            disabled={isLoading}
+            className={styles.submitButton}
+            disabled={isSubmitting}
           >
-            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            {isSubmitting
+              ? 'Đang đăng nhập...'
+              : 'Đăng nhập'}
           </button>
-
-          <p className={styles.footerText}>
-            Hệ thống quản lý quan hệ khách hàng
-          </p>
         </form>
+
+        <p className={styles.footer}>
+          © 2026 CRM Management System
+        </p>
       </section>
     </main>
   );
