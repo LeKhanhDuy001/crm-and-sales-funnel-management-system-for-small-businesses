@@ -1,79 +1,200 @@
-import Link from "next/link";
+'use client';
+
+import {
+  FormEvent,
+  useEffect,
+  useState,
+} from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  getStoredUser,
+  saveAuth,
+} from '../../modules/auth/auth.storage';
+import { login } from '../../modules/auth/auth.service';
+import styles from './login.module.css';
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberLogin, setRememberLogin] =
+    useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  useEffect(() => {
+    const user = getStoredUser();
+
+    if (user?.role === 'Admin') {
+      router.replace('/admin/dashboard');
+    }
+  }, [router]);
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
+
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const result = await login({
+        email,
+        password,
+      });
+
+      saveAuth(
+        result.accessToken,
+        result.user,
+      );
+
+      switch (result.user.role) {
+        case 'Admin':
+          router.replace('/admin/dashboard');
+          break;
+
+        case 'Sales Manager':
+          router.replace(
+            '/sales-manager/dashboard',
+          );
+          break;
+
+        case 'Sales':
+          router.replace('/sales/dashboard');
+          break;
+
+        case 'Marketing':
+          router.replace(
+            '/marketing/dashboard',
+          );
+          break;
+
+        case 'Customer Care':
+          router.replace(
+            '/customer-care/dashboard',
+          );
+          break;
+
+        default:
+          router.replace('/unauthorized');
+      }
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Đã xảy ra lỗi khi đăng nhập',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-2xl font-bold text-white">
-            C
-          </div>
+    <main className={styles.page}>
+      <section className={styles.loginCard}>
+        <div className={styles.logo}>
+          C
+        </div>
 
-          <h1 className="mt-5 text-2xl font-bold text-slate-900">
-            Đăng nhập hệ thống CRM
-          </h1>
+        <div className={styles.heading}>
+          <h1>Đăng nhập hệ thống CRM</h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p>
             Nhập thông tin tài khoản để tiếp tục
           </p>
         </div>
 
-        <form className="space-y-5">
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-semibold text-slate-700"
-            >
+        <form
+          className={styles.form}
+          onSubmit={handleSubmit}
+        >
+          <div className={styles.field}>
+            <label htmlFor="email">
               Email
             </label>
 
             <input
               id="email"
               type="email"
+              value={email}
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
               placeholder="admin@crm.com"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-700"
+              autoComplete="email"
+              disabled={isSubmitting}
+              required
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-semibold text-slate-700"
-            >
+          <div className={styles.field}>
+            <label htmlFor="password">
               Mật khẩu
             </label>
 
             <input
               id="password"
               type="password"
+              value={password}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
               placeholder="Nhập mật khẩu"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-700"
+              autoComplete="current-password"
+              disabled={isSubmitting}
+              required
             />
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-slate-600">
-              <input type="checkbox" />
-              Ghi nhớ đăng nhập
+          <div className={styles.options}>
+            <label className={styles.remember}>
+              <input
+                type="checkbox"
+                checked={rememberLogin}
+                onChange={(event) =>
+                  setRememberLogin(
+                    event.target.checked,
+                  )
+                }
+                disabled={isSubmitting}
+              />
+
+              <span>Ghi nhớ đăng nhập</span>
             </label>
 
             <button
               type="button"
-              className="font-medium text-slate-700 underline"
+              className={styles.forgotPassword}
+              disabled={isSubmitting}
             >
               Quên mật khẩu?
             </button>
           </div>
 
-          <Link
-            href="/dashboard"
-            className="block w-full rounded-lg bg-slate-900 py-3 text-center font-semibold text-white hover:bg-slate-800"
+          {error && (
+            <p
+              className={styles.error}
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className={styles.submitButton}
+            disabled={isSubmitting}
           >
-            Đăng nhập
-          </Link>
+            {isSubmitting
+              ? 'Đang đăng nhập...'
+              : 'Đăng nhập'}
+          </button>
         </form>
 
-        <p className="mt-8 text-center text-xs text-slate-400">
+        <p className={styles.footer}>
           © 2026 CRM Management System
         </p>
       </section>
