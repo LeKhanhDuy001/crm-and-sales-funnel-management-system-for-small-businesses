@@ -1,13 +1,7 @@
-import {
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import {
-  ExtractJwt,
-  Strategy,
-} from 'passport-jwt';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Role } from '../../common/enums/role.enum';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
@@ -22,22 +16,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const jwtSecret = configService.get<string>('JWT_SECRET');
 
     if (!jwtSecret) {
-      throw new Error(
-        'JWT_SECRET chưa được cấu hình trong file .env',
-      );
+      throw new Error('JWT_SECRET chưa được cấu hình trong file .env');
     }
 
     super({
-      jwtFromRequest:
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: jwtSecret,
     });
   }
 
-  async validate(
-    payload: JwtPayload,
-  ): Promise<AuthenticatedUser> {
+  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     const user = await this.prisma.users.findUnique({
       where: {
         userid: payload.sub,
@@ -48,15 +37,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      throw new UnauthorizedException(
-        'Tài khoản không tồn tại',
-      );
+      throw new UnauthorizedException('Tài khoản không tồn tại');
     }
 
     if (user.status === false) {
-      throw new UnauthorizedException(
-        'Tài khoản đã bị khóa',
-      );
+      throw new UnauthorizedException('Tài khoản đã bị khóa');
     }
 
     return {

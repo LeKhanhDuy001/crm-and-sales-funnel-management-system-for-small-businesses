@@ -14,10 +14,10 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(
-      ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     // API không dùng @Roles() thì không kiểm tra vai trò.
     if (!requiredRoles || requiredRoles.length === 0) {
@@ -39,9 +39,7 @@ export class RolesGuard implements CanActivate {
     const hasPermission = requiredRoles.includes(user.role);
 
     if (!hasPermission) {
-      throw new ForbiddenException(
-        'Bạn không có quyền truy cập chức năng này',
-      );
+      throw new ForbiddenException('Bạn không có quyền truy cập chức năng này');
     }
 
     return true;

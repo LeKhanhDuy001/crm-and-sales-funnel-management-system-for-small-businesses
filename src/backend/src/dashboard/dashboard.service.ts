@@ -3,9 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getAdminDashboard() {
     const [
@@ -106,9 +104,7 @@ export class DashboardService {
         totalProducts,
         totalQuotes,
         pendingTasks,
-        totalRevenue: Number(
-          revenueResult._sum.dealvalue ?? 0,
-        ),
+        totalRevenue: Number(revenueResult._sum.dealvalue ?? 0),
       },
 
       pipeline: pipelineStages.map((stage) => ({
@@ -124,10 +120,8 @@ export class DashboardService {
         company: lead.company,
         email: lead.email,
         status: lead.status,
-        source:
-          lead.leadsources?.sourcename ?? null,
-        assignedUser:
-          lead.users?.fullname ?? null,
+        source: lead.leadsources?.sourcename ?? null,
+        assignedUser: lead.users?.fullname ?? null,
         createdDate: lead.createddate,
       })),
     };

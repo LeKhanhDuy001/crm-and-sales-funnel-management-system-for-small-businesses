@@ -10,7 +10,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   async login(loginDto: LoginDto) {
     const normalizedEmail = loginDto.email.trim().toLowerCase();
@@ -18,9 +18,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(normalizedEmail);
 
     if (!user) {
-      throw new UnauthorizedException(
-        'Email hoặc mật khẩu không chính xác',
-      );
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
     if (user.status === false) {
@@ -33,9 +31,7 @@ export class AuthService {
     );
 
     if (!passwordIsValid) {
-      throw new UnauthorizedException(
-        'Email hoặc mật khẩu không chính xác',
-      );
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
     const payload: JwtPayload = {
