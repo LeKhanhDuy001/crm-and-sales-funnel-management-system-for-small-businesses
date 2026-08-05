@@ -1,111 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { DashboardRepository } from './repositories/dashboard.repository';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly dashboardRepository: DashboardRepository) {}
 
+  /**
+   * @returns
+   */
   async getAdminDashboard() {
-    const [
-      totalUsers,
-      totalLeads,
-      totalCustomers,
-      totalDeals,
-      totalProducts,
-      totalQuotes,
-      pendingTasks,
-      revenueResult,
-      pipelineStages,
-      recentLeads,
-    ] = await Promise.all([
-      this.prisma.users.count(),
-
-      this.prisma.leads.count(),
-
-      this.prisma.customers.count(),
-
-      this.prisma.deals.count(),
-
-      this.prisma.products.count({
-        where: {
-          status: true,
-        },
-      }),
-
-      this.prisma.quotes.count(),
-
-      this.prisma.tasks.count({
-        where: {
-          status: {
-            not: 'Completed',
-          },
-        },
-      }),
-
-      this.prisma.deals.aggregate({
-        where: {
-          status: 'Won',
-        },
-        _sum: {
-          dealvalue: true,
-        },
-      }),
-
-      this.prisma.pipelinestages.findMany({
-        orderBy: {
-          stageorder: 'asc',
-        },
-        select: {
-          stageid: true,
-          stagename: true,
-          stageorder: true,
-          _count: {
-            select: {
-              deals: true,
-            },
-          },
-        },
-      }),
-
-      this.prisma.leads.findMany({
-        take: 5,
-        orderBy: {
-          createddate: 'desc',
-        },
-        select: {
-          leadid: true,
-          fullname: true,
-          company: true,
-          email: true,
-          status: true,
-          createddate: true,
-
-          leadsources: {
-            select: {
-              sourcename: true,
-            },
-          },
-
-          users: {
-            select: {
-              fullname: true,
-            },
-          },
-        },
-      }),
+    const [overview, pipelineStages, recentLeads] = await Promise.all([
+      this.getOverview(),
+      this.dashboardRepository.findPipelineStages(),
+      this.dashboardRepository.findRecentLeads(5),
     ]);
 
     return {
-      overview: {
-        totalUsers,
-        totalLeads,
-        totalCustomers,
-        totalDeals,
-        totalProducts,
-        totalQuotes,
-        pendingTasks,
-        totalRevenue: Number(revenueResult._sum.dealvalue ?? 0),
-      },
+      overview,
 
       pipeline: pipelineStages.map((stage) => ({
         stageId: stage.stageid,
@@ -124,6 +35,39 @@ export class DashboardService {
         assignedUser: lead.users?.fullname ?? null,
         createdDate: lead.createddate,
       })),
+    };
+  }
+
+  private async getOverview() {
+    const [
+      totalUsers,
+      totalLeads,
+      totalCustomers,
+      totalDeals,
+      totalProducts,
+      totalQuotes,
+      pendingTasks,
+      revenueResult,
+    ] = await Promise.all([
+      this.dashboardRepository.countUsers(),
+      this.dashboardRepository.countLeads(),
+      this.dashboardRepository.countCustomers(),
+      this.dashboardRepository.countDeals(),
+      this.dashboardRepository.countProductsByStatus(true),
+      this.dashboardRepository.countQuotes(),
+      this.dashboardRepository.countTasksExcludingStatus('Completed'),
+      this.dashboardRepository.sumDealValueByStatus('Won'),
+    ]);
+
+    return {
+      totalUsers,
+      totalLeads,
+      totalCustomers,
+      totalDeals,
+      totalProducts,
+      totalQuotes,
+      pendingTasks,
+      totalRevenue: Number(revenueResult._sum.dealvalue ?? 0),
     };
   }
 }

@@ -11,8 +11,9 @@ import {
 } from '../../modules/auth/auth.storage';
 import { getAdminDashboard } from '../../modules/dashboard/dashboard.service';
 import type { AdminDashboardData } from '../../modules/dashboard/dashboard.types';
-import styles from './AdminDashboard.module.css';
-import StatCard from './StatCard';
+import styles from './admin-dashboard.module.css';
+import StatCard from './stat-card';
+import { ApiError } from '../../services/api';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -44,21 +45,24 @@ export default function AdminDashboard() {
           await getAdminDashboard(accessToken);
 
         setDashboard(data);
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Đã xảy ra lỗi';
+      } catch (caughtError) {
+        if (caughtError instanceof ApiError) {
+          if (caughtError.statusCode === 401) {
+            clearAuth();
+            router.replace('/login');
+            return;
+          }
 
-        setError(message);
+          if (caughtError.statusCode === 403) {
+            router.replace('/unauthorized');
+            return;
+          }
 
-        if (
-          message.includes('hết hạn') ||
-          message.includes('không hợp lệ')
-        ) {
-          clearAuth();
-          router.replace('/login');
+          setError(caughtError.message);
+          return;
         }
+
+        setError('Đã xảy ra lỗi khi tải Dashboard');
       } finally {
         setIsLoading(false);
       }

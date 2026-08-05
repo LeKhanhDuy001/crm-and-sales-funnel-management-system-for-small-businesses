@@ -1,4 +1,4 @@
-import styles from './AdminDashboard.module.css';
+import styles from './admin-dashboard.module.css';
 
 interface StatCardProps {
   title: string;

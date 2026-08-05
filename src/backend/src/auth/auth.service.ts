@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { LoginResponseDto } from './dto/login-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
@@ -12,7 +13,15 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  /**
+   * Xác thực email và mật khẩu, sau đó trả JWT cùng thông tin người dùng.
+   *
+   * @param loginDto Email và mật khẩu đăng nhập.
+   * @returns JWT access token và thông tin người dùng đã được lọc.
+   * @throws UnauthorizedException Khi tài khoản không tồn tại, bị khóa
+   * hoặc mật khẩu không chính xác.
+   */
+  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const normalizedEmail = loginDto.email.trim().toLowerCase();
 
     const user = await this.usersService.findByEmail(normalizedEmail);
