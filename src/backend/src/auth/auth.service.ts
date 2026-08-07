@@ -6,6 +6,9 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
+const NORMAL_SESSION_SECONDS = 60 * 60;
+const REMEMBERED_SESSION_SECONDS = 60 * 60 * 24 * 7;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -48,7 +51,14 @@ export class AuthService {
       role: user.roles.rolename,
     };
 
-    const accessToken = await this.jwtService.signAsync(payload);
+    const expiresIn =
+      loginDto.rememberMe === true
+        ? REMEMBERED_SESSION_SECONDS
+        : NORMAL_SESSION_SECONDS;
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn,
+    });
 
     return {
       message: 'Đăng nhập thành công',
