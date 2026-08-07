@@ -1,7 +1,7 @@
 generator client {
-  provider      = "prisma-client"
-  output        = "../generated/prisma"
-  moduleFormat  = "cjs"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -9,168 +9,233 @@ datasource db {
 }
 
 model activities {
-  activityid   Int       @id @default(autoincrement())
-  dealid       Int
-  userid       Int
-  activitytype String?   @db.VarChar(30)
+  activityid   Int       @id @default(autoincrement()) @map("id")
+  dealid       Int       @map("deal_id")
+  userid       Int       @map("user_id")
+  activitytype String?   @map("activity_type") @db.VarChar(30)
   subject      String?   @db.VarChar(200)
   description  String?
-  activitytime DateTime? @db.Timestamp(6)
+  activitytime DateTime? @map("activity_time") @db.Timestamp(6)
   result       String?
-  deals        deals     @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_deal")
-  users        users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_user")
+
+  deals deals @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_deal")
+  users users @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_user")
+
+  @@index([dealid], map: "activities_deal_id_idx")
+  @@index([userid], map: "activities_user_id_idx")
+  @@map("activities")
 }
 
 model activitylogs {
-  logid      Int          @id @default(autoincrement())
-  userid     Int?
+  logid      Int          @id(map: "activitylogs_pkey") @default(autoincrement()) @map("id")
+  userid     Int?         @map("user_id")
   action     action_type?
-  tablename  String?      @db.VarChar(100)
-  recordid   Int?
-  actiontime DateTime?    @default(now()) @db.Timestamp(6)
-  ipaddress  String?      @db.VarChar(50)
-  users      users?       @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_log_user")
+  tablename  String?      @map("table_name") @db.VarChar(100)
+  recordid   Int?         @map("record_id")
+  actiontime DateTime?    @default(now()) @map("action_time") @db.Timestamp(6)
+  ipaddress  String?      @map("ip_address") @db.VarChar(50)
+
+  users users? @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_log_user")
+
+  @@index([userid], map: "activity_logs_user_id_idx")
+  @@index([actiontime], map: "activity_logs_action_time_idx")
+  @@map("activity_logs")
 }
 
 model customers {
-  customerid   Int       @id @default(autoincrement())
-  leadid       Int?      @unique
-  fullname     String    @db.VarChar(100)
+  customerid   Int       @id @default(autoincrement()) @map("id")
+  leadid       Int?      @unique(map: "customers_leadid_key") @map("lead_id")
+  fullname     String    @map("full_name") @db.VarChar(100)
   company      String?   @db.VarChar(150)
   phone        String?   @db.VarChar(20)
   email        String?   @db.VarChar(100)
   address      String?
-  customertype String?   @db.VarChar(50)
-  createddate  DateTime? @default(now()) @db.Timestamp(6)
-  leads        leads?    @relation(fields: [leadid], references: [leadid], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_lead")
-  deals        deals[]
+  customertype String?   @map("customer_type") @db.VarChar(50)
+  createddate  DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  leads leads?  @relation(fields: [leadid], references: [leadid], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_lead")
+  deals deals[]
+
+  @@index([email], map: "customers_email_idx")
+  @@index([phone], map: "customers_phone_idx")
+  @@map("customers")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model deals {
-  dealid            Int            @id @default(autoincrement())
-  customerid        Int
-  assigneduserid    Int
-  stageid           Int
-  dealname          String         @db.VarChar(200)
-  dealvalue         Decimal        @db.Decimal(18, 2)
+  dealid            Int       @id @default(autoincrement()) @map("id")
+  customerid        Int       @map("customer_id")
+  assigneduserid    Int       @map("assigned_user_id")
+  stageid           Int       @map("stage_id")
+  dealname          String    @map("deal_name") @db.VarChar(200)
+  dealvalue         Decimal   @map("deal_value") @db.Decimal(18, 2)
   probability       Int?
-  expectedrevenue   Decimal?       @db.Decimal(18, 2)
-  expectedclosedate DateTime?      @db.Date
-  status            String?        @db.VarChar(30)
-  createddate       DateTime?      @default(now()) @db.Timestamp(6)
-  activities        activities[]
-  customers         customers      @relation(fields: [customerid], references: [customerid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_customer")
-  pipelinestages    pipelinestages @relation(fields: [stageid], references: [stageid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_stage")
-  users             users          @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_user")
-  quotes            quotes[]
-  tasks             tasks[]
+  expectedrevenue   Decimal?  @map("expected_revenue") @db.Decimal(18, 2)
+  expectedclosedate DateTime? @map("expected_close_date") @db.Date
+  status            String?   @db.VarChar(30)
+  createddate       DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  activities     activities[]
+  customers      customers      @relation(fields: [customerid], references: [customerid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_customer")
+  pipelinestages pipelinestages @relation(fields: [stageid], references: [stageid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_stage")
+  users          users          @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_deal_user")
+  quotes         quotes[]
+  tasks          tasks[]
+
+  @@index([customerid], map: "deals_customer_id_idx")
+  @@index([assigneduserid], map: "deals_assigned_user_id_idx")
+  @@index([stageid], map: "deals_stage_id_idx")
+  @@index([status], map: "deals_status_idx")
+  @@map("deals")
 }
 
 model leads {
-  leadid         Int          @id @default(autoincrement())
-  sourceid       Int?
-  assigneduserid Int?
-  fullname       String       @db.VarChar(100)
-  company        String?      @db.VarChar(150)
-  phone          String?      @db.VarChar(20)
-  email          String?      @db.VarChar(100)
+  leadid         Int       @id @default(autoincrement()) @map("id")
+  sourceid       Int?      @map("source_id")
+  assigneduserid Int?      @map("assigned_user_id")
+  fullname       String    @map("full_name") @db.VarChar(100)
+  company        String?   @db.VarChar(150)
+  phone          String?   @db.VarChar(20)
+  email          String?   @db.VarChar(100)
   address        String?
-  status         String?      @db.VarChar(30)
-  createddate    DateTime?    @default(now()) @db.Timestamp(6)
-  customers      customers?
-  leadsources    leadsources? @relation(fields: [sourceid], references: [sourceid], onDelete: NoAction, onUpdate: NoAction, map: "fk_lead_source")
-  users          users?       @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_lead_user")
+  status         String?   @db.VarChar(30)
+  createddate    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  customers   customers?
+  leadsources leadsources? @relation(fields: [sourceid], references: [sourceid], onDelete: NoAction, onUpdate: NoAction, map: "fk_lead_source")
+  users       users?       @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_lead_user")
+
+  @@index([sourceid], map: "leads_source_id_idx")
+  @@index([assigneduserid], map: "leads_assigned_user_id_idx")
+  @@index([status], map: "leads_status_idx")
+  @@index([email], map: "leads_email_idx")
+  @@index([phone], map: "leads_phone_idx")
+  @@map("leads")
 }
 
 model leadsources {
-  sourceid   Int     @id @default(autoincrement())
-  sourcename String  @unique @db.VarChar(100)
-  leads      leads[]
+  sourceid   Int    @id(map: "leadsources_pkey") @default(autoincrement()) @map("id")
+  sourcename String @unique(map: "leadsources_sourcename_key") @map("source_name") @db.VarChar(100)
+
+  leads leads[]
+
+  @@map("lead_sources")
 }
 
 model notifications {
-  notificationid Int       @id @default(autoincrement())
-  userid         Int
+  notificationid Int       @id @default(autoincrement()) @map("id")
+  userid         Int       @map("user_id")
   title          String?   @db.VarChar(200)
   content        String?
   type           String?   @db.VarChar(30)
-  isread         Boolean?  @default(false)
-  createddate    DateTime? @default(now()) @db.Timestamp(6)
-  users          users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_notification_user")
+  isread         Boolean?  @default(false) @map("is_read")
+  createddate    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  users users @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_notification_user")
+
+  @@index([userid, isread], map: "notifications_user_id_is_read_idx")
+  @@map("notifications")
 }
 
 model pipelinestages {
-  stageid    Int     @id @default(autoincrement())
-  stagename  String  @db.VarChar(100)
-  stageorder Int
-  deals      deals[]
+  stageid    Int    @id(map: "pipelinestages_pkey") @default(autoincrement()) @map("id")
+  stagename  String @map("stage_name") @db.VarChar(100)
+  stageorder Int    @map("stage_order")
+
+  deals deals[]
+
+  @@map("pipeline_stages")
 }
 
 model products {
-  productid    Int            @id @default(autoincrement())
-  productname  String         @db.VarChar(200)
+  productid    Int            @id @default(autoincrement()) @map("id")
+  productname  String         @map("product_name") @db.VarChar(200)
   category     String?        @db.VarChar(100)
   price        Decimal?       @db.Decimal(18, 2)
   description  String?
   status       Boolean?       @default(true)
   quotedetails quotedetails[]
+
+  @@index([category], map: "products_category_idx")
+  @@index([status], map: "products_status_idx")
+  @@map("products")
 }
 
 model quotedetails {
-  quotedetailid Int      @id @default(autoincrement())
-  quoteid       Int
-  productid     Int
+  quotedetailid Int      @id(map: "quotedetails_pkey") @default(autoincrement()) @map("id")
+  quoteid       Int      @map("quote_id")
+  productid     Int      @map("product_id")
   quantity      Int
-  unitprice     Decimal? @db.Decimal(18, 2)
+  unitprice     Decimal? @map("unit_price") @db.Decimal(18, 2)
   discount      Decimal? @db.Decimal(5, 2)
   total         Decimal? @db.Decimal(18, 2)
-  products      products @relation(fields: [productid], references: [productid], onDelete: NoAction, onUpdate: NoAction, map: "fk_qd_product")
-  quotes        quotes   @relation(fields: [quoteid], references: [quoteid], onDelete: NoAction, onUpdate: NoAction, map: "fk_qd_quote")
+
+  products products @relation(fields: [productid], references: [productid], onDelete: NoAction, onUpdate: NoAction, map: "fk_qd_product")
+  quotes   quotes   @relation(fields: [quoteid], references: [quoteid], onDelete: NoAction, onUpdate: NoAction, map: "fk_qd_quote")
+
+  @@index([quoteid], map: "quote_details_quote_id_idx")
+  @@index([productid], map: "quote_details_product_id_idx")
+  @@map("quote_details")
 }
 
 model quotes {
-  quoteid      Int            @id @default(autoincrement())
-  dealid       Int
-  quotedate    DateTime?      @db.Date
-  totalamount  Decimal?       @db.Decimal(18, 2)
+  quoteid      Int            @id @default(autoincrement()) @map("id")
+  dealid       Int            @map("deal_id")
+  quotedate    DateTime?      @map("quote_date") @db.Date
+  totalamount  Decimal?       @map("total_amount") @db.Decimal(18, 2)
   status       String?        @db.VarChar(30)
-  createdby    Int?
+  createdby    Int?           @map("created_by")
   quotedetails quotedetails[]
-  deals        deals          @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_quote_deal")
-  users        users?         @relation(fields: [createdby], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_quote_user")
+
+  deals deals  @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_quote_deal")
+  users users? @relation(fields: [createdby], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_quote_user")
+
+  @@index([dealid], map: "quotes_deal_id_idx")
+  @@index([createdby], map: "quotes_created_by_idx")
+  @@index([status], map: "quotes_status_idx")
+  @@map("quotes")
 }
 
 model roles {
-  roleid      Int     @id @default(autoincrement())
-  rolename    String  @unique @db.VarChar(50)
+  roleid      Int     @id @default(autoincrement()) @map("id")
+  rolename    String  @unique(map: "roles_rolename_key") @map("role_name") @db.VarChar(50)
   description String?
-  users       users[]
+
+  users users[]
+
+  @@map("roles")
 }
 
 model tasks {
-  taskid         Int       @id @default(autoincrement())
-  dealid         Int?
-  assigneduserid Int?
+  taskid         Int       @id @default(autoincrement()) @map("id")
+  dealid         Int?      @map("deal_id")
+  assigneduserid Int?      @map("assigned_user_id")
   title          String?   @db.VarChar(200)
   description    String?
-  duedate        DateTime? @db.Timestamp(6)
-  remindertime   DateTime? @db.Timestamp(6)
+  duedate        DateTime? @map("due_date") @db.Timestamp(6)
+  remindertime   DateTime? @map("reminder_time") @db.Timestamp(6)
   priority       String?   @db.VarChar(20)
   status         String?   @db.VarChar(30)
-  deals          deals?    @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_task_deal")
-  users          users?    @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_task_user")
+
+  deals deals? @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_task_deal")
+  users users? @relation(fields: [assigneduserid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_task_user")
+
+  @@index([dealid], map: "tasks_deal_id_idx")
+  @@index([assigneduserid], map: "tasks_assigned_user_id_idx")
+  @@index([status], map: "tasks_status_idx")
+  @@index([duedate], map: "tasks_due_date_idx")
+  @@map("tasks")
 }
 
 model users {
-  userid        Int             @id @default(autoincrement())
-  roleid        Int
-  fullname      String          @db.VarChar(100)
-  email         String          @unique @db.VarChar(100)
-  passwordhash  String          @db.VarChar(255)
-  phone         String?         @db.VarChar(20)
-  status        Boolean?        @default(true)
-  createdat     DateTime?       @default(now()) @db.Timestamp(6)
+  userid       Int       @id @default(autoincrement()) @map("id")
+  roleid       Int       @map("role_id")
+  fullname     String    @map("full_name") @db.VarChar(100)
+  email        String    @unique(map: "users_email_key") @db.VarChar(100)
+  passwordhash String    @map("password_hash") @db.VarChar(255)
+  phone        String?   @db.VarChar(20)
+  status       Boolean?  @default(true)
+  createdat    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
   activities    activities[]
   activitylogs  activitylogs[]
   deals         deals[]
@@ -179,6 +244,10 @@ model users {
   quotes        quotes[]
   tasks         tasks[]
   roles         roles           @relation(fields: [roleid], references: [roleid], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_role")
+
+  @@index([roleid], map: "users_role_id_idx")
+  @@index([status], map: "users_status_idx")
+  @@map("users")
 }
 
 enum action_type {

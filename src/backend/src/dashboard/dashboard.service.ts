@@ -6,7 +6,8 @@ export class DashboardService {
   constructor(private readonly dashboardRepository: DashboardRepository) {}
 
   /**
-   * @returns
+   * Tổng hợp dữ liệu dashboard cho admin
+   * @returns Số liệu tổng quan, Pipeline bán hàng và danh sách Lead mới nhất
    */
   async getAdminDashboard() {
     const [overview, pipelineStages, recentLeads] = await Promise.all([

@@ -18,8 +18,7 @@ export class AuthService {
    *
    * @param loginDto Email và mật khẩu đăng nhập.
    * @returns JWT access token và thông tin người dùng đã được lọc.
-   * @throws UnauthorizedException Khi tài khoản không tồn tại, bị khóa
-   * hoặc mật khẩu không chính xác.
+   * @throws UnauthorizedException Khi tài khoản không tồn tại, bị khóa hoặc mật khẩu không chính xác.
    */
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const normalizedEmail = loginDto.email.trim().toLowerCase();

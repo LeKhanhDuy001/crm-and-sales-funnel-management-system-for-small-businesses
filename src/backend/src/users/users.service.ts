@@ -20,8 +20,8 @@ export class UsersService {
   /**
    * Tìm người dùng theo mã định danh.
    *
-   * @param userId
-   * @returns
+   * @param userId Mã định danh của người dùng
+   * @returns Người dùng cùng với thông tin vai trò hoặc null nếu không tồn tại
    */
   async findById(userId: number) {
     return this.usersRepository.findById(userId);
