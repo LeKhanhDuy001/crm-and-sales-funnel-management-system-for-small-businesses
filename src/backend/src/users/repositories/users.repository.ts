@@ -26,4 +26,21 @@ export class UsersRepository {
       },
     });
   }
+
+  /**
+   * Cập nhật mật khẩu đã được mã hóa của người dùng.
+   *
+   * @param userId ID của người dùng.
+   * @param passwordHash Mật khẩu đã được bcrypt hash.
+   */
+  async updatePassword(userId: number, passwordHash: string): Promise<void> {
+    await this.prisma.users.update({
+      where: {
+        userid: userId,
+      },
+      data: {
+        passwordhash: passwordHash,
+      },
+    });
+  }
 }

@@ -26,4 +26,14 @@ export class UsersService {
   async findById(userId: number) {
     return this.usersRepository.findById(userId);
   }
+
+  /**
+   * Cập nhật mật khẩu đã được mã hóa của người dùng.
+   *
+   * @param userId ID của người dùng.
+   * @param passwordHash Mật khẩu đã được hash.
+   */
+  async updatePassword(userId: number, passwordHash: string): Promise<void> {
+    await this.usersRepository.updatePassword(userId, passwordHash);
+  }
 }

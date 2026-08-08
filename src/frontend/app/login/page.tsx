@@ -17,6 +17,7 @@ import {
   validateLoginForm,
 } from '../../modules/auth/login-validation';
 import styles from './login.module.css';
+import Link from 'next/link';
 
 function getDashboardPath(role: string): string {
   switch (role) {
@@ -58,32 +59,32 @@ export default function LoginPage() {
     useState(false);
 
   useEffect(() => {
-  const user = getStoredUser();
+    const user = getStoredUser();
 
-  if (user) {
-    router.replace(
-      getDashboardPath(user.role),
-    );
+    if (user) {
+      router.replace(
+        getDashboardPath(user.role),
+      );
 
-    return;
-  }
+      return;
+    }
 
-  const rememberedEmail =
-    getRememberedEmail();
+    const rememberedEmail =
+      getRememberedEmail();
 
-  if (!rememberedEmail) {
-    return;
-  }
+    if (!rememberedEmail) {
+      return;
+    }
 
-  const timeoutId = window.setTimeout(() => {
-    setEmail(rememberedEmail);
-    setRememberLogin(true);
-  }, 0);
+    const timeoutId = window.setTimeout(() => {
+      setEmail(rememberedEmail);
+      setRememberLogin(true);
+    }, 0);
 
-  return () => {
-    window.clearTimeout(timeoutId);
-  };
-}, [router]);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [router]);
 
   function clearFieldError(
     field: keyof LoginFieldErrors,
@@ -295,15 +296,9 @@ export default function LoginPage() {
               </span>
             </label>
 
-            <button
-              type="button"
-              className={
-                styles.forgotPassword
-              }
-              disabled={isSubmitting}
-            >
+            <Link href="/forgot-password" className={styles.forgotPassword}>
               Quên mật khẩu?
-            </button>
+            </Link>
           </div>
 
           {error && (
