@@ -1,18 +1,20 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from './prisma.service';
 
 describe('PrismaService', () => {
-  let service: PrismaService;
+  const originalDatabaseUrl = process.env.DATABASE_URL;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [PrismaService],
-    }).compile();
-
-    service = module.get<PrismaService>(PrismaService);
+  afterEach(() => {
+    if (originalDatabaseUrl) {
+      process.env.DATABASE_URL = originalDatabaseUrl;
+    } else {
+      delete process.env.DATABASE_URL;
+    }
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('should throw error when DATABASE_URL is missing', () => {
+    delete process.env.DATABASE_URL;
+    expect(() => {
+      new PrismaService();
+    }).toThrow('DATABASE_URL chưa được cấu hình trong file .env');
   });
 });
