@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class LoginDto {
   @IsEmail({}, { message: 'Email không đúng định dạng' })
@@ -8,4 +14,10 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
   password!: string;
+
+  @IsOptional()
+  @IsBoolean({
+    message: 'Giá trị ghi nhớ đăng nhập không hợp lệ',
+  })
+  rememberMe?: boolean;
 }

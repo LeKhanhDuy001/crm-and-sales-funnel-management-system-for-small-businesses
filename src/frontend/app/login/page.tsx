@@ -1,36 +1,108 @@
 'use client';
 
 import {
-  FormEvent,
+  type FormEvent,
   useEffect,
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  getRememberedEmail,
   getStoredUser,
   saveAuth,
 } from '../../modules/auth/auth.storage';
 import { login } from '../../modules/auth/auth.service';
+import {
+  type LoginFieldErrors,
+  validateLoginForm,
+} from '../../modules/auth/login-validation';
 import styles from './login.module.css';
+import Link from 'next/link';
+
+function getDashboardPath(role: string): string {
+  switch (role) {
+    case 'Admin':
+      return '/admin/dashboard';
+
+    case 'Sales Manager':
+      return '/sales-manager/dashboard';
+
+    case 'Sales':
+      return '/sales/dashboard';
+
+    case 'Marketing':
+      return '/marketing/dashboard';
+
+    case 'Customer Care':
+      return '/customer-care/dashboard';
+
+    default:
+      return '/unauthorized';
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [rememberLogin, setRememberLogin] =
     useState(false);
+
+  const [fieldErrors, setFieldErrors] =
+    useState<LoginFieldErrors>({});
+
   const [error, setError] = useState('');
+
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
   useEffect(() => {
     const user = getStoredUser();
 
-    if (user?.role === 'Admin') {
-      router.replace('/admin/dashboard');
+    if (user) {
+      router.replace(
+        getDashboardPath(user.role),
+      );
+
+      return;
     }
+
+    const rememberedEmail =
+      getRememberedEmail();
+
+    if (!rememberedEmail) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setEmail(rememberedEmail);
+      setRememberLogin(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [router]);
+
+  function clearFieldError(
+    field: keyof LoginFieldErrors,
+  ): void {
+    setFieldErrors((currentErrors) => {
+      if (!currentErrors[field]) {
+        return currentErrors;
+      }
+
+      const nextErrors = {
+        ...currentErrors,
+      };
+
+      delete nextErrors[field];
+
+      return nextErrors;
+    });
+  }
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -38,54 +110,49 @@ export default function LoginPage() {
     event.preventDefault();
 
     setError('');
+
+    const validationErrors =
+      validateLoginForm(
+        email,
+        password,
+      );
+
+    setFieldErrors(validationErrors);
+
+    if (
+      Object.keys(validationErrors).length > 0
+    ) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      const normalizedEmail = email.trim();
+
       const result = await login({
-        email,
+        email: normalizedEmail,
         password,
+        rememberMe: rememberLogin,
       });
 
       saveAuth(
         result.accessToken,
         result.user,
+        rememberLogin,
+        normalizedEmail,
       );
 
-      switch (result.user.role) {
-        case 'Admin':
-          router.replace('/admin/dashboard');
-          break;
-
-        case 'Sales Manager':
-          router.replace(
-            '/sales-manager/dashboard',
-          );
-          break;
-
-        case 'Sales':
-          router.replace('/sales/dashboard');
-          break;
-
-        case 'Marketing':
-          router.replace(
-            '/marketing/dashboard',
-          );
-          break;
-
-        case 'Customer Care':
-          router.replace(
-            '/customer-care/dashboard',
-          );
-          break;
-
-        default:
-          router.replace('/unauthorized');
-      }
-    } catch (error) {
+      router.replace(
+        getDashboardPath(
+          result.user.role,
+        ),
+      );
+    } catch (caughtError) {
       setError(
-        error instanceof Error
-          ? error.message
-          : 'Đã xảy ra lỗi khi đăng nhập',
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Đã xảy ra lỗi khi đăng nhập.',
       );
     } finally {
       setIsSubmitting(false);
@@ -95,21 +162,21 @@ export default function LoginPage() {
   return (
     <main className={styles.page}>
       <section className={styles.loginCard}>
-        <div className={styles.logo}>
-          C
-        </div>
-
         <div className={styles.heading}>
-          <h1>Đăng nhập hệ thống CRM</h1>
+          <h1>
+            Đăng nhập hệ thống CRM
+          </h1>
 
           <p>
-            Nhập thông tin tài khoản để tiếp tục
+            Nhập thông tin tài khoản để
+            tiếp tục
           </p>
         </div>
 
         <form
           className={styles.form}
           onSubmit={handleSubmit}
+          noValidate
         >
           <div className={styles.field}>
             <label htmlFor="email">
@@ -118,16 +185,44 @@ export default function LoginPage() {
 
             <input
               id="email"
+              name="email"
               type="email"
               value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
               placeholder="admin@crm.com"
               autoComplete="email"
               disabled={isSubmitting}
-              required
+              aria-invalid={
+                fieldErrors.email
+                  ? true
+                  : undefined
+              }
+              aria-describedby={
+                fieldErrors.email
+                  ? 'email-error'
+                  : undefined
+              }
+              onChange={(event) => {
+                setEmail(
+                  event.target.value,
+                );
+
+                clearFieldError(
+                  'email',
+                );
+              }}
             />
+
+            {fieldErrors.email && (
+              <p
+                id="email-error"
+                className={
+                  styles.fieldError
+                }
+                role="alert"
+              >
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
 
           <div className={styles.field}>
@@ -137,41 +232,73 @@ export default function LoginPage() {
 
             <input
               id="password"
+              name="password"
               type="password"
               value={password}
-              onChange={(event) =>
-                setPassword(event.target.value)
-              }
               placeholder="Nhập mật khẩu"
               autoComplete="current-password"
               disabled={isSubmitting}
-              required
+              aria-invalid={
+                fieldErrors.password
+                  ? true
+                  : undefined
+              }
+              aria-describedby={
+                fieldErrors.password
+                  ? 'password-error'
+                  : undefined
+              }
+              onChange={(event) => {
+                setPassword(
+                  event.target.value,
+                );
+
+                clearFieldError(
+                  'password',
+                );
+              }}
             />
+
+            {fieldErrors.password && (
+              <p
+                id="password-error"
+                className={
+                  styles.fieldError
+                }
+                role="alert"
+              >
+                {fieldErrors.password}
+              </p>
+            )}
           </div>
 
-          <div className={styles.options}>
-            <label className={styles.remember}>
+          <div
+            className={styles.options}
+          >
+            <label
+              className={
+                styles.remember
+              }
+            >
               <input
                 type="checkbox"
                 checked={rememberLogin}
-                onChange={(event) =>
+                disabled={isSubmitting}
+                onChange={(event) => {
                   setRememberLogin(
                     event.target.checked,
-                  )
-                }
-                disabled={isSubmitting}
+                  );
+                }}
               />
 
-              <span>Ghi nhớ đăng nhập</span>
+              <span>
+                Ghi nhớ đăng nhập
+              </span>
             </label>
 
-            <button
-              type="button"
-              className={styles.forgotPassword}
-              disabled={isSubmitting}
-            >
+            <Link href="/forgot-password" className={styles.forgotPassword}>
               Quên mật khẩu?
-            </button>
+            </Link>
           </div>
 
           {error && (
@@ -185,7 +312,9 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className={styles.submitButton}
+            className={
+              styles.submitButton
+            }
             disabled={isSubmitting}
           >
             {isSubmitting
@@ -195,7 +324,8 @@ export default function LoginPage() {
         </form>
 
         <p className={styles.footer}>
-          © 2026 CRM Management System
+          © 2026 CRM Management
+          System
         </p>
       </section>
     </main>

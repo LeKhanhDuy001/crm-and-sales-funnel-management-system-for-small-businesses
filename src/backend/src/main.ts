@@ -1,19 +1,35 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
+  const logger = new Logger('Bootstrap');
 
-  const frontendUrl =
-    configService.get<string>('FRONTEND_URL') ??
-    'http://localhost:3000';
+  const frontendUrl = configService.get<string>('FRONTEND_URL');
 
-  const port =
-    configService.get<number>('PORT') ?? 3001;
+  const portValue = configService.get<string>('PORT');
+
+  if (!frontendUrl) {
+    throw new Error('FRONTEND_URL chưa được cấu hình trong file .env');
+  }
+
+  if (!portValue) {
+    throw new Error('PORT chưa được cấu hình trong file .env');
+  }
+
+  const port = Number(portValue);
+
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error('PORT phải là một số nguyên dương hợp lệ');
+  }
+
+  app.setGlobalPrefix('api/v1');
+  setupSwagger(app);
 
   app.enableCors({
     origin: frontendUrl,
@@ -23,16 +39,14 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      transform: true,
       forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
   await app.listen(port);
 
-  console.log(
-    `Backend đang chạy tại http://localhost:${port}`,
-  );
+  logger.log(`Backend đang chạy trên cổng ${port}`);
 }
 
 void bootstrap();
