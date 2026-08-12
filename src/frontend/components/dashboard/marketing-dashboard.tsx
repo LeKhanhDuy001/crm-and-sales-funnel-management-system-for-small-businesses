@@ -6,12 +6,13 @@ import { formatDate } from './dashboard-formatters';
 import DashboardState from './dashboard-state';
 import styles from './role-dashboard.module.css';
 import { useDashboardData } from './use-dashboard-data';
+import Link from 'next/link';
 
 export default function MarketingDashboard() {
-  const {data: dashboard, isLoading, error,} = useDashboardData(getMarketingDashboard,);
+  const { data: dashboard, isLoading, error, } = useDashboardData(getMarketingDashboard,);
 
   if (isLoading || error || !dashboard) {
-    return (<DashboardState isLoading={isLoading} error={error} hasData={Boolean(dashboard)}/>);
+    return (<DashboardState isLoading={isLoading} error={error} hasData={Boolean(dashboard)} />);
   }
 
   const { overview, leadsBySource, leadsByStatus, recentLeads, } = dashboard;
@@ -20,20 +21,31 @@ export default function MarketingDashboard() {
 
   return (
     <main className={styles.page}>
-      <DashboardHeader title="Dashboard Marketing" description="Theo dõi nguồn Lead và hiệu quả chuyển đổi khách hàng tiềm năng."/>
+      <DashboardHeader title="Dashboard Marketing" description="Theo dõi nguồn Lead và hiệu quả chuyển đổi khách hàng tiềm năng." />
+
+      <nav className={styles.dashboardNavigation} aria-label="Điều hướng Marketing">
+        <Link href="/marketing/dashboard"
+          className={`${styles.dashboardNavigationLink} ${styles.dashboardNavigationLinkActive}`}>
+          Dashboard
+        </Link>
+
+        <Link href="/leads" className={styles.dashboardNavigationLink}>
+          Quản lý Lead
+        </Link>
+      </nav>
 
       <section className={styles.statGrid}>
-        <Stat title="Tổng Lead" value={overview.totalLeads} icon="👥"/>
+        <Stat title="Tổng Lead" value={overview.totalLeads} icon="👥" />
 
-        <Stat title="Lead mới tháng này" value={overview.newLeadsThisMonth} icon="✨"/>
+        <Stat title="Lead mới tháng này" value={overview.newLeadsThisMonth} icon="✨" />
 
-        <Stat title="Đã chuyển đổi" value={overview.convertedLeads} icon="✅"/>
+        <Stat title="Đã chuyển đổi" value={overview.convertedLeads} icon="✅" />
 
-        <Stat title="Chưa chuyển đổi" value={overview.unconvertedLeads} icon="⏳"/>
+        <Stat title="Chưa chuyển đổi" value={overview.unconvertedLeads} icon="⏳" />
 
-        <Stat title="Tỷ lệ chuyển đổi" value={`${overview.conversionRate}%`} icon="📈"/>
+        <Stat title="Tỷ lệ chuyển đổi" value={`${overview.conversionRate}%`} icon="📈" />
 
-        <Stat title="Nguồn Lead" value={overview.totalLeadSources} icon="📣"/>
+        <Stat title="Nguồn Lead" value={overview.totalLeadSources} icon="📣" />
       </section>
 
       <section className={styles.contentGrid}>
@@ -48,31 +60,30 @@ export default function MarketingDashboard() {
           ) : (
             <div>
               {leadsBySource.map((source) => (
-                  <div key={source.sourceId} className={styles.sourceRow}>
-                    <div className={styles.sourceTop}>
-                      <span className={styles.sourceName}>
-                        {source.sourceName}
-                      </span>
+                <div key={source.sourceId} className={styles.sourceRow}>
+                  <div className={styles.sourceTop}>
+                    <span className={styles.sourceName}>
+                      {source.sourceName}
+                    </span>
 
-                      <span className={styles.sourceCount}>
-                        {source.totalLeads}
-                      </span>
-                    </div>
-
-                    <div className={styles.progressTrack}>
-                      <div className={styles.progressBar}
-                        style={{
-                          width: `${
-                            (
-                              source.totalLeads /
-                              maxSource
-                            ) * 100
-                          }%`,
-                        }}
-                      />
-                    </div>
+                    <span className={styles.sourceCount}>
+                      {source.totalLeads}
+                    </span>
                   </div>
-                ),
+
+                  <div className={styles.progressTrack}>
+                    <div className={styles.progressBar}
+                      style={{
+                        width: `${(
+                            source.totalLeads /
+                            maxSource
+                          ) * 100
+                          }%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ),
               )}
             </div>
           )}
@@ -153,9 +164,9 @@ export default function MarketingDashboard() {
   );
 }
 
-interface StatProps {title: string; value: string | number;icon: string;}
+interface StatProps { title: string; value: string | number; icon: string; }
 
-function Stat({title, value, icon,}: StatProps) {
+function Stat({ title, value, icon, }: StatProps) {
   return (
     <article className={styles.statCard}>
       <div className={styles.statTop}>
