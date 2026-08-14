@@ -7,10 +7,10 @@ import type { LeadQueryDto } from '../dto/lead-query.dto';
 export class LeadsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findMany(query: LeadQueryDto) {
+  findMany(query: LeadQueryDto, assignedUserId?: number) {
     const { search, status, sourceId, page, limit } = query;
 
-    const where = this.buildWhere(search, status, sourceId);
+    const where = this.buildWhere(search, status, sourceId, assignedUserId);
 
     return this.prisma.leads.findMany({
       where,
@@ -30,8 +30,13 @@ export class LeadsRepository {
     });
   }
 
-  count(query: LeadQueryDto) {
-    const where = this.buildWhere(query.search, query.status, query.sourceId);
+  count(query: LeadQueryDto, assignedUserId?: number) {
+    const where = this.buildWhere(
+      query.search,
+      query.status,
+      query.sourceId,
+      assignedUserId,
+    );
 
     return this.prisma.leads.count({ where });
   }
@@ -194,12 +199,16 @@ export class LeadsRepository {
     search?: string,
     status?: string,
     sourceId?: number,
+    assignedUserId?: number,
   ): Prisma.leadsWhereInput {
     const normalizedSearch = search?.trim();
 
     return {
       ...(status ? { status } : {}),
       ...(sourceId ? { sourceid: sourceId } : {}),
+      ...(assignedUserId !== undefined
+        ? { assigneduserid: assignedUserId }
+        : {}),
       ...(normalizedSearch
         ? {
             OR: [
@@ -228,5 +237,48 @@ export class LeadsRepository {
           }
         : {}),
     };
+  }
+
+  async findByIdForConversion(leadId: number) {
+    return this.prisma.leads.findUnique({
+      where: { leadid: leadId },
+      include: { customers: true },
+    });
+  }
+
+  async convertToCustomer(leadId: number, userId: number) {
+    return this.prisma.$transaction(async (transaction) => {
+      const lead = await transaction.leads.findUniqueOrThrow({
+        where: { leadid: leadId },
+      });
+
+      const customer = await transaction.customers.create({
+        data: {
+          leadid: lead.leadid,
+          fullname: lead.fullname,
+          company: lead.company,
+          phone: lead.phone,
+          email: lead.email,
+          address: lead.address,
+        },
+      });
+
+      await transaction.leads.update({
+        where: { leadid: leadId },
+
+        data: { status: 'Converted' },
+      });
+
+      await transaction.activitylogs.create({
+        data: {
+          userid: userId,
+          action: 'Convert',
+          tablename: 'leads',
+          recordid: leadId,
+        },
+      });
+
+      return customer;
+    });
   }
 }

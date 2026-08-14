@@ -50,3 +50,16 @@ export interface CreateLeadInput {
 
 export type UpdateLeadInput =
   Partial<CreateLeadInput>;
+
+export interface ConvertLeadResponse {
+  message: string;
+  customer: {
+    customerId: number;
+    leadId: number | null;
+    fullName: string;
+    company: string | null;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+  };
+}

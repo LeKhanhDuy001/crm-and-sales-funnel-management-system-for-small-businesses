@@ -8,6 +8,7 @@ interface LeadTableProps {
     onView: (lead: Lead) => void;
     onEdit: (lead: Lead) => void;
     onDelete: (lead: Lead) => void;
+    onConvert?: (lead: Lead) => void;
 }
 
 function getStatusLabel(status: string | null,): string {
@@ -48,7 +49,7 @@ function getInitials(fullName: string,): string {
     return fullName.trim().split(/\s+/).slice(-2).map((word) => word.charAt(0),).join('').toUpperCase();
 }
 
-export default function LeadTable({ leads, canManage, onView, onEdit, onDelete, }: LeadTableProps) {
+export default function LeadTable({ leads, canManage, onView, onEdit, onDelete, onConvert, }: LeadTableProps) {
     return (
         <div className="overflow-x-auto">
             <table className="w-full min-w-[1050px] text-left">
@@ -118,9 +119,16 @@ export default function LeadTable({ leads, canManage, onView, onEdit, onDelete, 
 
                             <td className="px-5 py-4 text-right">
                                 <button type="button" onClick={() => onView(lead)}
-                                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
+                                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100">
                                     Chi tiết
                                 </button>
+
+                                {onConvert && lead.status !== 'Converted' && (
+                                    <button type="button" onClick={() => onConvert(lead)}
+                                        className="ml-2 rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-700">
+                                        Chuyển đổi
+                                    </button>
+                                )}
 
                                 {canManage && (
                                     <>

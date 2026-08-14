@@ -1,5 +1,5 @@
 import { apiRequest } from '../../services/api';
-import type { CreateLeadInput, Lead, LeadQuery, LeadsResponse, LeadSource, UpdateLeadInput, } from './leads.types';
+import type { CreateLeadInput, Lead, LeadQuery, LeadsResponse, LeadSource, UpdateLeadInput, ConvertLeadResponse, } from './leads.types';
 
 function buildLeadQuery(query: LeadQuery,): string {
     const params = new URLSearchParams();
@@ -31,6 +31,17 @@ export async function getLeads(accessToken: string, query: LeadQuery = {},): Pro
             method: 'GET',
             accessToken,
             cache: 'no-store',
+        },
+    );
+}
+
+export async function convertLead(accessToken: string, leadId: number,): Promise<ConvertLeadResponse> {
+
+    return apiRequest<ConvertLeadResponse>('/leads/conversions',
+        {
+            method: 'POST',
+            accessToken,
+            body: {leadId,},
         },
     );
 }

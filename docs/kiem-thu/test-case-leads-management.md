@@ -15,9 +15,8 @@
 | LEAD-009 | UC2 - Cập nhật Lead | Kiểm tra Marketing sửa Lead thành công | Marketing đã đăng nhập; Lead cần sửa tồn tại | Đổi công ty hoặc trạng thái của Lead | 1. Chọn Lead; 2. Nhấn **Sửa**; 3. Thay đổi thông tin; 4. Nhấn **Lưu** | Thông tin Lead được cập nhật; dữ liệu mới hiển thị trên danh sách | Đã kiểm thử | PASS |
 | LEAD-010 | UC2 - Xóa Lead | Kiểm tra Marketing xóa Lead chưa có liên kết | Marketing đã đăng nhập; Lead chưa có Customer liên kết | Lead hợp lệ để xóa | 1. Chọn Lead; 2. Nhấn **Xóa**; 3. Xác nhận | Lead bị xóa; Lead không còn xuất hiện trong danh sách | Đã kiểm thử | PASS |
 | LEAD-011 | UC2 / BR20 | Kiểm tra không cho xóa Lead đã phát sinh liên kết nghiệp vụ | Marketing đã đăng nhập; Lead đã có Customer liên kết | Lead đã được chuyển đổi | 1. Tìm Lead đã Converted; 2. Nhấn **Xóa**; 3. Xác nhận | Hệ thống từ chối xóa vật lý; Lead và Customer liên quan vẫn tồn tại; hiển thị thông báo lỗi | Đã kiểm thử | PASS |
-| LEAD-012 | Phân quyền Lead | Kiểm tra Sales được xem danh sách Lead | Sales đã đăng nhập | Không có dữ liệu ban đầu | 1. Đăng nhập Sales; 2. Truy cập danh sách Lead | Sales xem được danh sách Lead | Chưa chạy | Chưa chạy |
-| LEAD-013 | Phân quyền Lead | Kiểm tra Sales không được tạo Lead | Sales đã đăng nhập | Không có dữ liệu ban đầu | 1. Đăng nhập Sales; 2. Gửi request tạo Lead | không tạo Lead mới | Chưa chạy | Chưa chạy |
-| LEAD-014 | Phân quyền Lead | Kiểm tra Customer Care không được truy cập danh sách Lead | Customer Care đã đăng nhập | Không có dữ liệu ban đầu | 1. Đăng nhập Customer Care; 2. Gọi API danh sách Lead | HTTP 403; không trả dữ liệu Lead | Chưa chạy | Chưa chạy |
+| LEAD-012 | Phân quyền Lead | Kiểm tra Sales được xem danh sách Lead đã phân công | Sales đã đăng nhập | Không có dữ liệu ban đầu | 1. Đăng nhập Sales; 2. Truy cập danh sách Lead | Sales xem được danh sách Lead | Đã kiểm thử | PASS |
+| LEAD-013 | Phân quyền Lead | Kiểm tra Sales được xem chi tiết Lead | Sales đã đăng nhập | Không có dữ liệu ban đầu | 1. Đăng nhập Sales; 2. Truy cập danh sách Lead; 3. Nhấn **Chi tiết** | Hiển thị chi tiết Lead | Đã kiểm thử | PASS |
 
 ### Minh chứng LEAD-001
 ![LEAD-001 - Hiển thị danh sách leads](./assets/leads/leads-001-view-list.png)
@@ -55,3 +54,9 @@
 ### Minh chứng LEAD-011
 ![LEAD-011 - Chọn Lead đã có phát sinh liên kết muốn xóa](./assets/leads/leads-011-choose-relative-lead.png)
 ![LEAD-011 - Xác nhận không cho phép xóa Lead](./assets/leads/leads-011-confirm-unallowed-relative-lead.png)
+
+### Minh chứng LEAD-012
+![LEAD-012 - Sales có quyền xem danh sách Leads đã phân công](./assets/leads/leads-012-sales-are-able-to-view-list-leads.png)
+
+### Minh chứng LEAD-013
+![LEAD-013 - Sales xem chi tiết Lead](./assets/leads/leads-013-viewing-lead-details.png)

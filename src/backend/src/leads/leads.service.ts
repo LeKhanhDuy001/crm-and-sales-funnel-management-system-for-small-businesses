@@ -1,14 +1,18 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import type { CreateLeadDto } from './dto/create-lead.dto';
 import type { LeadQueryDto } from './dto/lead-query.dto';
 import type { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadsRepository } from './repositories/leads.repository';
 import type { Prisma } from '../../generated/prisma/client';
+import { Role } from '../common/enums/role.enum';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 type LeadWithRelations = Prisma.leadsGetPayload<{
   include: {
@@ -33,10 +37,13 @@ export class LeadsService {
    * @param query Điều kiện tìm kiếm và phân trang.
    * @returns Danh sách Lead và thông tin phân trang.
    */
-  async findAll(query: LeadQueryDto) {
+  async findAll(query: LeadQueryDto, currentUser: AuthenticatedUser) {
+    const assignedUserId =
+      currentUser.role === Role.SALES ? currentUser.userId : undefined;
+
     const [leads, total] = await Promise.all([
-      this.leadsRepository.findMany(query),
-      this.leadsRepository.count(query),
+      this.leadsRepository.findMany(query, assignedUserId),
+      this.leadsRepository.count(query, assignedUserId),
     ]);
 
     return {
@@ -268,6 +275,70 @@ export class LeadsService {
             email: lead.users.email,
           }
         : null,
+    };
+  }
+
+  /**
+   * Chuyển Lead đủ điều kiện thành Customer.
+   *
+   * @param leadId ID của Lead cần chuyển đổi.
+   * @param currentUser Sales đang thực hiện chuyển đổi.
+   * @returns Customer vừa được tạo.
+   */
+  async convertLead(leadId: number, currentUser: AuthenticatedUser) {
+    const lead = await this.leadsRepository.findByIdForConversion(leadId);
+
+    if (!lead) {
+      throw new NotFoundException('Không tìm thấy Lead.');
+    }
+
+    if (lead.assigneduserid !== currentUser.userId) {
+      throw new ForbiddenException(
+        'Bạn không được phân công phụ trách Lead này.',
+      );
+    }
+
+    if (lead.status === 'Converted' || lead.customers) {
+      throw new ConflictException('Lead này đã được chuyển thành Customer.');
+    }
+
+    // BR04: Chỉ Lead Qualified mới được chuyển.
+    if (lead.status !== 'Qualified') {
+      throw new UnprocessableEntityException(
+        'Lead chưa đủ điều kiện để chuyển thành Customer.',
+      );
+    }
+
+    if (!lead.fullname.trim()) {
+      throw new UnprocessableEntityException('Lead chưa có họ tên hợp lệ.');
+    }
+
+    const hasPhone = Boolean(lead.phone?.trim());
+
+    const hasEmail = Boolean(lead.email?.trim());
+
+    if (!hasPhone && !hasEmail) {
+      throw new UnprocessableEntityException(
+        'Lead phải có số điện thoại hoặc email trước khi chuyển đổi.',
+      );
+    }
+
+    const customer = await this.leadsRepository.convertToCustomer(
+      leadId,
+      currentUser.userId,
+    );
+
+    return {
+      message: 'Chuyển Lead thành Customer thành công.',
+      customer: {
+        customerId: customer.customerid,
+        leadId: customer.leadid,
+        fullName: customer.fullname,
+        company: customer.company,
+        phone: customer.phone,
+        email: customer.email,
+        address: customer.address,
+      },
     };
   }
 }
