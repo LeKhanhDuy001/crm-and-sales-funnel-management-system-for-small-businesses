@@ -297,7 +297,7 @@ export class LeadsService {
         'Bạn không được phân công phụ trách Lead này.',
       );
     }
-
+    //BR04: Lead chưa được chuyển đổi thành Customer và có đủ điều kiện chuyển đổi
     if (lead.status === 'Converted' || lead.customers) {
       throw new ConflictException('Lead này đã được chuyển thành Customer.');
     }
@@ -308,7 +308,7 @@ export class LeadsService {
         'Lead chưa đủ điều kiện để chuyển thành Customer.',
       );
     }
-
+    // BR04: Lead phải có họ tên hợp lệ
     if (!lead.fullname.trim()) {
       throw new UnprocessableEntityException('Lead chưa có họ tên hợp lệ.');
     }

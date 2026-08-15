@@ -252,6 +252,7 @@ export class LeadsRepository {
         where: { leadid: leadId },
       });
 
+      //BR05: khi chuyển Lead thành công thì hệ thống phải tạo một Customer mới
       const customer = await transaction.customers.create({
         data: {
           leadid: lead.leadid,
@@ -263,12 +264,14 @@ export class LeadsRepository {
         },
       });
 
+      //BR05: Sau khi tạo Customer, chuyển trạng thái của Lead sang Converted
       await transaction.leads.update({
         where: { leadid: leadId },
 
         data: { status: 'Converted' },
       });
 
+      //BR18: Ghi nhật ký thao tác chuyển đổi
       await transaction.activitylogs.create({
         data: {
           userid: userId,
