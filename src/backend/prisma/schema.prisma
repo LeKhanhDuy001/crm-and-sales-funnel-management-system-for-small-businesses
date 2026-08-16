@@ -34,6 +34,9 @@ model activitylogs {
   recordid   Int?         @map("record_id")
   actiontime DateTime?    @default(now()) @map("action_time") @db.Timestamp(6)
   ipaddress  String?      @map("ip_address") @db.VarChar(50)
+  
+  oldvalue Json? @map("old_value") @db.JsonB
+  newvalue Json? @map("new_value") @db.JsonB
 
   users users? @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_log_user")
 
