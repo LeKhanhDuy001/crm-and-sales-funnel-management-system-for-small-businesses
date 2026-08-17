@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { LeadsModule } from './leads/leads.module';
 import { ProductsModule } from './products/products.module';
+import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { ProductsModule } from './products/products.module';
     DashboardModule,
     LeadsModule,
     ProductsModule,
+    ActivityLogsModule,
   ],
   providers: [
     {

@@ -1,0 +1,340 @@
+.page {
+  width: 100%;
+  padding: 28px;
+}
+
+.panel {
+  margin-top: 24px;
+  padding: 24px;
+
+  border-radius: 14px;
+  background: #ffffff;
+
+  box-shadow:
+    0 1px 3px
+    rgba(15, 23, 42, 0.08);
+}
+
+.panelHeader {
+  margin-bottom: 20px;
+}
+
+.panelHeader h2 {
+  margin: 0;
+}
+
+.panelHeader p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.filters {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(150px, 1fr))
+    auto;
+
+  align-items: start;
+  gap: 12px;
+
+  margin-bottom: 24px;
+}
+
+.filterField {
+  display: grid;
+  gap: 6px;
+}
+
+.filterField label {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.filterField select,
+.filterField input {
+  width: 100%;
+
+  padding: 10px 12px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  font: inherit;
+}
+
+.filterActions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+
+  padding-top: 24px;
+}
+
+.primaryButton,
+.secondaryButton,
+.viewButton,
+.pagination button,
+.modalFooter button {
+  padding: 9px 14px;
+
+  border-radius: 8px;
+
+  font: inherit;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.secondaryButton {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.inputError {
+  border-color: #dc2626 !important;
+}
+
+.inputError:focus {
+  outline: 2px solid
+    rgba(220, 38, 38, 0.15);
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+
+  border-bottom:
+    1px solid #e2e8f0;
+
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.userEmail {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #64748b;
+  font-size: 12px;
+}
+
+.viewButton {
+  border: 1px solid #2563eb;
+  background: #ffffff;
+  color: #2563eb;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 14px;
+
+  margin-top: 22px;
+}
+
+.pagination button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.empty {
+  padding: 32px 0;
+
+  color: #64748b;
+  text-align: center;
+}
+
+.error {
+  padding: 32px 0;
+
+  color: #dc2626;
+  text-align: center;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background:
+    rgba(15, 23, 42, 0.55);
+}
+
+.modal {
+  width: min(850px, 100%);
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  padding: 24px;
+
+  border-radius: 14px;
+  background: #ffffff;
+
+  box-shadow:
+    0 20px 45px
+    rgba(15, 23, 42, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  margin-bottom: 22px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+}
+
+.modalHeader p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+}
+
+.closeButton {
+  border: 0;
+  background: transparent;
+
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.detailGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 14px;
+
+  margin-bottom: 24px;
+}
+
+.detailGrid > div {
+  display: grid;
+  gap: 4px;
+
+  padding: 12px;
+
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.detailGrid span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.changeGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+.changeGrid section {
+  min-width: 0;
+}
+
+.changeGrid h3 {
+  margin: 0 0 8px;
+}
+
+.changeGrid pre {
+  min-height: 180px;
+  max-height: 320px;
+
+  overflow: auto;
+
+  margin: 0;
+  padding: 14px;
+
+  border-radius: 8px;
+
+  background: #0f172a;
+  color: #e2e8f0;
+
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+
+  margin-top: 22px;
+}
+
+.modalFooter button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+}
+
+@media (max-width: 1100px) {
+  .filters {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .filterActions {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .filters,
+  .detailGrid,
+  .changeGrid {
+    grid-template-columns: 1fr;
+  }
+}
