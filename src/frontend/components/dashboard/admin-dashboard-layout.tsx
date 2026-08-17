@@ -3,7 +3,7 @@ import AdminDashboardNavigation from './admin-dashboard-navigation';
 import styles from './admin-dashboard-layout.module.css';
 
 interface AdminDashboardLayoutProps {
-  activePage: | 'dashboard' | 'users';
+  activePage: | 'dashboard' | 'users' | 'products';
 
   children: ReactNode;
 }

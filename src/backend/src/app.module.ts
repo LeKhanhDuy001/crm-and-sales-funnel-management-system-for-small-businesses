@@ -10,6 +10,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { LeadsModule } from './leads/leads.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { LeadsModule } from './leads/leads.module';
     AuthModule,
     DashboardModule,
     LeadsModule,
+    ProductsModule,
   ],
   providers: [
     {

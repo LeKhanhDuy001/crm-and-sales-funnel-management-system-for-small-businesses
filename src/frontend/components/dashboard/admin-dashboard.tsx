@@ -73,14 +73,26 @@ export default function AdminDashboard() {
   }, [router]);
 
   if (isLoading) {
-    return <p>Đang tải Dashboard...</p>;
+    return (
+      <AdminDashboardLayout activePage="dashboard">
+        <div className={styles.dashboard}>
+          <p className={styles.empty}>
+            Đang tải Dashboard...
+          </p>
+        </div>
+      </AdminDashboardLayout>
+    );
   }
 
   if (error) {
     return (
-      <p style={{ color: '#dc2626' }}>
-        {error}
-      </p>
+      <AdminDashboardLayout activePage="dashboard">
+        <div className={styles.dashboard}>
+          <p className={styles.empty} style={{ color: '#dc2626' }}>
+            {error}
+          </p>
+        </div>
+      </AdminDashboardLayout>
     );
   }
 
