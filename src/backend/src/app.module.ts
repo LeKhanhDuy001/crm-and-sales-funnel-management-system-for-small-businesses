@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module';
 import { LeadsModule } from './leads/leads.module';
 import { ProductsModule } from './products/products.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
     LeadsModule,
     ProductsModule,
     ActivityLogsModule,
+    CustomersModule,
   ],
   providers: [
     {
