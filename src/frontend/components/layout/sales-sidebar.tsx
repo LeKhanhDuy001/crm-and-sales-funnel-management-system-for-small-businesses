@@ -32,6 +32,12 @@ export default function SalesSidebar() {
                     <span>👥</span>
                     Quản lý Customer
                 </Link>
+                <Link href="/sales/deals"
+                    className={pathname.startsWith('/sales/deals') ? styles.activeLink : styles.link}
+                >
+                    <span>💼</span>
+                    Quản lý Deal
+                </Link>
             </nav>
         </aside>
     );

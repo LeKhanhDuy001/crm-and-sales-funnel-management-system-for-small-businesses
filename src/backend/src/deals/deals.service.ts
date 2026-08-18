@@ -1,0 +1,334 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { getPipelineStageProbability } from './constants/pipeline-stage-probability.constant';
+import { CreateDealDto } from './dto/create-deal.dto';
+import { DealQueryDto } from './dto/deal-query.dto';
+import { UpdateDealDto } from './dto/update-deal.dto';
+import {
+  type CreateDealData,
+  type DealWithRelations,
+  DealsRepository,
+  type UpdateDealData,
+} from './repositories/deals.repository';
+
+@Injectable()
+export class DealsService {
+  constructor(private readonly dealsRepository: DealsRepository) {}
+
+  /**
+   * Lấy danh sách Deal thuộc quyền quản lý của Sales hiện tại.
+   */
+  async findAll(query: DealQueryDto, user: AuthenticatedUser) {
+    const page = query.page;
+    const limit = query.limit;
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      search: query.search,
+      stageId: query.stageId,
+      salesUserId: user.userId,
+    };
+
+    const [deals, total] = await Promise.all([
+      this.dealsRepository.findMany(filter, skip, limit),
+      this.dealsRepository.count(filter),
+    ]);
+
+    return {
+      data: deals.map((deal) => this.mapDeal(deal)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Lấy danh sách giai đoạn Pipeline dùng cho form và bộ lọc Deal.
+   */
+  async getMeta() {
+    const stages = await this.dealsRepository.findPipelineStages();
+
+    return {
+      stages: stages.map((stage) => ({
+        stageId: stage.stageid,
+        stageName: stage.stagename,
+        stageOrder: stage.stageorder,
+        probability: getPipelineStageProbability(stage.stagename),
+      })),
+    };
+  }
+
+  /**
+   * Lấy chi tiết một Deal thuộc quyền của Sales hiện tại.
+   */
+  async findOne(dealId: number, user: AuthenticatedUser) {
+    const deal = await this.findOwnedDeal(dealId, user.userId);
+    return this.mapDeal(deal);
+  }
+
+  /**
+   * Tạo Deal mới và tự động gán Sales đang đăng nhập làm người phụ trách.
+   */
+  async create(
+    dto: CreateDealDto,
+    user: AuthenticatedUser,
+    ipAddress: string | null,
+  ) {
+    // BR-06: Deal phải có Customer, người phụ trách và Pipeline.
+    await this.ensureCustomerAccessible(dto.customerId, user.userId);
+    const stage = await this.requireStage(dto.stageId);
+
+    // BR-08: Xác suất phải tương ứng với giai đoạn Pipeline.
+    const probability = this.requireStageProbability(stage.stagename);
+
+    // BR-09: Expected Revenue = Deal Value × Probability.
+    const expectedRevenue = this.calculateExpectedRevenue(
+      dto.dealValue,
+      probability,
+    );
+
+    const data = this.buildCreateData(
+      dto,
+      user.userId,
+      probability,
+      expectedRevenue,
+    );
+
+    // BR-18: thao tác tạo Deal phải được ghi Activity Log.
+    const deal = await this.dealsRepository.createWithLog(
+      data,
+      user.userId,
+      ipAddress,
+    );
+    return {
+      message: 'Tạo Deal thành công.',
+      data: this.mapDeal(deal),
+    };
+  }
+
+  /**
+   * Cập nhật thông tin Deal thuộc quyền quản lý của Sales hiện tại.
+   */
+  async update(
+    dealId: number,
+    dto: UpdateDealDto,
+    user: AuthenticatedUser,
+    ipAddress: string | null,
+  ) {
+    if (Object.keys(dto).length === 0) {
+      throw new BadRequestException('Không có dữ liệu để cập nhật.');
+    }
+
+    const currentDeal = await this.findOwnedDeal(dealId, user.userId);
+
+    if (dto.customerId !== undefined) {
+      await this.ensureCustomerAccessible(dto.customerId, user.userId);
+    }
+
+    const data = this.buildUpdateData(
+      dto,
+      Number(currentDeal.dealvalue),
+      currentDeal.probability ?? 0,
+    );
+
+    // BR-18: thao tác cập nhật Deal phải được ghi Activity Log.
+    const deal = await this.dealsRepository.updateWithLog(
+      dealId,
+      data,
+      user.userId,
+      ipAddress,
+    );
+
+    return {
+      message: 'Cập nhật Deal thành công.',
+      data: this.mapDeal(deal),
+    };
+  }
+
+  /**
+   * Xóa Deal chưa phát sinh dữ liệu nghiệp vụ liên quan.
+   */
+  async remove(
+    dealId: number,
+    user: AuthenticatedUser,
+    ipAddress: string | null,
+  ): Promise<void> {
+    await this.findOwnedDeal(dealId, user.userId);
+    const linked = await this.dealsRepository.getLinkedRecordCount(dealId);
+    if (!linked) {
+      throw new NotFoundException('Không tìm thấy Deal.');
+    }
+
+    const hasLinkedData =
+      linked._count.quotes > 0 ||
+      linked._count.activities > 0 ||
+      linked._count.tasks > 0;
+
+    // BR-20: dữ liệu đã phát sinh liên kết không được xóa vật lý.
+    if (hasLinkedData) {
+      throw new UnprocessableEntityException(
+        'Deal đã phát sinh dữ liệu liên quan nên không thể xóa.',
+      );
+    }
+
+    // BR-18: thao tác xóa Deal phải được ghi Activity Log.
+    await this.dealsRepository.deleteWithLog(dealId, user.userId, ipAddress);
+  }
+
+  private async findOwnedDeal(dealId: number, salesUserId: number) {
+    const deal = await this.dealsRepository.findOwnedById(dealId, salesUserId);
+
+    if (!deal) {
+      throw new NotFoundException('Không tìm thấy Deal.');
+    }
+    return deal;
+  }
+
+  private async ensureCustomerAccessible(
+    customerId: number,
+    salesUserId: number,
+  ): Promise<void> {
+    const customer = await this.dealsRepository.findCustomerAccessible(
+      customerId,
+      salesUserId,
+    );
+    if (!customer) {
+      throw new UnprocessableEntityException(
+        'Customer không tồn tại hoặc không thuộc quyền quản lý của Sales.',
+      );
+    }
+  }
+
+  private async requireStage(stageId: number) {
+    const stage = await this.dealsRepository.findStageById(stageId);
+
+    if (!stage) {
+      throw new UnprocessableEntityException(
+        'Giai đoạn Pipeline không tồn tại.',
+      );
+    }
+
+    return stage;
+  }
+
+  private requireStageProbability(stageName: string): number {
+    const probability = getPipelineStageProbability(stageName);
+
+    if (probability === null) {
+      throw new UnprocessableEntityException(
+        `Giai đoạn "${stageName}" chưa được cấu hình xác suất.`,
+      );
+    }
+
+    return probability;
+  }
+
+  private calculateExpectedRevenue(
+    dealValue: number,
+    probability: number,
+  ): Prisma.Decimal {
+    return new Prisma.Decimal(dealValue).mul(probability).div(100);
+  }
+
+  private buildCreateData(
+    dto: CreateDealDto,
+    salesUserId: number,
+    probability: number,
+    expectedRevenue: Prisma.Decimal,
+  ): CreateDealData {
+    return {
+      customerid: dto.customerId,
+      assigneduserid: salesUserId,
+      stageid: dto.stageId,
+      dealname: dto.dealName.trim(),
+      dealvalue: new Prisma.Decimal(dto.dealValue),
+      probability,
+      expectedrevenue: expectedRevenue,
+      expectedclosedate: this.toDate(dto.expectedCloseDate),
+    };
+  }
+
+  private buildUpdateData(
+    dto: UpdateDealDto,
+    currentDealValue: number,
+    probability: number,
+  ): UpdateDealData {
+    const data: UpdateDealData = {};
+
+    if (dto.customerId !== undefined) {
+      data.customerid = dto.customerId;
+    }
+
+    if (dto.dealName !== undefined) {
+      data.dealname = dto.dealName.trim();
+    }
+
+    if (dto.dealValue !== undefined) {
+      data.dealvalue = new Prisma.Decimal(dto.dealValue);
+
+      data.expectedrevenue = this.calculateExpectedRevenue(
+        dto.dealValue,
+        probability,
+      );
+    } else {
+      data.expectedrevenue = this.calculateExpectedRevenue(
+        currentDealValue,
+        probability,
+      );
+    }
+
+    if (dto.expectedCloseDate !== undefined) {
+      data.expectedclosedate = this.toDate(dto.expectedCloseDate);
+    }
+
+    return data;
+  }
+
+  private toDate(value?: string): Date | null {
+    if (!value) {
+      return null;
+    }
+    return new Date(value);
+  }
+
+  private mapDeal(deal: DealWithRelations) {
+    return {
+      dealId: deal.dealid,
+      dealCode: `DL${String(deal.dealid).padStart(3, '0')}`,
+      dealName: deal.dealname,
+      dealValue: Number(deal.dealvalue),
+      probability: deal.probability,
+      expectedRevenue:
+        deal.expectedrevenue === null ? null : Number(deal.expectedrevenue),
+      expectedCloseDate: deal.expectedclosedate,
+      status: deal.status,
+      createdDate: deal.createddate,
+
+      customer: {
+        customerId: deal.customers.customerid,
+        fullName: deal.customers.fullname,
+        company: deal.customers.company,
+      },
+
+      stage: {
+        stageId: deal.pipelinestages.stageid,
+        stageName: deal.pipelinestages.stagename,
+        stageOrder: deal.pipelinestages.stageorder,
+      },
+
+      assignedUser: {
+        userId: deal.users.userid,
+        fullName: deal.users.fullname,
+      },
+    };
+  }
+}

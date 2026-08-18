@@ -13,6 +13,7 @@ import { LeadsModule } from './leads/leads.module';
 import { ProductsModule } from './products/products.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { CustomersModule } from './customers/customers.module';
+import { DealsModule } from './deals/deals.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { CustomersModule } from './customers/customers.module';
     ProductsModule,
     ActivityLogsModule,
     CustomersModule,
+    DealsModule,
   ],
   providers: [
     {
