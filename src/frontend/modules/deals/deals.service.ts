@@ -7,6 +7,7 @@ import type {
     DealQuery,
     DealsResponse,
     UpdateDealInput,
+    UpdateDealStageInput,
 } from './deals.types';
 
 function buildQueryString(query: DealQuery,): string {
@@ -91,6 +92,17 @@ export async function deleteDeal(accessToken: string, dealId: number,): Promise<
         {
             method: 'DELETE',
             accessToken,
+        },
+    );
+}
+
+export async function changeDealStage(accessToken: string, dealId: number, input: UpdateDealStageInput,): Promise<DealMutationResponse> {
+    return apiRequest<DealMutationResponse>(
+        `/deals/${dealId}/stage`,
+        {
+            method: 'PATCH',
+            accessToken,
+            body: input,
         },
     );
 }

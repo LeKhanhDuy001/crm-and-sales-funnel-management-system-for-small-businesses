@@ -16,6 +16,7 @@ import {
   DealsRepository,
   type UpdateDealData,
 } from './repositories/deals.repository';
+import { UpdateDealStageDto } from './dto/update-deal-stage.dto';
 
 @Injectable()
 export class DealsService {
@@ -330,5 +331,70 @@ export class DealsService {
         fullName: deal.users.fullname,
       },
     };
+  }
+
+  /**
+   * Thay đổi Pipeline Stage của Deal thuộc Sales đang đăng nhập.
+   */
+  async changeStage(
+    dealId: number,
+    dto: UpdateDealStageDto,
+    user: AuthenticatedUser,
+    ipAddress?: string,
+  ) {
+    const currentDeal = await this.findOwnedDeal(dealId, user.userId);
+
+    if (currentDeal.stageid === dto.stageId) {
+      return {
+        message: 'Deal đang ở giai đoạn này.',
+        data: this.mapDeal(currentDeal),
+      };
+    }
+    // BR-10: Deal đang ở Won hoặc Lost thì không chuyển về trạng thái trước
+    if (this.isTerminalStage(currentDeal.pipelinestages.stagename)) {
+      throw new UnprocessableEntityException(
+        'Deal đang ở giai đoạn Won hoặc Lost nên không thể thay đổi giai đoạn.',
+      );
+    }
+
+    const targetStage = await this.dealsRepository.findStageById(dto.stageId);
+
+    if (!targetStage) {
+      throw new UnprocessableEntityException(
+        'Giai đoạn Pipeline không hợp lệ.',
+      );
+    }
+
+    // BR-08: cập nhật lại xác suất
+    const probability = this.requireStageProbability(targetStage.stagename);
+
+    // BR-09: tính doanh thu kỳ vọng
+    const expectedRevenue = this.calculateExpectedRevenue(
+      Number(currentDeal.dealvalue),
+      probability,
+    );
+
+    // BR-18: ghi vào nhật ký
+    const updatedDeal = await this.dealsRepository.changeStageWithLog({
+      dealId,
+      stageId: targetStage.stageid,
+      stageName: targetStage.stagename,
+      probability,
+      expectedRevenue,
+      currentDeal,
+      userId: user.userId,
+      ipAddress,
+    });
+
+    return {
+      message: 'Cập nhật giai đoạn Deal thành công.',
+      data: this.mapDeal(updatedDeal),
+    };
+  }
+
+  private isTerminalStage(stageName: string): boolean {
+    const normalizedStage = stageName.trim().toLowerCase();
+
+    return normalizedStage === 'won' || normalizedStage === 'lost';
   }
 }

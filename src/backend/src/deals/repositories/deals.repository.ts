@@ -27,6 +27,17 @@ export interface UpdateDealData {
   expectedclosedate?: Date | null;
 }
 
+export interface ChangeDealStageData {
+  dealId: number;
+  stageId: number;
+  stageName: string;
+  probability: number;
+  expectedRevenue: Prisma.Decimal;
+  currentDeal: DealWithRelations;
+  userId: number;
+  ipAddress?: string;
+}
+
 export const dealSelect = {
   dealid: true,
   customerid: true,
@@ -259,5 +270,56 @@ export class DealsRepository {
     }
 
     return where;
+  }
+
+  async changeStageWithLog(
+    input: ChangeDealStageData,
+  ): Promise<DealWithRelations> {
+    return this.prisma.$transaction(async (transaction) => {
+      const updatedDeal = await transaction.deals.update({
+        where: { dealid: input.dealId },
+        data: {
+          stageid: input.stageId,
+          probability: input.probability,
+          expectedrevenue: input.expectedRevenue,
+        },
+        select: dealSelect,
+      });
+
+      await transaction.activitylogs.create({
+        data: {
+          userid: input.userId,
+          action: action_type.Change_Stage,
+          tablename: 'deals',
+          recordid: input.dealId,
+          ipaddress: input.ipAddress ?? null,
+
+          oldvalue: {
+            stageId: input.currentDeal.stageid,
+
+            stageName: input.currentDeal.pipelinestages.stagename,
+
+            probability: input.currentDeal.probability,
+
+            expectedRevenue:
+              input.currentDeal.expectedrevenue === null
+                ? null
+                : Number(input.currentDeal.expectedrevenue),
+          },
+
+          newvalue: {
+            stageId: input.stageId,
+
+            stageName: input.stageName,
+
+            probability: input.probability,
+
+            expectedRevenue: Number(input.expectedRevenue),
+          },
+        },
+      });
+
+      return updatedDeal;
+    });
   }
 }

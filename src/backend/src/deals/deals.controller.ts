@@ -23,6 +23,7 @@ import { DealsService } from './deals.service';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { DealQueryDto } from './dto/deal-query.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
+import { UpdateDealStageDto } from './dto/update-deal-stage.dto';
 
 @ApiTags('Deals')
 @ApiBearerAuth('access-token')
@@ -76,5 +77,19 @@ export class DealsController {
     @Req() request: AuthenticatedRequest,
   ): Promise<void> {
     await this.dealsService.remove(dealId, request.user, request.ip ?? null);
+  }
+
+  @Patch(':id/stage')
+  async changeStage(
+    @Param('id', ParseIntPipe)
+    dealId: number,
+
+    @Body()
+    dto: UpdateDealStageDto,
+
+    @Req()
+    request: AuthenticatedRequest,
+  ) {
+    return this.dealsService.changeStage(dealId, dto, request.user, request.ip);
   }
 }

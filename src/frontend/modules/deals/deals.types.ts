@@ -79,3 +79,7 @@ export interface DealMutationResponse {
   message: string;
   data: Deal;
 }
+
+export interface UpdateDealStageInput {
+  stageId: number;
+}

@@ -13,8 +13,10 @@ import DealsTable from './deals-table';
 import styles from './deals-page.module.css';
 import EditDealModal from './edit-deal-modal';
 import { getDealStageLabel } from '../../modules/deals/deal-stage-labels';
+import PipelineBoard from './pipeline-board';
 
 const DEFAULT_PAGINATION: DealPagination = { page: 1, limit: 20, total: 0, totalPages: 0, };
+type DealViewMode = 'list' | 'pipeline';
 
 export default function DealsPage() {
     const router = useRouter();
@@ -28,6 +30,7 @@ export default function DealsPage() {
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
     const [stageFilter, setStageFilter] = useState('');
+    const [viewMode, setViewMode,] = useState<DealViewMode>('list',);
     const [page, setPage] = useState(1);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -60,13 +63,11 @@ export default function DealsPage() {
                 ] = await Promise.all([
                     getDeals(token, {
                         search: search || undefined,
-                        stageId: stageFilter ? Number(stageFilter) : undefined,
-                        page,
-                        limit: 20,
+                        stageId: viewMode === 'list' && stageFilter ? Number(stageFilter) : undefined,
+                        page: viewMode === 'pipeline' ? 1 : page,
+                        limit: viewMode === 'pipeline' ? 100 : 20,
                     }),
-
                     getDealMeta(token),
-
                     getCustomers(token, { page: 1, limit: 100, }),
                 ]);
 
@@ -104,6 +105,7 @@ export default function DealsPage() {
         router,
         search,
         stageFilter,
+        viewMode,
     ]);
 
     function handleSearch(event: FormEvent<HTMLFormElement>,): void {
@@ -142,6 +144,22 @@ export default function DealsPage() {
         }
     }
 
+    function handleDealChanged(updatedDeal: Deal,): void {
+        setDeals((currentDeals) =>
+            currentDeals.map((deal) =>
+                deal.dealId === updatedDeal.dealId ? updatedDeal : deal,
+            ),
+        );
+
+        setSelectedDeal(
+            (currentDeal) => currentDeal?.dealId === updatedDeal.dealId ? updatedDeal : currentDeal,
+        );
+
+        setEditingDeal(
+            (currentDeal) => currentDeal?.dealId === updatedDeal.dealId ? updatedDeal : currentDeal,
+        );
+    }
+
     const token = getAccessToken();
 
     return (
@@ -163,6 +181,24 @@ export default function DealsPage() {
             </div>
 
             <section className={styles.panel}>
+                <div className={styles.viewTabs}>
+                    <button type="button"
+                        className={viewMode === 'list' ? styles.viewTabActive : styles.viewTab}
+                        onClick={() => { setViewMode('list'); setPage(1); }}
+                    >
+                        Danh sách
+                    </button>
+
+                    <button type="button"
+                        className={viewMode === 'pipeline' ? styles.viewTabActive : styles.viewTab}
+                        onClick={() => {
+                            setViewMode('pipeline',);
+                            setPage(1);
+                        }}
+                    >
+                        Pipeline
+                    </button>
+                </div>
                 <div className={styles.filters}>
                     <form className={styles.searchForm} onSubmit={handleSearch}>
                         <input type="search"
@@ -176,20 +212,20 @@ export default function DealsPage() {
                         </button>
                     </form>
 
-                    <select
-                        value={stageFilter}
-                        onChange={(event) => { setPage(1); setStageFilter(event.target.value,); }}
-                    >
-                        <option value="">
-                            Tất cả giai đoạn
-                        </option>
-
-                        {stages.map((stage) => (
-                            <option key={stage.stageId} value={stage.stageId}>
-                                {getDealStageLabel(stage.stageName)}
+                    {viewMode === 'list' && (
+                        <select value={stageFilter}
+                            onChange={(event) => { setPage(1); setStageFilter(event.target.value,); }}
+                        >
+                            <option value="">
+                                Tất cả giai đoạn
                             </option>
-                        ))}
-                    </select>
+                            {stages.map((stage) => (
+                                <option key={stage.stageId} value={stage.stageId}>
+                                    {getDealStageLabel(stage.stageName,)}
+                                </option>
+                            ))}
+                        </select>
+                    )}
                 </div>
 
                 {isLoading && (
@@ -204,44 +240,56 @@ export default function DealsPage() {
                     </p>
                 )}
 
-                {!isLoading && !error &&
-                    deals.length === 0 && (
+                {!isLoading && !error && deals.length === 0 &&
+                    viewMode === 'list' && (
                         <p className={styles.stateMessage}>
                             Không tìm thấy Deal phù hợp.
                         </p>
                     )}
 
-                {!isLoading && !error && deals.length > 0 && (
-                    <>
-                        <DealsTable
+                {!isLoading && !error && deals.length > 0 &&
+                    viewMode === 'list' && (
+                        <>
+                            <DealsTable
+                                deals={deals}
+                                onView={setSelectedDeal}
+                                onEdit={setEditingDeal}
+                                onDelete={(deal) => { void handleDelete(deal); }}
+                            />
+
+                            <div className={styles.pagination}>
+                                <button type="button" disabled={page <= 1}
+                                    onClick={() => setPage((value) => value - 1)}
+                                >
+                                    Trước
+                                </button>
+
+                                <span>
+                                    Trang {pagination.page}
+                                    {' / '}
+                                    {Math.max(pagination.totalPages, 1,)}
+                                </span>
+
+                                <button type="button"
+                                    disabled={page >= pagination.totalPages}
+                                    onClick={() => setPage((value) => value + 1)}
+                                >
+                                    Sau
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                {!isLoading && !error &&
+                    viewMode === 'pipeline' &&
+                    token && (
+                        <PipelineBoard
+                            token={token}
                             deals={deals}
-                            onView={setSelectedDeal}
-                            onEdit={setEditingDeal}
-                            onDelete={(deal) => { void handleDelete(deal); }}
+                            stages={stages}
+                            onDealChanged={handleDealChanged}
                         />
-
-                        <div className={styles.pagination}>
-                            <button type="button" disabled={page <= 1}
-                                onClick={() => setPage((value) => value - 1,)}
-                            >
-                                Trước
-                            </button>
-
-                            <span>
-                                Trang {pagination.page}
-                                {' / '}
-                                {Math.max(pagination.totalPages, 1,)}
-                            </span>
-
-                            <button type="button"
-                                disabled={page >= pagination.totalPages}
-                                onClick={() => setPage((value) => value + 1,)}
-                            >
-                                Sau
-                            </button>
-                        </div>
-                    </>
-                )}
+                    )}
             </section>
 
             {isCreateOpen && token && (
