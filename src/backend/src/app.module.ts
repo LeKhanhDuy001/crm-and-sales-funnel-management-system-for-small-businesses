@@ -14,6 +14,7 @@ import { ProductsModule } from './products/products.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { CustomersModule } from './customers/customers.module';
 import { DealsModule } from './deals/deals.module';
+import { QuotesModule } from './quotes/quotes.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { DealsModule } from './deals/deals.module';
     ActivityLogsModule,
     CustomersModule,
     DealsModule,
+    QuotesModule,
   ],
   providers: [
     {

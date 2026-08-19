@@ -185,7 +185,7 @@ model quotes {
   dealid       Int            @map("deal_id")
   quotedate    DateTime?      @map("quote_date") @db.Date
   totalamount  Decimal?       @map("total_amount") @db.Decimal(18, 2)
-  status       String?        @db.VarChar(30)
+  status       String         @default("Draft") @db.VarChar(30)
   createdby    Int?           @map("created_by")
   quotedetails quotedetails[]
 

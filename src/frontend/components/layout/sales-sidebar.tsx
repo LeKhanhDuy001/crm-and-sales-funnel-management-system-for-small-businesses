@@ -38,6 +38,12 @@ export default function SalesSidebar() {
                     <span>💼</span>
                     Quản lý Deal
                 </Link>
+                <Link href="/sales/quotes"
+                    className={pathname.startsWith('/sales/quotes') ? styles.activeLink : styles.link}
+                >
+                    <span>🧾</span>
+                    Quản lý báo giá
+                </Link>
             </nav>
         </aside>
     );
