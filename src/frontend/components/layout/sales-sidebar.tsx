@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './sales-sidebar.module.css';
+import NotificationMenuLink from '../notifications/notification-menu-link';
 
 export default function SalesSidebar() {
     const pathname = usePathname();
@@ -45,11 +46,14 @@ export default function SalesSidebar() {
                     Quản lý báo giá
                 </Link>
                 <Link href="/sales/tasks"
-                    className={pathname.startsWith('/sales/tasks') ? styles.activeLink: styles.link}
+                    className={pathname.startsWith('/sales/tasks') ? styles.activeLink : styles.link}
                 >
                     <span>✅</span>
                     Công việc của tôi
                 </Link>
+                <NotificationMenuLink linkClassName={styles.link}
+                    activeClassName={styles.activeLink}
+                />
             </nav>
         </aside>
     );
