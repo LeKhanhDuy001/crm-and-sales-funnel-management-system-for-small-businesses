@@ -1,0 +1,46 @@
+import { Type } from 'class-transformer';
+import {
+  IsIn,
+  IsInt,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { TASK_PRIORITIES, type TaskPriority } from '../constants/task.constant';
+
+export class UpdateTaskDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Deal không hợp lệ.' })
+  @Min(1, { message: 'Deal không hợp lệ.' })
+  dealId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Người phụ trách không hợp lệ.' })
+  @Min(1, { message: 'Người phụ trách không hợp lệ.' })
+  assignedUserId?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200, { message: 'Tiêu đề Task không được vượt quá 200 ký tự.' })
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  dueDate?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  reminderTime?: string;
+
+  @IsOptional()
+  @IsIn(TASK_PRIORITIES, { message: 'Mức độ ưu tiên không hợp lệ.' })
+  priority?: TaskPriority;
+}
