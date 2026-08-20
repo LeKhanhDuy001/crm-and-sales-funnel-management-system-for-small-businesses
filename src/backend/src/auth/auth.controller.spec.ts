@@ -1,18 +1,87 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 describe('AuthController', () => {
-  let controller: AuthController;
+  let authController: AuthController;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [AuthController],
-    }).compile();
+  let authService: {
+    login: jest.Mock;
+    forgotPassword: jest.Mock;
+    resetPassword: jest.Mock;
+  };
 
-    controller = module.get<AuthController>(AuthController);
+  beforeEach(() => {
+    authService = {
+      login: jest.fn(),
+      forgotPassword: jest.fn(),
+      resetPassword: jest.fn(),
+    };
+
+    authController = new AuthController(authService as unknown as AuthService);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it('should call AuthService.login and return result', async () => {
+    const loginDto: LoginDto = {
+      email: 'admin@crm.com',
+      password: 'Demo@12345',
+      rememberMe: false,
+    };
+
+    const expectedResult = {
+      message: 'Đăng nhập thành công',
+      accessToken: 'test-token',
+      user: {
+        userId: 1,
+        fullName: 'Admin Demo',
+        email: 'admin@crm.com',
+        phone: null,
+        role: 'Admin',
+      },
+    };
+
+    authService.login.mockResolvedValue(expectedResult);
+
+    const result = await authController.login(loginDto);
+
+    expect(authService.login).toHaveBeenCalledWith(loginDto);
+
+    expect(result).toEqual(expectedResult);
+  });
+
+  it('should call forgotPassword with email', async () => {
+    const forgotPasswordDto: ForgotPasswordDto = { email: 'admin@crm.com' };
+
+    const expectedResult = {
+      message: 'Email hợp lệ. Bạn có thể đặt lại mật khẩu.',
+    };
+
+    authService.forgotPassword.mockResolvedValue(expectedResult);
+
+    const result = await authController.forgotPassword(forgotPasswordDto);
+
+    expect(authService.forgotPassword).toHaveBeenCalledWith(forgotPasswordDto);
+
+    expect(result).toEqual(expectedResult);
+  });
+
+  it('should call resetPassword with new password data', async () => {
+    const resetPasswordDto: ResetPasswordDto = {
+      email: 'admin@crm.com',
+      newPassword: 'NewPassword123',
+      confirmPassword: 'NewPassword123',
+    };
+
+    const expectedResult = { message: 'Đổi mật khẩu thành công' };
+
+    authService.resetPassword.mockResolvedValue(expectedResult);
+
+    const result = await authController.resetPassword(resetPasswordDto);
+
+    expect(authService.resetPassword).toHaveBeenCalledWith(resetPasswordDto);
+
+    expect(result).toEqual(expectedResult);
   });
 });

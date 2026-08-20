@@ -1,50 +1,396 @@
-# **Đồ án ngành:** CRM System - Hệ Thống Quản Lý Khách Hàng Cho Doanh Nghiệp Nhỏ
+# CRM System - Hệ Thống Quản Lý Khách Hàng
 
-## 📖 BỐI CẢNH ĐỀ TÀI
+Đề tài đồ án ngành là CRM System nhằm hỗ trợ các doanh nghiệp nhỏ quản lý khách hàng. Hệ thống hỗ trợ quản lý khách hàng, lead, deal, pipeline bán hàng, sản phẩm, báo giá, hoạt động chăm sóc khách hàng, phân quyền người dùng và báo cáo doanh thu.
 
-Các doanh nghiệp nhỏ thường lưu trữ thông tin khách hàng, cơ hội bán hàng bằng sổ sách hoặc Excel một cách rời rạc, dẫn đến khi có một nhân viên nghỉ thì thì bị mất dữ liệu, bỏ sót lead, không nắm được doanh thu sắp tới. Doanh nghiệp cần một hệ thống CRM phù hợp để quản lý việc bán hàng và thống kê dự báo doanh thu. Đề tài xây dựng hệ thống CRM tối ưu cho doanh nghiệp nhỏ với quy trình quản lý Deal dạng kéo – thả trực quan và dự báo doanh thu dựa trên xác suất thắng của từng cơ hội kinh doanh.
+## 1. Công nghệ sử dụng
 
-## 📌 PHẦN 1: TỔNG QUAN ĐỀ TÀI
+### Frontend
 
-### 💡 1. Ý nghĩa đề tài
-Hệ thống CRM giúp doanh nghiệp xây dựng trải nghiệm khách hàng bền vững và tăng khả năng giữ chân khách hàng. Sử dụng mô hình CRM tích hợp hiện đại kết nối dữ liệu từ nhiều bộ phận, việc tích hợp này rất phù hợp cho các doanh nghiệp vừa và nhỏ để tiết kiệm chi phí, rút ngắn quy trình và tăng tương tác phản hồi đối với khách hàng.
+- Next.js
+- dnd-kit
+- Recharts
 
-### 👥 2. Đối tượng sử dụng
-* **Quản lý (Admin / Manager):** Theo dõi thống kê, lập cơ sở dữ liệu về sản phẩm, khách hàng, thiết kế phễu, lập lịch hoặc chiến lược kinh doanh.
-* **Nhân viên bán hàng (Sales Rep):** Tìm kiếm và nhập thông tin khách hàng; tư vấn, giới thiệu và báo giá sản phẩm; theo dõi và cập nhật tiến độ của khách hàng; phân công deal; đặt lịch hẹn.
-* **Nhân viên chăm sóc khách hàng (Customer Service):** Tiếp nhận sự cố và phản hồi của khách hàng, xử lý sự cố, chăm sóc khách hàng định kỳ.
+### Backend
 
-### 🛠️ 3. Phạm vi & Chức năng chính
-* **Lead & Khách hàng:** Thu thập lead, chuyển đổi thành khách hàng, lưu thông tin liên hệ và lịch sử tương tác.
-* **Deal & Pipeline:** Kéo-thả deal theo giai đoạn (stage); tính xác suất thắng, giá trị deal, giá trị kỳ vọng.
-* **Hoạt động & Lịch chăm sóc:** Ghi lại cuộc gọi/email/cuộc hẹn; đặt lịch và nhắc chăm sóc khách hàng.
-* **Sản phẩm & Báo giá:** Quản lý danh mục sản phẩm/dịch vụ; tạo báo giá gắn trực tiếp vào deal.
-* **Nhắc việc & Thông báo:** Nhắc lịch chăm sóc, cảnh báo deal sắp đến hạn, thông báo khi được phân công công việc.
-* **Báo cáo & Forecast:** Dự báo doanh thu theo pipeline; báo cáo hiệu suất theo nhân viên và theo từng giai đoạn.
-* **Hệ thống:** Đăng nhập/Đăng xuất, phân quyền chi tiết theo vai trò (RBAC), nhật ký hoạt động (Audit log).
+- NestJS
+- Prisma ORM
 
-### 💻 4. Công nghệ sử dụng (Tech Stack)
+### Database
 
-#### **Front-end:**
-* **Next.js (Framework cho React):** Xây dựng toàn bộ giao diện cho nhân viên sales, chăm sóc khách hàng và admin.
-* **dnd-kit:** Thư viện xử lý tính năng kéo – thả các Deal qua từng giai đoạn trên phễu bán hàng.
-* **Recharts:** Vẽ các biểu đồ phễu, biểu đồ cột dự báo doanh thu, báo cáo hiệu suất nhân viên.
-
-#### **Back-end & Database:**
-* **NestJS:** Framework xây dựng kiến trúc và xử lý toàn bộ logic nghiệp vụ hệ thống.
-* **Prisma (ORM):** Làm cầu nối để NestJS tương tác an toàn và tối ưu với Cơ sở dữ liệu.
-* **PostgreSQL:** Hệ quản trị cơ sở dữ liệu quan hệ lưu trữ dữ liệu tập trung.
+- PostgreSQL
 
 ---
 
-## 🔍 PHẦN 2: PHÂN TÍCH HIỆN TRẠNG
+## 2. Cấu trúc project
 
-### 🌟 Ưu điểm của giải pháp CRM
-* **Quản lý dữ liệu tập trung:** CRM giúp lưu trữ tất cả thông tin khách hàng, lịch sử giao dịch và liên hệ một cách nhất quán, thay vì quản lý bằng sổ sách, trí nhớ hay Excel riêng lẻ (tránh mất dữ liệu khi nhân viên nghỉ việc).
-* **Chuẩn hóa quy trình làm việc:** Hướng dẫn cho nhân viên sale biết cần làm gì ở từng bước, giúp đồng bộ tiến trình làm việc chuyên nghiệp.
-* **Tự động hóa kênh tiếp thị:** Tích hợp tự động các nền tảng như Google hoặc Zalo để ghi nhận chính xác nguồn khách hàng, giúp doanh nghiệp tập trung ngân sách vào các kênh hiệu quả.
+```text
+crm-project/
+├── database/
+│   ├── schema.sql
+│   └── seed.sql
+│
+├── src/
+│   ├── backend/
+│   │   ├── prisma/
+│   │   ├── src/
+│   │   ├── .env.example
+│   │   └── package.json
+│   │
+│   └── frontend/
+│       ├── app/
+│       ├── components/
+│       ├── modules/
+│       ├── services/
+│       └── package.json
+│── docs/
+│   ├── assets/
+│   ├── BaoCao/
+│   ├── phan-tich/
+│   ├── thiet-ke/
+│   └── weekly/
+│      
+├── .gitignore
+└── README.md
+```
 
-### ⚠️ Nhược điểm & Hạn chế
-* **Chi phí & Thời gian đào tạo:** Doanh nghiệp phải tổ chức các chương trình đào tạo để nhân viên sale có thể làm quen và sử dụng thành thạo CRM.
-* **Thay đổi thói quen nhập liệu:** Làm cho nhân viên sale bị gò mình vào quy trình và bắt buộc phải chủ động nhập dữ liệu liên tục.
-* **Phụ thuộc vào giá trị sản phẩm:** CRM chỉ phát huy hiệu quả tốt đối với các sản phẩm hoặc dịch vụ có giá trị cao; đối với các sản phẩm giá trị thấp, CRM làm phức tạp hóa quy trình và lãng phí chi phí.
+---
+
+## 3. Yêu cầu môi trường
+
+Cần cài đặt các phần mềm sau trước khi chạy project:
+
+- Node.js
+- npm
+- PostgreSQL
+- Git
+
+Kiểm tra Node.js và npm:
+
+```bash
+node --version
+npm --version
+```
+
+Kiểm tra PostgreSQL:
+
+```bash
+psql --version
+```
+
+---
+
+## 4. Clone project
+
+```bash
+git clone <repository-url>
+```
+
+Di chuyển vào thư mục project:
+
+```bash
+cd crm-project
+```
+
+---
+
+## 5. Cài đặt Backend
+
+Di chuyển vào backend:
+
+```bash
+cd ./src/backend
+```
+
+Cài dependencies:
+
+```bash
+npm install
+```
+
+Tạo file môi trường từ file mẫu: .env
+
+Sau đó mở:
+
+```text
+./src/backend/.env
+```
+
+và cấu hình kết nối PostgreSQL.
+
+Ví dụ:
+
+```env
+DATABASE_URL="postgresql://postgres:your_password@localhost:5432/crm_db"
+JWT_SECRET="your_jwt_secret"
+PORT=3001
+```
+
+## 6. Tạo Database
+
+Đăng nhập PostgreSQL và tạo database:
+
+```sql
+CREATE DATABASE crm_db;
+```
+
+Tên database phải khớp với `DATABASE_URL` trong:
+
+```text
+./src/backend/.env
+```
+
+---
+
+## 7. Chạy Prisma Migration
+
+Tại thư mục:
+
+```text
+./src/backend
+```
+
+chạy:
+
+```bash
+npx prisma generate
+```
+
+Sau đó áp dụng migration:
+
+```bash
+npx prisma migrate deploy
+```
+
+Kiểm tra trạng thái migration:
+
+```bash
+npx prisma migrate status
+```
+
+---
+
+## 8. Tạo dữ liệu mẫu
+
+Tại thư mục backend:
+
+```bash
+npx prisma db seed
+```
+
+Seed có thể chạy lại nhiều lần mà không làm hỏng dữ liệu mẫu.
+
+Ngoài Prisma seed, project còn cung cấp:
+
+```text
+database/schema.sql
+database/seed.sql
+```
+
+để phục vụ kiểm tra cấu trúc và dữ liệu database.
+
+---
+
+## 9. Chạy Backend
+
+Tại:
+
+```text
+./src/backend
+```
+
+chạy:
+
+```bash
+npm run start:dev
+```
+
+Backend mặc định chạy tại:
+
+```text
+http://localhost:3001
+```
+
+API sử dụng prefix:
+
+```text
+/api/v1
+```
+
+Ví dụ API đăng nhập:
+
+```text
+POST http://localhost:3001/api/v1/auth/login
+```
+
+---
+
+## 10. Cài đặt Frontend
+
+Mở terminal mới và di chuyển vào:
+
+```bash
+cd ./src/frontend
+```
+
+Cài dependencies:
+
+```bash
+npm install
+```
+
+Tạo file:
+
+```text
+src/frontend/.env.local
+```
+
+với nội dung:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+```
+
+---
+
+## 11. Chạy Frontend
+
+Tại:
+
+```text
+src/frontend
+```
+
+chạy:
+
+```bash
+npm run dev
+```
+
+Frontend mặc định chạy tại:
+
+```text
+http://localhost:3000
+```
+
+Trang đăng nhập:
+
+```text
+http://localhost:3000/login
+```
+
+---
+
+## 12. Tài khoản demo
+
+Sau khi chạy:
+
+```bash
+npx prisma db seed
+```
+
+có thể sử dụng tài khoản demo:
+
+```text
+Email: admin.demo@crm.local
+Password: Demo@12345
+Role: Admin
+```
+
+Mật khẩu trong database được lưu dưới dạng bcrypt hash,
+không lưu mật khẩu dạng plain text.
+
+---
+
+## 13. Chạy kiểm tra Backend
+
+Di chuyển vào:
+
+```text
+./src/backend
+```
+
+Kiểm tra ESLint:
+
+```bash
+npm run lint
+```
+
+Kiểm tra build:
+
+```bash
+npm run build
+```
+
+Chạy test:
+
+```bash
+npm run test
+```
+
+---
+
+## 14. Chạy kiểm tra Frontend
+
+Di chuyển vào:
+
+```text
+./src/frontend
+```
+
+Kiểm tra ESLint:
+
+```bash
+npm run lint
+```
+
+Kiểm tra build:
+
+```bash
+npm run build
+```
+
+---
+
+## 15. Quy trình chạy project từ đầu
+
+Terminal 1:
+
+```bash
+cd src/backend
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npx prisma db seed
+npm run start:dev
+```
+
+Terminal 2:
+
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
+
+Sau đó truy cập:
+
+```text
+http://localhost:3000/login
+```
+
+---
+
+## 16. Các vai trò trong hệ thống
+
+Hệ thống hỗ trợ các vai trò:
+
+```text
+Admin
+Sales Manager
+Sales
+Marketing
+Customer Care
+```
+
+Người dùng sau khi đăng nhập sẽ được điều hướng đến dashboard
+phù hợp với vai trò của tài khoản.

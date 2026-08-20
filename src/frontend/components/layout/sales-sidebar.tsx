@@ -1,0 +1,32 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import styles from './sales-sidebar.module.css';
+
+export default function SalesSidebar() {
+    const pathname = usePathname();
+
+    return (
+        <aside className={styles.sidebar}>
+            <div className={styles.header}>
+                <h2>CRM Sales</h2>
+            </div>
+
+            <nav className={styles.navigation}>
+                <Link href="/sales/dashboard"
+                    className={pathname === '/sales/dashboard' ? styles.activeLink : styles.link}>
+                    <span>📊</span>
+                    Dashboard
+                </Link>
+
+                <Link
+                    href="/sales/leads"
+                    className={pathname.startsWith('/sales/leads') ? styles.activeLink : styles.link}>
+                    <span>🎯</span>
+                    Quản lý Lead
+                </Link>
+            </nav>
+        </aside>
+    );
+}
