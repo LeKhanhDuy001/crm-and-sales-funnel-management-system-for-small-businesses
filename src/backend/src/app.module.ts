@@ -17,6 +17,7 @@ import { DealsModule } from './deals/deals.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { TasksModule } from './tasks/tasks.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -60,7 +61,7 @@ import { NotificationsModule } from './notifications/notifications.module';
       ],
       errorMessage: 'Too Many Requests',
     }),
-
+    ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,

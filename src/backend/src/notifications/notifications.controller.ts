@@ -19,7 +19,7 @@ import { NotificationsService } from './notifications.service';
 @ApiBearerAuth('access-token')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.SALES)
+@Roles(Role.SALES, Role.CUSTOMER_CARE,)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

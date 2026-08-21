@@ -18,14 +18,27 @@ function toDateTimeInput(value: string | null,): string {
   if (!value) {
     return '';
   }
-
   const date = new Date(value);
   const offset = date.getTimezoneOffset() * 60_000;
-
   return new Date(date.getTime() - offset,).toISOString().slice(0, 16);
 }
 
-export default function TaskFormModal({task, deals, assignees, isSubmitting, onClose, onSubmit,}: Props) {
+function getReminderError(reminderTime: string, dueDate: string,): string {
+  if (!reminderTime) {
+    return '';
+  }
+  const reminderDate = new Date(reminderTime);
+  if (reminderDate.getTime() <= Date.now()) {
+    return 'Thời gian nhắc phải lớn hơn thời điểm hiện tại.';
+  }
+  if (dueDate && reminderDate.getTime() >= new Date(dueDate).getTime()) {
+    return 'Thời gian nhắc phải trước thời hạn hoàn thành.';
+  }
+
+  return '';
+}
+
+export default function TaskFormModal({ task, deals, assignees, isSubmitting, onClose, onSubmit, }: Props) {
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '',);
   const [dealId, setDealId] = useState(task?.deal?.dealId ?? deals[0]?.dealId ?? 0,);
@@ -34,6 +47,7 @@ export default function TaskFormModal({task, deals, assignees, isSubmitting, onC
   const [dueDate, setDueDate] = useState(toDateTimeInput(task?.dueDate ?? null,),);
   const [reminderTime, setReminderTime,] = useState(toDateTimeInput(task?.reminderTime ?? null,),);
   const [titleError, setTitleError] = useState('');
+  const [reminderError, setReminderError,] = useState('');
 
   function handleSubmit(event: FormEvent<HTMLFormElement>,): void {
     event.preventDefault();
@@ -42,8 +56,15 @@ export default function TaskFormModal({task, deals, assignees, isSubmitting, onC
       setTitleError('Tiêu đề Task không được để trống.',);
       return;
     }
-
     setTitleError('');
+    const nextReminderError = getReminderError(reminderTime, dueDate,);
+
+    if (nextReminderError) {
+      setReminderError(nextReminderError,);
+      return;
+    }
+
+    setReminderError('');
 
     void onSubmit({
       dealId: dealId || undefined,
@@ -51,7 +72,8 @@ export default function TaskFormModal({task, deals, assignees, isSubmitting, onC
       title: title.trim(),
       description: description.trim() || undefined,
       dueDate: new Date(dueDate,).toISOString(),
-      reminderTime: reminderTime ? new Date(reminderTime,).toISOString() : undefined,
+      reminderTime:
+        reminderTime ? new Date(reminderTime,).toISOString() : undefined,
       priority,
     });
   }
@@ -91,9 +113,9 @@ export default function TaskFormModal({task, deals, assignees, isSubmitting, onC
               />
             </div>
 
-            <SelectDeal deals={deals} value={dealId} onChange={setDealId}/>
+            <SelectDeal deals={deals} value={dealId} onChange={setDealId} />
 
-            <SelectAssignee assignees={assignees} value={assignedUserId} onChange={setAssignedUserId}/>
+            <SelectAssignee assignees={assignees} value={assignedUserId} onChange={setAssignedUserId} />
 
             <div>
               <label htmlFor="task-priority">
@@ -131,10 +153,17 @@ export default function TaskFormModal({task, deals, assignees, isSubmitting, onC
               <label htmlFor="task-reminder">
                 Thời gian nhắc
               </label>
-
               <input id="task-reminder" type="datetime-local"
-                value={reminderTime} onChange={(event) => setReminderTime(event.target.value,)}
+                value={reminderTime} onChange={(event) => {
+                  setReminderTime(event.target.value,);
+                  setReminderError('');
+                }}
               />
+              {reminderError && (
+                <p className={styles.fieldError}>
+                  {reminderError}
+                </p>
+              )}
             </div>
           </div>
 
@@ -155,7 +184,7 @@ export default function TaskFormModal({task, deals, assignees, isSubmitting, onC
   );
 }
 
-function TaskFormHeader({isEdit, disabled, onClose,}: {
+function TaskFormHeader({ isEdit, disabled, onClose, }: {
   isEdit: boolean;
   disabled: boolean;
   onClose: () => void;
@@ -180,7 +209,7 @@ function TaskFormHeader({isEdit, disabled, onClose,}: {
   );
 }
 
-function SelectDeal({deals, value, onChange,}: {
+function SelectDeal({ deals, value, onChange, }: {
   deals: TaskMetaDeal[];
   value: number;
   onChange: (value: number) => void;
@@ -209,7 +238,7 @@ function SelectDeal({deals, value, onChange,}: {
   );
 }
 
-function SelectAssignee({assignees, value, onChange,}: {
+function SelectAssignee({ assignees, value, onChange, }: {
   assignees: TaskAssignee[];
   value: number;
   onChange: (value: number) => void;

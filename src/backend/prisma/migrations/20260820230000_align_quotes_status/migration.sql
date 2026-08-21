@@ -1,0 +1,5 @@
+ALTER TABLE "quotes"
+ALTER COLUMN "status" SET DEFAULT 'Draft';
+
+ALTER TABLE "quotes"
+ALTER COLUMN "status" SET NOT NULL;

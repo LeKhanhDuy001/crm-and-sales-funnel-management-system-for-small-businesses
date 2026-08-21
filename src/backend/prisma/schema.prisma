@@ -216,6 +216,7 @@ model tasks {
   description    String?
   duedate        DateTime? @map("due_date") @db.Timestamp(6)
   remindertime   DateTime? @map("reminder_time") @db.Timestamp(6)
+  remindedat     DateTime? @map("reminded_at") @db.Timestamp(6)
   priority       String?   @db.VarChar(20)
   status         String?   @db.VarChar(30)
 

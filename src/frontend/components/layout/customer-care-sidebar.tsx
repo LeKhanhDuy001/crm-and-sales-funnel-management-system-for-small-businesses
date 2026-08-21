@@ -33,6 +33,12 @@ export default function CustomerCareSidebar() {
           <span>✅</span>
           Quản lý Task
         </Link>
+        <Link href="/customer-care/notifications"
+          className={pathname.startsWith('/customer-care/notifications') ? styles.activeLink : styles.link}
+        >
+          <span>🔔</span>
+          Thông báo
+        </Link>
       </nav>
     </aside>
   );

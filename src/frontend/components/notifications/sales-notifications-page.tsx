@@ -8,7 +8,11 @@ import type { Notification } from '../../modules/notifications/notifications.typ
 import { ApiError } from '../../services/api';
 import styles from './notifications-page.module.css';
 
-export default function SalesNotificationsPage() {
+interface Props {
+    taskPath?: string;
+}
+
+export default function SalesNotificationsPage({ taskPath = '/sales/tasks', }: Props) {
     const router = useRouter();
     const [notifications, setNotifications,] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -90,8 +94,8 @@ export default function SalesNotificationsPage() {
     }
 
     function openNotification(notification: Notification,): void {
-        if (notification.type === 'Task') {
-            router.push('/sales/tasks');
+        if (notification.type === 'Task' || notification.type === 'TaskReminder') {
+            router.push(taskPath);
         }
     }
 
