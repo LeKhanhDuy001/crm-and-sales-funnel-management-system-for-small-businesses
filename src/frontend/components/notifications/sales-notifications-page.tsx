@@ -94,6 +94,10 @@ export default function SalesNotificationsPage({ taskPath = '/sales/tasks', }: P
     }
 
     function openNotification(notification: Notification,): void {
+        if (notification.type === 'LeadAssignment') {
+            router.push('/sales/leads');
+            return;
+        }
         if (notification.type === 'Task' || notification.type === 'TaskReminder') {
             router.push(taskPath);
         }

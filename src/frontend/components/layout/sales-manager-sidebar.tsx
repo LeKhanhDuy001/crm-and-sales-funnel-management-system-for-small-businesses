@@ -27,6 +27,12 @@ export default function SalesManagerSidebar() {
           <span>✅</span>
           Quản lý Task
         </Link>
+        <Link href="/sales-manager/leads"
+          className={pathname.startsWith('/sales-manager/leads',) ? styles.activeLink : styles.link}
+        >
+          <span>🎯</span>
+          Quản lý Lead
+        </Link>
       </nav>
     </aside>
   );
