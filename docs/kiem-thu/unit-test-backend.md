@@ -119,6 +119,39 @@ npm test -- leads.service.spec.ts
 | UNIT-CUSTOMER-013 | `customers.service.spec.ts` | Customer Care cập nhật Customer mà không bị giới hạn theo Sales scope | Repository kiểm tra Customer với `salesUserId = undefined` và cập nhật thành công | PASS |
 | UNIT-CUSTOMER-014 | `customers.service.spec.ts` | BR18 - Truyền IP và User thực hiện xuống Repository khi cập nhật Customer | `updateWithActivityLog` nhận đúng actorUserId và ipAddress để phục vụ ghi Activity Log | PASS |
 
+## Chức năng quản lý Deals
+## Unit Test - Quản lý Deal cho Sales và kéo thả giai đoạn pipeline
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-DEAL-001 | `deals.service.spec.ts` | Sales lấy danh sách Deal có tìm kiếm, lọc Pipeline Stage và phân trang | Repository nhận đúng `search`, `stageId`, `salesUserId`, `skip`, `limit`; chỉ lấy Deal thuộc Sales đang đăng nhập và tính đúng pagination | PASS |
+| UNIT-DEAL-002 | `deals.service.spec.ts` | Sales không có Deal phù hợp với điều kiện tìm kiếm | Trả `data = []`, `total = 0` và `totalPages = 0` | PASS |
+| UNIT-DEAL-003 | `deals.service.spec.ts` | Lấy danh sách Pipeline Stage dùng cho form và bộ lọc | Trả đúng stageId, stageName, stageOrder và xác suất tương ứng của từng Pipeline Stage | PASS |
+| UNIT-DEAL-004 | `deals.service.spec.ts` | Sales xem chi tiết Deal thuộc quyền quản lý | Repository kiểm tra bằng đúng `dealId` và `salesUserId`; trả đúng thông tin Deal, Customer, Stage và Sales phụ trách | PASS |
+| UNIT-DEAL-005 | `deals.service.spec.ts` | Sales xem Deal không tồn tại hoặc không thuộc quyền quản lý | Ném `NotFoundException` với thông báo `Không tìm thấy Deal.` | PASS |
+| UNIT-DEAL-006 | `deals.service.spec.ts` | BR06, BR08, BR09, BR18 - Tạo Deal hợp lệ | Kiểm tra Customer, Pipeline Stage; tự gán Sales hiện tại; trim tên Deal; tính đúng Probability và Expected Revenue; gọi Repository tạo Deal kèm Activity Log | PASS |
+| UNIT-DEAL-007 | `deals.service.spec.ts` | BR06 - Tạo Deal với Customer không tồn tại hoặc không thuộc quyền Sales | Ném `UnprocessableEntityException` với thông báo Customer không thuộc quyền; không tạo Deal | PASS |
+| UNIT-DEAL-008 | `deals.service.spec.ts` | BR06 - Tạo Deal với Pipeline Stage không tồn tại | Ném `UnprocessableEntityException` với thông báo `Giai đoạn Pipeline không tồn tại.`; không tạo Deal | PASS |
+| UNIT-DEAL-009 | `deals.service.spec.ts` | BR08 - Tạo Deal với Pipeline Stage chưa cấu hình xác suất | Ném `UnprocessableEntityException` thông báo Stage chưa được cấu hình xác suất; không tạo Deal | PASS |
+| UNIT-DEAL-010 | `deals.service.spec.ts` | Cập nhật Deal nhưng không truyền dữ liệu thay đổi | Ném `BadRequestException` với thông báo `Không có dữ liệu để cập nhật.`; không truy vấn hoặc cập nhật Deal | PASS |
+| UNIT-DEAL-011 | `deals.service.spec.ts` | Cập nhật Deal không tồn tại hoặc không thuộc quyền Sales | Ném `NotFoundException`; không gọi Repository cập nhật | PASS |
+| UNIT-DEAL-012 | `deals.service.spec.ts` | Cập nhật Deal sang Customer không thuộc quyền Sales | Ném `UnprocessableEntityException`; không cập nhật Deal | PASS |
+| UNIT-DEAL-013 | `deals.service.spec.ts` | BR09, BR18 - Cập nhật Deal Value hợp lệ | Trim tên Deal, cập nhật Customer và ngày dự kiến đóng; tính lại Expected Revenue theo Deal Value mới và Probability hiện tại; truyền User và IP để ghi log | PASS |
+| UNIT-DEAL-014 | `deals.service.spec.ts` | Cập nhật Deal nhưng không thay đổi Deal Value | Giữ Deal Value hiện tại để tính Expected Revenue; chỉ cập nhật các trường được truyền | PASS |
+| UNIT-DEAL-015 | `deals.service.spec.ts` | Xóa Deal không tồn tại hoặc không thuộc quyền Sales | Ném `NotFoundException`; không kiểm tra dữ liệu liên kết và không xóa Deal | PASS |
+| UNIT-DEAL-016 | `deals.service.spec.ts` | Không tìm thấy Deal khi kiểm tra dữ liệu nghiệp vụ liên kết trước khi xóa | Ném `NotFoundException`; không gọi `deleteWithLog` | PASS |
+| UNIT-DEAL-017 | `deals.service.spec.ts` | BR20 - Xóa Deal đã phát sinh Quote | Ném `UnprocessableEntityException` với thông báo Deal có dữ liệu liên quan; không xóa vật lý | PASS |
+| UNIT-DEAL-018 | `deals.service.spec.ts` | BR20 - Xóa Deal đã phát sinh Activity | Ném `UnprocessableEntityException` với thông báo Deal có dữ liệu liên quan; không xóa vật lý | PASS |
+| UNIT-DEAL-019 | `deals.service.spec.ts` | BR20 - Xóa Deal đã phát sinh Task | Ném `UnprocessableEntityException` với thông báo Deal có dữ liệu liên quan; không xóa vật lý | PASS |
+| UNIT-DEAL-020 | `deals.service.spec.ts` | BR18 - Xóa Deal chưa phát sinh Quote, Activity hoặc Task | Gọi `deleteWithLog` với đúng dealId, userId và IP address để xóa Deal và ghi Activity Log | PASS |
+| UNIT-DEAL-021 | `deals.service.spec.ts` | Sales thay đổi Stage của Deal không thuộc quyền quản lý | Ném `NotFoundException`; không tìm Stage đích và không cập nhật Pipeline | PASS |
+| UNIT-DEAL-022 | `deals.service.spec.ts` | Chọn lại đúng Pipeline Stage hiện tại của Deal | Không cập nhật database; trả thông báo `Deal đang ở giai đoạn này.` | PASS |
+| UNIT-DEAL-023 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Won | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
+| UNIT-DEAL-024 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Lost | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
+| UNIT-DEAL-025 | `deals.service.spec.ts` | Chuyển Deal sang Pipeline Stage không tồn tại | Ném `UnprocessableEntityException` với thông báo `Giai đoạn Pipeline không hợp lệ.` | PASS |
+| UNIT-DEAL-026 | `deals.service.spec.ts` | BR08 - Chuyển Deal sang Stage chưa cấu hình xác suất | Ném `UnprocessableEntityException` thông báo Stage chưa được cấu hình xác suất; không cập nhật Deal | PASS |
+| UNIT-DEAL-027 | `deals.service.spec.ts` | BR08, BR09, BR18 - Chuyển Pipeline Stage thành công | Cập nhật đúng Stage, Probability và Expected Revenue; truyền Deal cũ, User và IP xuống Repository để ghi Activity Log; trả Deal sau cập nhật | PASS |
+
 ## 3. Kết quả tổng hợp
 
 ```text
@@ -167,7 +200,17 @@ Snapshots:   0 total
 Time:        0.923 s
 ```
 
-**Kết luận:** 86/86 unit test PASS.
+```text
+Quản lý Deals và kéo thả giai đoạn pipeline
+Test Suites: 1 passed, 1 total
+Tests:       27 passed, 27 total
+Snapshots:   0 total
+Time:        21.009 s
+```
+
+
+
+**Kết luận:** 113/113 unit test PASS.
 
 ---
 
@@ -178,4 +221,4 @@ Time:        0.923 s
 | 10/08/2026 | Khởi tạo và hoàn thiện unit test backend | 10 | PASS |
 | 15/08/2026 | unit test backend cho chức năng convert Lead into Customer | 11 | PASS |
 | 21/08/2026 | unit test backend cho chức năng quản lý Users, quản lý Products | 39 | PASS |
-| 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer | 26 | PASS |
+| 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer, Quản lý Deals và kéo thả giai đoạn pipeline | 53 | PASS |
