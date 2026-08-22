@@ -38,6 +38,87 @@ npm test -- leads.service.spec.ts
 
 ---
 
+## CHỨC NĂNG QUẢN LÝ USERS CHO ADMIN
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-USER-001 | `users.service.spec.ts` | Admin lấy danh sách User có tìm kiếm, lọc và phân trang | Repository nhận đúng search, roleId, status, skip, take; trả đúng danh sách User và thông tin phân trang | PASS |
+| UNIT-USER-002 | `users.service.spec.ts` | Admin lấy danh sách Role để gán cho User | Trả về đúng roleId, roleName và description của các Role | PASS |
+| UNIT-USER-003 | `users.service.spec.ts` | Xem chi tiết User khi User tồn tại | Trả về đúng thông tin User và Role tương ứng | PASS |
+| UNIT-USER-004 | `users.service.spec.ts` | Xem chi tiết User không tồn tại | Ném `NotFoundException` với thông báo `Không tìm thấy người dùng.` | PASS |
+| UNIT-USER-005 | `users.service.spec.ts` | BR16 - Tạo User hợp lệ và mã hóa mật khẩu trước khi lưu | Gọi bcrypt hash với mật khẩu và salt rounds = 12; Repository nhận password đã hash; tạo User thành công | PASS |
+| UNIT-USER-006 | `users.service.spec.ts` | BR16 - Tạo User với email đã tồn tại | Ném `ConflictException`; không hash mật khẩu và không gọi Repository tạo User | PASS |
+| UNIT-USER-007 | `users.service.spec.ts` | Tạo User với Role không tồn tại | Ném `UnprocessableEntityException` với thông báo vai trò không hợp lệ; không tạo User | PASS |
+| UNIT-USER-008 | `users.service.spec.ts` | Tạo User với họ tên chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo họ tên không được để trống | PASS |
+| UNIT-USER-009 | `users.service.spec.ts` | Cập nhật User không tồn tại | Ném `NotFoundException`; không thực hiện cập nhật | PASS |
+| UNIT-USER-010 | `users.service.spec.ts` | BR16 - Cập nhật sang email đang thuộc User khác | Ném `ConflictException`; không gọi Repository cập nhật User | PASS |
+| UNIT-USER-011 | `users.service.spec.ts` | BR18 - Admin thay đổi Role của User | Repository cập nhật roleId mới và nhận Audit action `Assign` chứa Role cũ và Role mới | PASS |
+| UNIT-USER-012 | `users.service.spec.ts` | Admin cập nhật User nhưng dữ liệu không thay đổi | Trả thông báo `Không có thông tin thay đổi.` và không gọi Repository cập nhật | PASS |
+| UNIT-USER-013 | `users.service.spec.ts` | Admin xóa chính tài khoản đang đăng nhập | Ném `ForbiddenException`; không thực hiện truy vấn xóa User | PASS |
+| UNIT-USER-014 | `users.service.spec.ts` | Xóa User không tồn tại | Ném `NotFoundException` với thông báo `Không tìm thấy người dùng.` | PASS |
+| UNIT-USER-015 | `users.service.spec.ts` | BR20 - Xóa User đã phát sinh dữ liệu nghiệp vụ | Không xóa vật lý; gọi `deactivateUser`, chuyển status thành false và trả mode `deactivated` | PASS |
+| UNIT-USER-016 | `users.service.spec.ts` | BR20 - Xóa User chưa phát sinh dữ liệu nghiệp vụ | Gọi `deleteUser`, không gọi `deactivateUser` và trả mode `deleted` | PASS |
+| UNIT-USER-017 | `users.service.spec.ts` | Chuẩn hóa email trước khi tìm User | Email được trim, chuyển về chữ thường và truyền đúng vào Repository | PASS |
+| UNIT-USER-018 | `users.service.spec.ts` | Tìm User theo ID | Repository được gọi với đúng User ID và trả về đúng User | PASS |
+| UNIT-USER-019 | `users.service.spec.ts` | Cập nhật mật khẩu đã mã hóa thông qua Repository | Repository `updatePassword` được gọi với đúng User ID và password hash | PASS |
+
+## Chức năng quản lý sản phẩm
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-PRODUCT-001 | `products.service.spec.ts` | Admin lấy danh sách sản phẩm có tìm kiếm, lọc theo danh mục, trạng thái và phân trang | Repository nhận đúng search, category, status, skip, take; trả đúng danh sách sản phẩm và thông tin phân trang | PASS |
+| UNIT-PRODUCT-002 | `products.service.spec.ts` | Admin lấy danh sách danh mục sản phẩm | Trả về đúng danh sách category hiện có | PASS |
+| UNIT-PRODUCT-003 | `products.service.spec.ts` | Xem chi tiết sản phẩm khi sản phẩm tồn tại | Trả về đúng productId, productCode, productName và các thông tin sản phẩm | PASS |
+| UNIT-PRODUCT-004 | `products.service.spec.ts` | Xem chi tiết sản phẩm không tồn tại | Ném `NotFoundException` với thông báo `Không tìm thấy sản phẩm.` | PASS |
+| UNIT-PRODUCT-005 | `products.service.spec.ts` | Tạo sản phẩm hợp lệ và chuẩn hóa dữ liệu trước khi lưu | Tên, danh mục, mô tả được trim; Repository nhận đúng dữ liệu; tạo sản phẩm thành công | PASS |
+| UNIT-PRODUCT-006 | `products.service.spec.ts` | Tạo sản phẩm với tên đã tồn tại | Ném `ConflictException` với thông báo `Tên sản phẩm đã tồn tại.`; không gọi Repository tạo sản phẩm | PASS |
+| UNIT-PRODUCT-007 | `products.service.spec.ts` | BR17 - Tạo sản phẩm với giá bằng `0` | Ném `UnprocessableEntityException` với thông báo `Giá sản phẩm phải lớn hơn 0.`; không tạo sản phẩm | PASS |
+| UNIT-PRODUCT-008 | `products.service.spec.ts` | BR17 - Tạo sản phẩm với giá bằng `-1` | Ném `UnprocessableEntityException` với thông báo `Giá sản phẩm phải lớn hơn 0.`; không tạo sản phẩm | PASS |
+| UNIT-PRODUCT-009 | `products.service.spec.ts` | BR17 - Tạo sản phẩm với giá bằng `-100` | Ném `UnprocessableEntityException` với thông báo `Giá sản phẩm phải lớn hơn 0.`; không tạo sản phẩm | PASS |
+| UNIT-PRODUCT-010 | `products.service.spec.ts` | Cập nhật sản phẩm hợp lệ | Repository nhận đúng productId, dữ liệu mới, User thực hiện và dữ liệu sản phẩm cũ; trả thông báo cập nhật thành công | PASS |
+| UNIT-PRODUCT-011 | `products.service.spec.ts` | Cập nhật sản phẩm không tồn tại | Ném `NotFoundException`; không gọi Repository cập nhật sản phẩm | PASS |
+| UNIT-PRODUCT-012 | `products.service.spec.ts` | Cập nhật sản phẩm với tên mới bị trùng | Ném `ConflictException` với thông báo `Tên sản phẩm đã tồn tại.`; không cập nhật sản phẩm | PASS |
+| UNIT-PRODUCT-013 | `products.service.spec.ts` | Cập nhật tên sản phẩm chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo `Tên sản phẩm không được để trống.` | PASS |
+| UNIT-PRODUCT-014 | `products.service.spec.ts` | BR17 - Cập nhật giá sản phẩm bằng `0` | Ném `UnprocessableEntityException` với thông báo `Giá sản phẩm phải lớn hơn 0.`; không cập nhật sản phẩm | PASS |
+| UNIT-PRODUCT-015 | `products.service.spec.ts` | BR17 - Cập nhật giá sản phẩm bằng `-1` | Ném `UnprocessableEntityException` với thông báo `Giá sản phẩm phải lớn hơn 0.`; không cập nhật sản phẩm | PASS |
+| UNIT-PRODUCT-016 | `products.service.spec.ts` | BR17 - Cập nhật giá sản phẩm bằng `-100` | Ném `UnprocessableEntityException` với thông báo `Giá sản phẩm phải lớn hơn 0.`; không cập nhật sản phẩm | PASS |
+| UNIT-PRODUCT-017 | `products.service.spec.ts` | Cập nhật sản phẩm nhưng không có dữ liệu cần thay đổi | Trả thông báo `Không có thông tin cần cập nhật.` và không gọi Repository update | PASS |
+| UNIT-PRODUCT-018 | `products.service.spec.ts` | BR17, BR20 - Xóa sản phẩm đã phát sinh QuoteDetail | Không xóa vật lý; gọi `deactivate`, chuyển status thành false và trả mode `deactivated` | PASS |
+| UNIT-PRODUCT-019 | `products.service.spec.ts` | Xóa sản phẩm chưa phát sinh QuoteDetail | Gọi Repository `delete`, không gọi `deactivate` và trả mode `deleted` | PASS |
+| UNIT-PRODUCT-020 | `products.service.spec.ts` | Xóa sản phẩm không tồn tại | Ném `NotFoundException`; không kiểm QuoteDetail và không thực hiện delete hoặc deactivate | PASS |
+
+## Chức năng xem Activity Logs
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-ACTIVITY-LOG-001 | `activity-logs.service.spec.ts` | Admin lấy danh sách Activity Log với phân trang mặc định | Repository nhận `skip = 0`, `take = 20`; trả đúng danh sách log và thông tin phân trang mặc định | PASS |
+| UNIT-ACTIVITY-LOG-002 | `activity-logs.service.spec.ts` | Lọc Activity Log theo User và Action | Repository nhận đúng `userId` và `action`; trả về các Activity Log phù hợp điều kiện lọc | PASS |
+| UNIT-ACTIVITY-LOG-003 | `activity-logs.service.spec.ts` | Lọc Activity Log theo khoảng ngày bắt đầu và ngày kết thúc | `fromDate` được chuyển về đầu ngày; `toDate` được chuyển thành đầu ngày kế tiếp và dùng làm mốc exclusive | PASS |
+| UNIT-ACTIVITY-LOG-004 | `activity-logs.service.spec.ts` | Lọc Activity Log chỉ với ngày bắt đầu | Repository nhận đúng `fromDate`; `toDateExclusive` không được thiết lập | PASS |
+| UNIT-ACTIVITY-LOG-005 | `activity-logs.service.spec.ts` | Lọc Activity Log chỉ với ngày kết thúc | Repository nhận đúng `toDateExclusive` là đầu ngày kế tiếp; `fromDate` không được thiết lập | PASS |
+| UNIT-ACTIVITY-LOG-006 | `activity-logs.service.spec.ts` | Nhập ngày bắt đầu sau ngày kết thúc | Ném `UnprocessableEntityException` với thông báo `Ngày bắt đầu không được sau ngày kết thúc.`; không truy vấn Repository | PASS |
+| UNIT-ACTIVITY-LOG-007 | `activity-logs.service.spec.ts` | Nhập ngày bắt đầu và ngày kết thúc giống nhau | Khoảng ngày được chấp nhận; hệ thống lấy toàn bộ Activity Log trong ngày đó | PASS |
+| UNIT-ACTIVITY-LOG-008 | `activity-logs.service.spec.ts` | Map dữ liệu Activity Log và thông tin User | Trả đúng logId, User, Action, tableName, recordId, actionTime, ipAddress, oldValue và newValue | PASS |
+| UNIT-ACTIVITY-LOG-009 | `activity-logs.service.spec.ts` | Activity Log không gắn với User | Trả `user = null` và vẫn trả đầy đủ các thông tin còn lại của Activity Log | PASS |
+| UNIT-ACTIVITY-LOG-010 | `activity-logs.service.spec.ts` | Không có Activity Log phù hợp với điều kiện lọc | Trả danh sách `data = []`, `total = 0` và `totalPages = 0` | PASS |
+| UNIT-ACTIVITY-LOG-011 | `activity-logs.service.spec.ts` | Kiểm tra phân trang ở trang thứ 3 với limit 20 | Repository nhận `skip = 40`, `take = 20`; với tổng 45 log hệ thống tính `totalPages = 3` | PASS |
+| UNIT-ACTIVITY-LOG-012 | `activity-logs.service.spec.ts` | Admin lấy danh sách User dùng cho bộ lọc Activity Log | Repository `findUsers` được gọi; trả đúng userId, fullName và email của từng User | PASS |
+
+## Chức năng quản lý khách hàng
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-CUSTOMER-001 | `customers.service.spec.ts` | Sales lấy danh sách Customer theo phạm vi được phân quyền | Repository nhận đúng `salesUserId` của Sales; chỉ trả Customer liên quan đến Lead hoặc Deal do Sales đó phụ trách | PASS |
+| UNIT-CUSTOMER-002 | `customers.service.spec.ts` | Customer Care lấy danh sách Customer | Repository không giới hạn theo `salesUserId`; Customer Care có thể xem toàn bộ Customer | PASS |
+| UNIT-CUSTOMER-003 | `customers.service.spec.ts` | Tìm kiếm, lọc loại Customer và phân trang | Repository nhận đúng `search`, `customerType`, `skip`, `take`; hệ thống tính đúng tổng số trang | PASS |
+| UNIT-CUSTOMER-004 | `customers.service.spec.ts` | Map dữ liệu Customer trả về cho client | Trả đúng customerId, customerCode, leadId, fullName, company, phone, email, address, customerType và createdAt | PASS |
+| UNIT-CUSTOMER-005 | `customers.service.spec.ts` | Không có Customer phù hợp với điều kiện tìm kiếm | Trả `data = []`, `total = 0` và `totalPages = 0` | PASS |
+| UNIT-CUSTOMER-006 | `customers.service.spec.ts` | Sales xem chi tiết Customer thuộc phạm vi được phép | Repository được gọi với đúng customerId và `salesUserId`; trả đúng thông tin Customer | PASS |
+| UNIT-CUSTOMER-007 | `customers.service.spec.ts` | Customer Care xem chi tiết Customer | Repository được gọi với customerId và không giới hạn theo `salesUserId` | PASS |
+| UNIT-CUSTOMER-008 | `customers.service.spec.ts` | Xem Customer không tồn tại hoặc Sales không có quyền truy cập | Ném `NotFoundException` với thông báo `Không tìm thấy Customer hoặc bạn không có quyền truy cập Customer này.` | PASS |
+| UNIT-CUSTOMER-009 | `customers.service.spec.ts` | Cập nhật Customer nhưng không truyền dữ liệu thay đổi | Ném `BadRequestException` với thông báo `Không có dữ liệu Customer cần cập nhật.`; không gọi Repository cập nhật | PASS |
+| UNIT-CUSTOMER-010 | `customers.service.spec.ts` | Cập nhật Customer không tồn tại hoặc người dùng không có quyền truy cập | Ném `NotFoundException`; không gọi `updateWithActivityLog` | PASS |
+| UNIT-CUSTOMER-011 | `customers.service.spec.ts` | Cập nhật Customer hợp lệ và chuẩn hóa dữ liệu | Trim các trường text, email chuyển về chữ thường; Repository nhận đúng dữ liệu và trả thông báo cập nhật thành công | PASS |
+| UNIT-CUSTOMER-012 | `customers.service.spec.ts` | Cập nhật các trường tùy chọn bằng chuỗi rỗng hoặc null | Các trường company, phone, email, address, customerType được chuyển thành `null` trước khi lưu | PASS |
+| UNIT-CUSTOMER-013 | `customers.service.spec.ts` | Customer Care cập nhật Customer mà không bị giới hạn theo Sales scope | Repository kiểm tra Customer với `salesUserId = undefined` và cập nhật thành công | PASS |
+| UNIT-CUSTOMER-014 | `customers.service.spec.ts` | BR18 - Truyền IP và User thực hiện xuống Repository khi cập nhật Customer | `updateWithActivityLog` nhận đúng actorUserId và ipAddress để phục vụ ghi Activity Log | PASS |
+
 ## 3. Kết quả tổng hợp
 
 ```text
@@ -47,13 +128,46 @@ Snapshots:   0 total
 Time:        2.074 s
 ```
 ```text
+Chuyển Lead thành Customer
 Test Suites: 1 passed, 1 total
 Tests:       11 passed, 11 total
 Snapshots:   0 total
 Time:        8.654 s
 ```
 
-**Kết luận:** 21/21 unit test PASS.
+```text
+Quản lý Users
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        8.629 s
+```
+
+```text
+Quản lý Products
+Test Suites: 1 passed, 1 total
+Tests:       20 passed, 20 total
+Snapshots:   0 total
+Time:        25.597 s
+```
+
+```text
+Xem Activity Logs
+Test Suites: 1 passed, 1 total
+Tests:       12 passed, 12 total
+Snapshots:   0 total
+Time:        0.995 s
+```
+
+```text
+Quản lý Customer
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        0.923 s
+```
+
+**Kết luận:** 86/86 unit test PASS.
 
 ---
 
@@ -63,3 +177,5 @@ Time:        8.654 s
 |---|---|---:|---|
 | 10/08/2026 | Khởi tạo và hoàn thiện unit test backend | 10 | PASS |
 | 15/08/2026 | unit test backend cho chức năng convert Lead into Customer | 11 | PASS |
+| 21/08/2026 | unit test backend cho chức năng quản lý Users, quản lý Products | 39 | PASS |
+| 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer | 26 | PASS |
