@@ -166,6 +166,53 @@ npm test -- leads.service.spec.ts
 | UNIT-QUOTE-011 | `quotes.service.spec.ts` | Product có `quantity = 0` | Trả lỗi 422, số lượng sản phẩm phải lớn hơn 0 | PASS |
 | UNIT-QUOTE-012 | `quotes.service.spec.ts` | Product có `quantity = -1` | Trả lỗi 422, số lượng sản phẩm phải lớn hơn 0 | PASS |
 
+## Chức năng quản lý Tasks
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-TASK-001 | `tasks.service.spec.ts` | Sales Manager lấy danh sách Task | Repository lấy toàn bộ Task không giới hạn theo người phụ trách; trả đúng dữ liệu và pagination | PASS |
+| UNIT-TASK-002 | `tasks.service.spec.ts` | Sales lấy danh sách Task | Chỉ lấy các Task được phân công cho Sales đang đăng nhập | PASS |
+| UNIT-TASK-003 | `tasks.service.spec.ts` | Customer Care lấy danh sách Task | Chỉ lấy các Task được phân công cho Customer Care đang đăng nhập | PASS |
+| UNIT-TASK-004 | `tasks.service.spec.ts` | Sales xem chi tiết Task thuộc quyền | Trả đúng thông tin Task, người phụ trách, Deal và Customer liên quan | PASS |
+| UNIT-TASK-005 | `tasks.service.spec.ts` | Xem Task không tồn tại hoặc không thuộc quyền | Ném `NotFoundException` với thông báo `Không tìm thấy Task.` | PASS |
+| UNIT-TASK-006 | `tasks.service.spec.ts` | Sales Manager lấy metadata để tạo/cập nhật Task | Trả danh sách trạng thái, mức ưu tiên, Deal và các Sales đang hoạt động | PASS |
+| UNIT-TASK-007 | `tasks.service.spec.ts` | Customer Care lấy metadata | Chỉ trả chính Customer Care hiện tại trong danh sách người phụ trách | PASS |
+| UNIT-TASK-008 | `tasks.service.spec.ts` | Sales truy cập metadata tạo/cập nhật Task | Ném `ForbiddenException` vì Sales không có quyền tạo hoặc chỉnh sửa Task | PASS |
+| UNIT-TASK-009 | `tasks.service.spec.ts` | BR13, BR14, BR18 - Sales Manager tạo Task hợp lệ và phân công cho Sales | Tạo Task trạng thái `Pending`, trim dữ liệu, lưu deadline/reminder, gửi Notification và ghi Activity Log | PASS |
+| UNIT-TASK-010 | `tasks.service.spec.ts` | Customer Care tạo Task cho chính mình | Tạo Task thành công, tự gán Customer Care hiện tại và không gửi Notification phân công cho chính mình | PASS |
+| UNIT-TASK-011 | `tasks.service.spec.ts` | Customer Care tạo Task cho người khác | Ném `ForbiddenException`; không tạo Task | PASS |
+| UNIT-TASK-012 | `tasks.service.spec.ts` | Sales Manager tạo Task nhưng không chọn Sales phụ trách | Ném `UnprocessableEntityException`; không tạo Task | PASS |
+| UNIT-TASK-013 | `tasks.service.spec.ts` | BR14 - Phân công Task cho Sales không tồn tại hoặc đã bị khóa | Ném `UnprocessableEntityException`; không tạo Task | PASS |
+| UNIT-TASK-014 | `tasks.service.spec.ts` | Tạo Task gắn với Deal không tồn tại | Ném `NotFoundException`; không tạo Task | PASS |
+| UNIT-TASK-015 | `tasks.service.spec.ts` | BR13 - Tạo Task với thời hạn hoàn thành ở quá khứ | Ném `UnprocessableEntityException`; không tạo Task | PASS |
+| UNIT-TASK-016 | `tasks.service.spec.ts` | BR13 - Tạo Task với thời gian nhắc việc ở quá khứ | Ném `UnprocessableEntityException`; không tạo Task | PASS |
+| UNIT-TASK-017 | `tasks.service.spec.ts` | BR13 - Thời gian nhắc việc sau thời hạn hoàn thành | Ném `UnprocessableEntityException`; không tạo Task | PASS |
+| UNIT-TASK-018 | `tasks.service.spec.ts` | BR13 - Tiêu đề Task chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo tiêu đề không được để trống | PASS |
+| UNIT-TASK-019 | `tasks.service.spec.ts` | BR18 - Cập nhật nội dung Task hợp lệ | Trim dữ liệu mới, giữ người phụ trách hiện tại, cập nhật Task và ghi Activity Log | PASS |
+| UNIT-TASK-020 | `tasks.service.spec.ts` | BR14 - Cập nhật Task và thay đổi người phụ trách | Cập nhật người phụ trách mới và yêu cầu gửi Notification cho người được giao | PASS |
+| UNIT-TASK-021 | `tasks.service.spec.ts` | BR13 - Cập nhật Task không có thời hạn hoàn thành | Ném `UnprocessableEntityException`; không cập nhật Task | PASS |
+| UNIT-TASK-022 | `tasks.service.spec.ts` | Cập nhật Task không tồn tại hoặc không thuộc quyền | Ném `NotFoundException`; không gọi Repository cập nhật | PASS |
+| UNIT-TASK-023 | `tasks.service.spec.ts` | BR18 - Cập nhật trạng thái Task thành `Completed` | Cập nhật đúng trạng thái và gọi Repository có ghi Activity Log | PASS |
+| UNIT-TASK-024 | `tasks.service.spec.ts` | Hủy Task đã ở trạng thái `Cancelled` | Ném `ConflictException` với thông báo `Task này đã được hủy.` | PASS |
+| UNIT-TASK-025 | `tasks.service.spec.ts` | BR18 - Hủy Task hợp lệ | Chuyển trạng thái sang `Cancelled` và ghi Activity Log | PASS |
+| UNIT-TASK-026 | `tasks.service.spec.ts` | Người không phải Sales Manager thực hiện phân công Task | Ném `ForbiddenException`; không phân công Task | PASS |
+| UNIT-TASK-027 | `tasks.service.spec.ts` | BR14 - Sales Manager phân công Task cho Sales không tồn tại hoặc bị khóa | Ném `UnprocessableEntityException`; không cập nhật người phụ trách | PASS |
+| UNIT-TASK-028 | `tasks.service.spec.ts` | Phân công Task lại cho chính Sales đang phụ trách | Ném `ConflictException` với thông báo Task đã được phân công cho nhân viên này | PASS |
+| UNIT-TASK-029 | `tasks.service.spec.ts` | BR14, BR18 - Sales Manager phân công Task thành công | Cập nhật đúng Sales phụ trách, tạo Notification cho người nhận và ghi Activity Log | PASS |
+
+## Chức năng thông báo
+## Chức năng quản lý thông báo
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-NOTIFICATION-001 | `notifications.service.spec.ts` | Người dùng lấy danh sách thông báo của chính mình | Repository được gọi với đúng `userId`; trả đúng danh sách thông báo sau khi mapping dữ liệu | PASS |
+| UNIT-NOTIFICATION-002 | `notifications.service.spec.ts` | Người dùng chưa có thông báo | Trả về danh sách rỗng `[]` | PASS |
+| UNIT-NOTIFICATION-003 | `notifications.service.spec.ts` | Đếm số thông báo chưa đọc của người dùng hiện tại | Repository đếm theo đúng `userId`; trả đúng `unreadCount` | PASS |
+| UNIT-NOTIFICATION-004 | `notifications.service.spec.ts` | Đánh dấu thông báo không tồn tại hoặc không thuộc người dùng hiện tại là đã đọc | Ném `NotFoundException` với thông báo `Không tìm thấy thông báo.`; không cập nhật Notification | PASS |
+| UNIT-NOTIFICATION-005 | `notifications.service.spec.ts` | Đánh dấu một thông báo đã ở trạng thái đã đọc | Không cập nhật database lần nữa; trả thông báo `Thông báo đã được đọc.` | PASS |
+| UNIT-NOTIFICATION-006 | `notifications.service.spec.ts` | Đánh dấu một thông báo chưa đọc thành đã đọc | Kiểm tra Notification thuộc đúng người dùng, gọi Repository cập nhật `isRead = true` và trả thông báo thành công | PASS |
+| UNIT-NOTIFICATION-007 | `notifications.service.spec.ts` | Đánh dấu tất cả thông báo chưa đọc của người dùng thành đã đọc | Repository chỉ cập nhật Notification thuộc đúng `userId`; trả đúng số lượng Notification được cập nhật | PASS |
+| UNIT-NOTIFICATION-008 | `notifications.service.spec.ts` | Đánh dấu tất cả đã đọc khi người dùng không còn thông báo chưa đọc | Không phát sinh lỗi; trả `updatedCount = 0` | PASS |
+
 ## 3. Kết quả tổng hợp
 
 ```text
@@ -230,7 +277,24 @@ Snapshots:   0 total
 Time:        13.98 s
 ```
 
-**Kết luận:** 125/125 unit test PASS.
+```text
+Quản lý Tasks
+Test Suites: 1 passed, 1 total
+Tests:       29 passed, 29 total
+Snapshots:   0 total
+Time:        1.135 s
+```
+
+```text
+Thông báo
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        23.104 s
+```
+
+
+**Kết luận:** 162/162 unit test PASS.
 
 ---
 
@@ -242,4 +306,4 @@ Time:        13.98 s
 | 15/08/2026 | unit test backend cho chức năng convert Lead into Customer | 11 | PASS |
 | 21/08/2026 | unit test backend cho chức năng quản lý Users, quản lý Products | 39 | PASS |
 | 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer, Quản lý Deals và kéo thả giai đoạn pipeline | 53 | PASS |
-| 23/08/2026 | unit test backend cho chức năng tạo quotes | 12 | PASS |
+| 23/08/2026 | unit test backend cho chức năng tạo quotes, chức năng quản lý tasks, chức năng thông báo | 61 | PASS |
