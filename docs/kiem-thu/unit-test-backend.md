@@ -120,8 +120,6 @@ npm test -- leads.service.spec.ts
 | UNIT-CUSTOMER-014 | `customers.service.spec.ts` | BR18 - Truyền IP và User thực hiện xuống Repository khi cập nhật Customer | `updateWithActivityLog` nhận đúng actorUserId và ipAddress để phục vụ ghi Activity Log | PASS |
 
 ## Chức năng quản lý Deals
-## Unit Test - Quản lý Deal cho Sales và kéo thả giai đoạn pipeline
-
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
 |---|---|---|---|---|
 | UNIT-DEAL-001 | `deals.service.spec.ts` | Sales lấy danh sách Deal có tìm kiếm, lọc Pipeline Stage và phân trang | Repository nhận đúng `search`, `stageId`, `salesUserId`, `skip`, `limit`; chỉ lấy Deal thuộc Sales đang đăng nhập và tính đúng pagination | PASS |
@@ -151,6 +149,22 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-025 | `deals.service.spec.ts` | Chuyển Deal sang Pipeline Stage không tồn tại | Ném `UnprocessableEntityException` với thông báo `Giai đoạn Pipeline không hợp lệ.` | PASS |
 | UNIT-DEAL-026 | `deals.service.spec.ts` | BR08 - Chuyển Deal sang Stage chưa cấu hình xác suất | Ném `UnprocessableEntityException` thông báo Stage chưa được cấu hình xác suất; không cập nhật Deal | PASS |
 | UNIT-DEAL-027 | `deals.service.spec.ts` | BR08, BR09, BR18 - Chuyển Pipeline Stage thành công | Cập nhật đúng Stage, Probability và Expected Revenue; truyền Deal cũ, User và IP xuống Repository để ghi Activity Log; trả Deal sau cập nhật | PASS |
+
+## Chức năng tạo quotes
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-QUOTE-001 | `quotes.service.spec.ts` | Lấy danh sách Deal và Product hợp lệ để tạo báo giá | Chỉ trả Deal ở Proposal/Negotiation và Product đang hoạt động, giá lớn hơn 0 | PASS |
+| UNIT-QUOTE-002 | `quotes.service.spec.ts` | Tạo báo giá với Deal hợp lệ và 2 Product hợp lệ | Tạo Quote thành công, trạng thái Draft, gán đúng Sales và tính đúng tổng tiền | PASS |
+| UNIT-QUOTE-003 | `quotes.service.spec.ts` | Thêm cùng một Product nhiều lần trong Quote | Từ chối tạo Quote và thông báo mỗi sản phẩm chỉ được thêm một lần | PASS |
+| UNIT-QUOTE-004 | `quotes.service.spec.ts` | Deal không tồn tại hoặc không thuộc Sales hiện tại | Trả lỗi 422 và không tạo Quote | PASS |
+| UNIT-QUOTE-005 | `quotes.service.spec.ts` | Deal không ở Proposal hoặc Negotiation | Trả lỗi 422 và không cho tạo báo giá | PASS |
+| UNIT-QUOTE-006 | `quotes.service.spec.ts` | Product không tồn tại | Trả lỗi 422 và không tạo Quote | PASS |
+| UNIT-QUOTE-007 | `quotes.service.spec.ts` | Product có `status = false` | Trả lỗi 422 và không cho Product vào Quote | PASS |
+| UNIT-QUOTE-008 | `quotes.service.spec.ts` | Product có `price = null` | Trả lỗi 422 do giá Product không hợp lệ | PASS |
+| UNIT-QUOTE-009 | `quotes.service.spec.ts` | Product có `price = 0` | Trả lỗi 422 do giá Product không hợp lệ | PASS |
+| UNIT-QUOTE-010 | `quotes.service.spec.ts` | Product có `price < 0` | Trả lỗi 422 do giá Product không hợp lệ | PASS |
+| UNIT-QUOTE-011 | `quotes.service.spec.ts` | Product có `quantity = 0` | Trả lỗi 422, số lượng sản phẩm phải lớn hơn 0 | PASS |
+| UNIT-QUOTE-012 | `quotes.service.spec.ts` | Product có `quantity = -1` | Trả lỗi 422, số lượng sản phẩm phải lớn hơn 0 | PASS |
 
 ## 3. Kết quả tổng hợp
 
@@ -208,9 +222,15 @@ Snapshots:   0 total
 Time:        21.009 s
 ```
 
+```text
+Tạo quotes
+Test Suites: 1 passed, 1 total
+Tests:       12 passed, 12 total
+Snapshots:   0 total
+Time:        13.98 s
+```
 
-
-**Kết luận:** 113/113 unit test PASS.
+**Kết luận:** 125/125 unit test PASS.
 
 ---
 
@@ -222,3 +242,4 @@ Time:        21.009 s
 | 15/08/2026 | unit test backend cho chức năng convert Lead into Customer | 11 | PASS |
 | 21/08/2026 | unit test backend cho chức năng quản lý Users, quản lý Products | 39 | PASS |
 | 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer, Quản lý Deals và kéo thả giai đoạn pipeline | 53 | PASS |
+| 23/08/2026 | unit test backend cho chức năng tạo quotes | 12 | PASS |
