@@ -178,24 +178,40 @@ export async function seedPipelineStages(
 ): Promise<Record<StageKey, number>> {
   const definitions = [
     {
-      key: 'qualification',
-      stagename: 'Qualification',
+      key: 'lead',
+      stagename: 'Lead',
       stageorder: 1,
+      probability: 10,
+    },
+    {
+      key: 'qualified',
+      stagename: 'Qualified',
+      stageorder: 2,
+      probability: 30,
     },
     {
       key: 'proposal',
       stagename: 'Proposal',
-      stageorder: 2,
+      stageorder: 3,
+      probability: 50,
     },
     {
       key: 'negotiation',
       stagename: 'Negotiation',
-      stageorder: 3,
+      stageorder: 4,
+      probability: 70,
     },
     {
       key: 'won',
       stagename: 'Won',
-      stageorder: 4,
+      stageorder: 5,
+      probability: 100,
+    },
+    {
+      key: 'lost',
+      stagename: 'Lost',
+      stageorder: 6,
+      probability: 0,
     },
   ] as const;
 
@@ -215,12 +231,14 @@ export async function seedPipelineStages(
           },
           data: {
             stageorder: item.stageorder,
+            probability: item.probability,
           },
         })
       : await prisma.pipelinestages.create({
           data: {
             stagename: item.stagename,
             stageorder: item.stageorder,
+            probability: item.probability,
           },
         });
 

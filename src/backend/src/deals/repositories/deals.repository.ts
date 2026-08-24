@@ -17,6 +17,7 @@ export interface CreateDealData {
   probability: number;
   expectedrevenue: Prisma.Decimal;
   expectedclosedate: Date | null;
+  status: string;
 }
 
 export interface UpdateDealData {
@@ -33,6 +34,7 @@ export interface ChangeDealStageData {
   stageName: string;
   probability: number;
   expectedRevenue: Prisma.Decimal;
+  status: string;
   currentDeal: DealWithRelations;
   userId: number;
   ipAddress?: string;
@@ -133,6 +135,12 @@ export class DealsRepository {
   async findStageById(stageId: number) {
     return this.prisma.pipelinestages.findUnique({
       where: { stageid: stageId },
+    });
+  }
+
+  async findInitialStage() {
+    return this.prisma.pipelinestages.findFirst({
+      orderBy: [{ stageorder: 'asc' }, { stageid: 'asc' }],
     });
   }
 
@@ -282,6 +290,7 @@ export class DealsRepository {
           stageid: input.stageId,
           probability: input.probability,
           expectedrevenue: input.expectedRevenue,
+          status: input.status,
         },
         select: dealSelect,
       });
@@ -296,25 +305,21 @@ export class DealsRepository {
 
           oldvalue: {
             stageId: input.currentDeal.stageid,
-
             stageName: input.currentDeal.pipelinestages.stagename,
-
             probability: input.currentDeal.probability,
-
             expectedRevenue:
               input.currentDeal.expectedrevenue === null
                 ? null
                 : Number(input.currentDeal.expectedrevenue),
+            status: input.currentDeal.status,
           },
 
           newvalue: {
             stageId: input.stageId,
-
             stageName: input.stageName,
-
             probability: input.probability,
-
             expectedRevenue: Number(input.expectedRevenue),
+            status: input.status,
           },
         },
       });

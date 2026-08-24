@@ -8,7 +8,7 @@ export async function seedTasks(
 ): Promise<void> {
   const definitions = [
     {
-      dealid: dealIds.qualification,
+      dealid: dealIds.qualified,
       title: 'Demo - Gọi xác nhận nhu cầu',
       priority: 'High',
       status: 'Pending',

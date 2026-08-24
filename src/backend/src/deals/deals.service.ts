@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
-import { getPipelineStageProbability } from './constants/pipeline-stage-probability.constant';
+import { getDealStatusByStage } from './constants/deal-status.constant';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { DealQueryDto } from './dto/deal-query.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
@@ -63,7 +63,7 @@ export class DealsService {
         stageId: stage.stageid,
         stageName: stage.stagename,
         stageOrder: stage.stageorder,
-        probability: getPipelineStageProbability(stage.stagename),
+        probability: stage.probability,
       })),
     };
   }
@@ -86,10 +86,19 @@ export class DealsService {
   ) {
     // BR-06: Deal phải có Customer, người phụ trách và Pipeline.
     await this.ensureCustomerAccessible(dto.customerId, user.userId);
-    const stage = await this.requireStage(dto.stageId);
+    const stage = await this.requireInitialStage();
+    if (dto.stageId !== stage.stageid) {
+      throw new UnprocessableEntityException(
+        'Deal mới phải bắt đầu ở giai đoạn đầu tiên của Pipeline.',
+      );
+    }
 
     // BR-08: Xác suất phải tương ứng với giai đoạn Pipeline.
-    const probability = this.requireStageProbability(stage.stagename);
+    const probability = this.requireStageProbability(
+      stage.probability,
+      stage.stagename,
+    );
+    const status = getDealStatusByStage(stage.stagename);
 
     // BR-09: Expected Revenue = Deal Value × Probability.
     const expectedRevenue = this.calculateExpectedRevenue(
@@ -102,6 +111,7 @@ export class DealsService {
       user.userId,
       probability,
       expectedRevenue,
+      status,
     );
 
     // BR-18: thao tác tạo Deal phải được ghi Activity Log.
@@ -221,12 +231,24 @@ export class DealsService {
     return stage;
   }
 
-  private requireStageProbability(stageName: string): number {
-    const probability = getPipelineStageProbability(stageName);
-
-    if (probability === null) {
+  private async requireInitialStage() {
+    const stage = await this.dealsRepository.findInitialStage();
+    if (!stage) {
       throw new UnprocessableEntityException(
-        `Giai đoạn "${stageName}" chưa được cấu hình xác suất.`,
+        'Pipeline chưa được cấu hình giai đoạn khởi đầu.',
+      );
+    }
+
+    return stage;
+  }
+
+  private requireStageProbability(
+    probability: number,
+    stageName: string,
+  ): number {
+    if (probability < 0 || probability > 100) {
+      throw new UnprocessableEntityException(
+        `Giai đoạn "${stageName}" có xác suất không hợp lệ.`,
       );
     }
 
@@ -245,6 +267,7 @@ export class DealsService {
     salesUserId: number,
     probability: number,
     expectedRevenue: Prisma.Decimal,
+    status: string,
   ): CreateDealData {
     return {
       customerid: dto.customerId,
@@ -255,6 +278,7 @@ export class DealsService {
       probability,
       expectedrevenue: expectedRevenue,
       expectedclosedate: this.toDate(dto.expectedCloseDate),
+      status,
     };
   }
 
@@ -366,7 +390,11 @@ export class DealsService {
     }
 
     // BR-08: cập nhật lại xác suất
-    const probability = this.requireStageProbability(targetStage.stagename);
+    const probability = this.requireStageProbability(
+      targetStage.probability,
+      targetStage.stagename,
+    );
+    const status = getDealStatusByStage(targetStage.stagename);
 
     // BR-09: tính doanh thu kỳ vọng
     const expectedRevenue = this.calculateExpectedRevenue(
@@ -381,6 +409,7 @@ export class DealsService {
       stageName: targetStage.stagename,
       probability,
       expectedRevenue,
+      status,
       currentDeal,
       userId: user.userId,
       ipAddress,

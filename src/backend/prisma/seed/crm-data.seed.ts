@@ -124,9 +124,9 @@ export async function seedDeals(
 ): Promise<Record<DealKey, number>> {
   const definitions = [
     {
-      key: 'qualification',
+      key: 'qualified',
       dealname: 'Demo - Tư vấn CRM',
-      stageid: stageIds.qualification,
+      stageid: stageIds.qualified,
       dealvalue: 15_000_000,
       probability: 30,
       expectedrevenue: 4_500_000,
@@ -137,8 +137,8 @@ export async function seedDeals(
       dealname: 'Demo - Triển khai CRM Starter',
       stageid: stageIds.proposal,
       dealvalue: 24_000_000,
-      probability: 60,
-      expectedrevenue: 14_400_000,
+      probability: 50,
+      expectedrevenue: 12_000_000,
       status: 'Open',
     },
     {

@@ -6,7 +6,6 @@ import {
 import { Prisma } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../common/enums/role.enum';
-import { getPipelineStageProbability } from './constants/pipeline-stage-probability.constant';
 import type { CreateDealDto } from './dto/create-deal.dto';
 import type { DealQueryDto } from './dto/deal-query.dto';
 import {
@@ -14,15 +13,6 @@ import {
   type DealWithRelations,
 } from './repositories/deals.repository';
 import { DealsService } from './deals.service';
-
-jest.mock('./constants/pipeline-stage-probability.constant', () => ({
-  getPipelineStageProbability: jest.fn(),
-}));
-
-const getPipelineStageProbabilityMock =
-  getPipelineStageProbability as jest.MockedFunction<
-    typeof getPipelineStageProbability
-  >;
 
 type DealsRepositoryMock = {
   findMany: jest.MockedFunction<DealsRepository['findMany']>;
@@ -35,6 +25,7 @@ type DealsRepositoryMock = {
   findPipelineStages: jest.MockedFunction<
     DealsRepository['findPipelineStages']
   >;
+  findInitialStage: jest.MockedFunction<DealsRepository['findInitialStage']>;
   createWithLog: jest.MockedFunction<DealsRepository['createWithLog']>;
   updateWithLog: jest.MockedFunction<DealsRepository['updateWithLog']>;
   getLinkedRecordCount: jest.MockedFunction<
@@ -56,16 +47,25 @@ describe('DealsService - Sales quản lý Deal', () => {
     role: Role.SALES,
   } as AuthenticatedUser;
 
+  const leadStage = {
+    stageid: 1,
+    stagename: 'Lead',
+    stageorder: 1,
+    probability: 10,
+  };
+
   const proposalStage = {
     stageid: 2,
     stagename: 'Proposal',
     stageorder: 3,
+    probability: 50,
   };
 
   const negotiationStage = {
     stageid: 3,
     stagename: 'Negotiation',
     stageorder: 4,
+    probability: 70,
   };
 
   const deal = {
@@ -109,6 +109,9 @@ describe('DealsService - Sales quản lý Deal', () => {
       findStageById: jest.fn() as jest.MockedFunction<
         DealsRepository['findStageById']
       >,
+      findInitialStage: jest.fn() as jest.MockedFunction<
+        DealsRepository['findInitialStage']
+      >,
       findPipelineStages: jest.fn() as jest.MockedFunction<
         DealsRepository['findPipelineStages']
       >,
@@ -132,18 +135,6 @@ describe('DealsService - Sales quản lý Deal', () => {
     dealsService = new DealsService(
       dealsRepository as unknown as DealsRepository,
     );
-
-    getPipelineStageProbabilityMock.mockImplementation((stageName) => {
-      const probabilities: Record<string, number | null> = {
-        Qualified: 25,
-        Proposal: 50,
-        Negotiation: 75,
-        Won: 100,
-        Lost: 0,
-        Unconfigured: null,
-      };
-      return probabilities[stageName] ?? null;
-    });
   });
 
   describe('findAll', () => {
@@ -211,7 +202,6 @@ describe('DealsService - Sales quản lý Deal', () => {
         proposalStage,
         negotiationStage,
       ]);
-
       const result = await dealsService.getMeta();
 
       expect(result).toEqual({
@@ -226,7 +216,7 @@ describe('DealsService - Sales quản lý Deal', () => {
             stageId: 3,
             stageName: 'Negotiation',
             stageOrder: 4,
-            probability: 75,
+            probability: 70,
           },
         ],
       });
@@ -257,11 +247,21 @@ describe('DealsService - Sales quản lý Deal', () => {
       dealsRepository.findCustomerAccessible.mockResolvedValue({
         customerid: 3,
       });
-      dealsRepository.findStageById.mockResolvedValue(proposalStage);
-      dealsRepository.createWithLog.mockResolvedValue(deal);
+      dealsRepository.findInitialStage.mockResolvedValue(leadStage);
+      dealsRepository.createWithLog.mockResolvedValue({
+        ...deal,
+        stageid: 1,
+        probability: 10,
+        expectedrevenue: new Prisma.Decimal(1_000_000),
+        pipelinestages: {
+          stageid: 1,
+          stagename: 'Lead',
+          stageorder: 1,
+        },
+      });
       const dto = {
         customerId: 3,
-        stageId: 2,
+        stageId: 1,
         dealName: '  Triển khai CRM  ',
         dealValue: 10_000_000,
         expectedCloseDate: '2026-09-30',
@@ -269,16 +269,16 @@ describe('DealsService - Sales quản lý Deal', () => {
 
       const result = await dealsService.create(dto, salesUser, '127.0.0.1');
       expect(dealsRepository.findCustomerAccessible).toHaveBeenCalledWith(3, 5);
-      expect(dealsRepository.findStageById).toHaveBeenCalledWith(2);
+      expect(dealsRepository.findInitialStage).toHaveBeenCalled();
       const [data, actorUserId, ipAddress] =
         dealsRepository.createWithLog.mock.calls[0];
       expect(data.customerid).toBe(3);
       expect(data.assigneduserid).toBe(5);
-      expect(data.stageid).toBe(2);
+      expect(data.stageid).toBe(1);
       expect(data.dealname).toBe('Triển khai CRM');
       expect(data.dealvalue.toNumber()).toBe(10_000_000);
-      expect(data.probability).toBe(50);
-      expect(data.expectedrevenue.toNumber()).toBe(5_000_000);
+      expect(data.probability).toBe(10);
+      expect(data.expectedrevenue.toNumber()).toBe(1_000_000);
       expect(data.expectedclosedate).toEqual(new Date('2026-09-30'));
       expect(actorUserId).toBe(5);
       expect(ipAddress).toBe('127.0.0.1');
@@ -302,38 +302,41 @@ describe('DealsService - Sales quản lý Deal', () => {
         'Customer không tồn tại hoặc không thuộc quyền quản lý của Sales.',
       );
 
-      expect(dealsRepository.findStageById).not.toHaveBeenCalled();
+      expect(dealsRepository.findInitialStage).not.toHaveBeenCalled();
       expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
     });
 
-    it('BR-06 - từ chối tạo Deal khi Pipeline Stage không tồn tại', async () => {
+    it('từ chối tạo Deal khi không bắt đầu ở giai đoạn đầu tiên của Pipeline', async () => {
       dealsRepository.findCustomerAccessible.mockResolvedValue({
         customerid: 3,
       });
-      dealsRepository.findStageById.mockResolvedValue(null);
+      dealsRepository.findInitialStage.mockResolvedValue(leadStage);
       await expect(
         dealsService.create(
           {
             customerId: 3,
-            stageId: 999,
+            stageId: 2,
             dealName: 'Deal mới',
             dealValue: 1_000_000,
           },
           salesUser,
           null,
         ),
-      ).rejects.toThrow('Giai đoạn Pipeline không tồn tại.');
+      ).rejects.toThrow(
+        'Deal mới phải bắt đầu ở giai đoạn đầu tiên của Pipeline.',
+      );
       expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
     });
 
-    it('BR-08 - từ chối tạo Deal khi Stage chưa cấu hình xác suất', async () => {
+    it('BR-08 - từ chối tạo Deal khi Stage có xác suất không hợp lệ', async () => {
       dealsRepository.findCustomerAccessible.mockResolvedValue({
         customerid: 3,
       });
-      dealsRepository.findStageById.mockResolvedValue({
+      dealsRepository.findInitialStage.mockResolvedValue({
         stageid: 6,
         stagename: 'Unconfigured',
-        stageorder: 6,
+        stageorder: 1,
+        probability: 101,
       });
 
       await expect(
@@ -347,9 +350,7 @@ describe('DealsService - Sales quản lý Deal', () => {
           salesUser,
           null,
         ),
-      ).rejects.toThrow(
-        'Giai đoạn "Unconfigured" chưa được cấu hình xác suất.',
-      );
+      ).rejects.toThrow('Giai đoạn "Unconfigured" có xác suất không hợp lệ.');
       expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
     });
   });
@@ -574,18 +575,17 @@ describe('DealsService - Sales quản lý Deal', () => {
       expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
     });
 
-    it('BR-08 - từ chối khi Stage đích chưa cấu hình xác suất', async () => {
-      dealsRepository.findOwnedById.mockResolvedValue(deal);
+    it('BR-08 - từ chối khi Stage đích có xác suất không hợp lệ', async () => {
       dealsRepository.findStageById.mockResolvedValue({
         stageid: 6,
         stagename: 'Unconfigured',
         stageorder: 6,
+        probability: 101,
       });
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
       await expect(
         dealsService.changeStage(7, { stageId: 6 }, salesUser),
-      ).rejects.toThrow(
-        'Giai đoạn "Unconfigured" chưa được cấu hình xác suất.',
-      );
+      ).rejects.toThrow('Giai đoạn "Unconfigured" có xác suất không hợp lệ.');
       expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
     });
 
@@ -595,8 +595,8 @@ describe('DealsService - Sales quản lý Deal', () => {
       const updatedDeal = {
         ...deal,
         stageid: 3,
-        probability: 75,
-        expectedrevenue: new Prisma.Decimal(7_500_000),
+        probability: 70,
+        expectedrevenue: new Prisma.Decimal(7_000_000),
         pipelinestages: {
           stageid: 3,
           stagename: 'Negotiation',
@@ -615,15 +615,15 @@ describe('DealsService - Sales quản lý Deal', () => {
       expect(input.dealId).toBe(7);
       expect(input.stageId).toBe(3);
       expect(input.stageName).toBe('Negotiation');
-      expect(input.probability).toBe(75);
-      expect(input.expectedRevenue.toNumber()).toBe(7_500_000);
+      expect(input.probability).toBe(70);
+      expect(input.expectedRevenue.toNumber()).toBe(7_000_000);
       expect(input.currentDeal).toBe(deal);
       expect(input.userId).toBe(5);
       expect(input.ipAddress).toBe('192.168.1.10');
       expect(result.message).toBe('Cập nhật giai đoạn Deal thành công.');
       expect(result.data.stage.stageName).toBe('Negotiation');
-      expect(result.data.probability).toBe(75);
-      expect(result.data.expectedRevenue).toBe(7_500_000);
+      expect(result.data.probability).toBe(70);
+      expect(result.data.expectedRevenue).toBe(7_000_000);
     });
   });
 });
