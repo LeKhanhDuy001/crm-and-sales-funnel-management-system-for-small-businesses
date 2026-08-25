@@ -10,6 +10,14 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { LeadsModule } from './leads/leads.module';
+import { ProductsModule } from './products/products.module';
+import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { CustomersModule } from './customers/customers.module';
+import { DealsModule } from './deals/deals.module';
+import { QuotesModule } from './quotes/quotes.module';
+import { TasksModule } from './tasks/tasks.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -53,12 +61,19 @@ import { LeadsModule } from './leads/leads.module';
       ],
       errorMessage: 'Too Many Requests',
     }),
-
+    ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,
     DashboardModule,
     LeadsModule,
+    ProductsModule,
+    ActivityLogsModule,
+    CustomersModule,
+    DealsModule,
+    QuotesModule,
+    TasksModule,
+    NotificationsModule,
   ],
   providers: [
     {

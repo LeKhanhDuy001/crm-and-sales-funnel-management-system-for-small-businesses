@@ -1,0 +1,121 @@
+.layout {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+
+  width: 240px;
+  padding: 24px 16px;
+
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 0 8px 24px;
+  margin-bottom: 20px;
+
+  border-bottom: 1px solid #334155;
+}
+
+.brandIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.brandName {
+  margin: 0;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.brandDescription {
+  margin: 4px 0 0;
+
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navigationLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 11px 12px;
+
+  border-radius: 8px;
+
+  color: #cbd5e1;
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.navigationLink:hover {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.navigationLinkActive {
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.navigationIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+
+  font-size: 18px;
+}
+
+.content {
+  min-height: 100vh;
+  margin-left: 240px;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: static;
+
+    width: 100%;
+    min-height: auto;
+  }
+
+  .content {
+    margin-left: 0;
+  }
+}

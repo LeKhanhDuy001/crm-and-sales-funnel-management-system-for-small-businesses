@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './sales-sidebar.module.css';
+import NotificationMenuLink from '../notifications/notification-menu-link';
 
 export default function SalesSidebar() {
     const pathname = usePathname();
@@ -26,6 +27,33 @@ export default function SalesSidebar() {
                     <span>🎯</span>
                     Quản lý Lead
                 </Link>
+                <Link href="/sales/customers"
+                    className={pathname.startsWith('/sales/customers') ? styles.activeLink : styles.link}
+                >
+                    <span>👥</span>
+                    Quản lý Customer
+                </Link>
+                <Link href="/sales/deals"
+                    className={pathname.startsWith('/sales/deals') ? styles.activeLink : styles.link}
+                >
+                    <span>💼</span>
+                    Quản lý Deal
+                </Link>
+                <Link href="/sales/quotes"
+                    className={pathname.startsWith('/sales/quotes') ? styles.activeLink : styles.link}
+                >
+                    <span>🧾</span>
+                    Quản lý báo giá
+                </Link>
+                <Link href="/sales/tasks"
+                    className={pathname.startsWith('/sales/tasks') ? styles.activeLink : styles.link}
+                >
+                    <span>✅</span>
+                    Công việc của tôi
+                </Link>
+                <NotificationMenuLink linkClassName={styles.link}
+                    activeClassName={styles.activeLink}
+                />
             </nav>
         </aside>
     );
