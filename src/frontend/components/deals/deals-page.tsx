@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { clearAuth, getAccessToken, } from '../../modules/auth/auth.storage';
 import { getCustomers } from '../../modules/customers/customers.service';
 import type { Customer } from '../../modules/customers/customers.types';
-import { deleteDeal, getDealMeta, getDeals, } from '../../modules/deals/deals.service';
-import type { Deal, DealPagination, PipelineStageOption, } from '../../modules/deals/deals.types';
+import { assignDeal, deleteDeal, getDealMeta, getDeals, } from '../../modules/deals/deals.service';
+import type { Deal, DealPagination, PipelineStageOption, DealSalesUserOption, } from '../../modules/deals/deals.types';
 import { ApiError } from '../../services/api';
 import CreateDealModal from './create-deal-modal';
+import AssignDealModal from './assign-deal-modal';
 import DealsTable from './deals-table';
 import styles from './deals-page.module.css';
 import EditDealModal from './edit-deal-modal';
@@ -18,13 +19,18 @@ import PipelineBoard from './pipeline-board';
 const DEFAULT_PAGINATION: DealPagination = { page: 1, limit: 20, total: 0, totalPages: 0, };
 type DealViewMode = 'list' | 'pipeline';
 
-export default function DealsPage() {
+interface DealsPageProps {
+    mode?: 'sales' | 'manager';
+}
+
+export default function DealsPage({ mode = 'sales', }: DealsPageProps) {
     const router = useRouter();
+    const isManager = mode === 'manager';
 
     const [deals, setDeals] = useState<Deal[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [stages, setStages] = useState<PipelineStageOption[]>([]);
-
+    const [salesUsers, setSalesUsers] = useState<DealSalesUserOption[]>([]);
     const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
 
     const [searchInput, setSearchInput] = useState('');
@@ -40,6 +46,12 @@ export default function DealsPage() {
     const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
     const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+
+    const [assigningDeal, setAssigningDeal] = useState<Deal | null>(null);
+
+    const [isAssigning, setIsAssigning] = useState(false);
+
+    const [assignError, setAssignError] = useState('');
 
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -74,6 +86,7 @@ export default function DealsPage() {
                 setDeals(dealsResponse.data,);
                 setPagination(dealsResponse.pagination,);
                 setStages(metaResponse.stages,);
+                setSalesUsers(metaResponse.salesUsers ?? []);
                 setCustomers(customersResponse.data,);
             } catch (caughtError) {
                 if (caughtError instanceof ApiError) {
@@ -144,6 +157,58 @@ export default function DealsPage() {
         }
     }
 
+    async function handleAssign(assignedUserId: number,): Promise<void> {
+        if (!assigningDeal) {
+            return;
+        }
+
+        const token = getAccessToken();
+
+        if (!token) {
+            router.replace('/login');
+            return;
+        }
+
+        try {
+            setIsAssigning(true);
+            setAssignError('');
+
+            const response = await assignDeal(
+                token,
+                assigningDeal.dealId,
+                {
+                    assignedUserId,
+                },
+            );
+
+            window.alert(response.message);
+
+            setAssigningDeal(null);
+
+            setRefreshKey((value) => value + 1,);
+        } catch (caughtError) {
+            if (caughtError instanceof ApiError) {
+                if (caughtError.statusCode === 401) {
+                    clearAuth();
+                    router.replace('/login');
+                    return;
+                }
+
+                if (caughtError.statusCode === 403) {
+                    router.replace('/unauthorized');
+                    return;
+                }
+
+                setAssignError(caughtError.message);
+                return;
+            }
+
+            setAssignError('Không thể phân công Deal.',);
+        } finally {
+            setIsAssigning(false);
+        }
+    }
+
     function handleDealChanged(updatedDeal: Deal,): void {
         setDeals((currentDeals) =>
             currentDeals.map((deal) =>
@@ -168,8 +233,9 @@ export default function DealsPage() {
                 <div>
                     <h1>Quản lý Deal</h1>
                     <p>
-                        Quản lý các cơ hội bán hàng
-                        được phân cho bạn.
+                        {isManager
+                            ? 'Quản lý Deal và phân công cho nhân viên Sales.'
+                            : 'Quản lý các cơ hội bán hàng được phân cho bạn.'}
                     </p>
                 </div>
 
@@ -181,24 +247,26 @@ export default function DealsPage() {
             </div>
 
             <section className={styles.panel}>
-                <div className={styles.viewTabs}>
-                    <button type="button"
-                        className={viewMode === 'list' ? styles.viewTabActive : styles.viewTab}
-                        onClick={() => { setViewMode('list'); setPage(1); }}
-                    >
-                        Danh sách
-                    </button>
+                {!isManager && (
+                    <div className={styles.viewTabs}>
+                        <button type="button"
+                            className={viewMode === 'list' ? styles.viewTabActive : styles.viewTab}
+                            onClick={() => { setViewMode('list'); setPage(1); }}
+                        >
+                            Danh sách
+                        </button>
 
-                    <button type="button"
-                        className={viewMode === 'pipeline' ? styles.viewTabActive : styles.viewTab}
-                        onClick={() => {
-                            setViewMode('pipeline',);
-                            setPage(1);
-                        }}
-                    >
-                        Pipeline
-                    </button>
-                </div>
+                        <button type="button"
+                            className={viewMode === 'pipeline' ? styles.viewTabActive : styles.viewTab}
+                            onClick={() => {
+                                setViewMode('pipeline',);
+                                setPage(1);
+                            }}
+                        >
+                            Pipeline
+                        </button>
+                    </div>
+                )}
                 <div className={styles.filters}>
                     <form className={styles.searchForm} onSubmit={handleSearch}>
                         <input type="search"
@@ -255,6 +323,12 @@ export default function DealsPage() {
                                 onView={setSelectedDeal}
                                 onEdit={setEditingDeal}
                                 onDelete={(deal) => { void handleDelete(deal); }}
+                                showAssignedUser={isManager}
+                                onAssign={
+                                    isManager
+                                        ? (deal) => { setAssignError(''); setAssigningDeal(deal); }
+                                        : undefined
+                                }
                             />
 
                             <div className={styles.pagination}>
@@ -280,7 +354,7 @@ export default function DealsPage() {
                         </>
                     )}
 
-                {!isLoading && !error &&
+                {!isManager && !isLoading && !error &&
                     viewMode === 'pipeline' &&
                     token && (
                         <PipelineBoard
@@ -295,6 +369,7 @@ export default function DealsPage() {
             {isCreateOpen && token && (
                 <CreateDealModal token={token}
                     customers={customers} stages={stages}
+                    salesUsers={salesUsers} requireAssignee={isManager}
                     onClose={() => setIsCreateOpen(false)}
                     onSuccess={() => { setIsCreateOpen(false); setRefreshKey((value) => value + 1,); }}
                 />
@@ -325,6 +400,10 @@ export default function DealsPage() {
                             <span>Customer</span>
                             <strong>
                                 {selectedDeal.customer.fullName}
+                            </strong>
+                            <span>Người phụ trách</span>
+                            <strong>
+                                {selectedDeal.assignedUser.fullName}
                             </strong>
 
                             <span>Giai đoạn</span>
@@ -359,6 +438,23 @@ export default function DealsPage() {
                     customers={customers}
                     onClose={() => setEditingDeal(null)}
                     onSuccess={() => { setEditingDeal(null); setRefreshKey((value) => value + 1,); }}
+                />
+            )}
+            {isManager && assigningDeal && (
+                <AssignDealModal
+                    deal={assigningDeal}
+                    salesUsers={salesUsers}
+                    isSubmitting={isAssigning}
+                    submitError={assignError}
+                    onClose={() => {
+                        if (isAssigning) {
+                            return;
+                        }
+
+                        setAssignError('');
+                        setAssigningDeal(null);
+                    }}
+                    onSubmit={(assignedUserId: number) => {void handleAssign(assignedUserId);}}
                 />
             )}
         </main>

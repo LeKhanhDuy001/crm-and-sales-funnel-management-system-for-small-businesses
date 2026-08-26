@@ -7,6 +7,8 @@ interface DealsTableProps {
   onView: (deal: Deal) => void;
   onEdit: (deal: Deal) => void;
   onDelete: (deal: Deal) => void;
+  onAssign?: (deal: Deal) => void;
+  showAssignedUser?: boolean;
 }
 
 function formatMoney(value: number | null,): string {
@@ -24,7 +26,7 @@ function formatMoney(value: number | null,): string {
   ).format(value);
 }
 
-export default function DealsTable({ deals, onView, onEdit, onDelete, }: DealsTableProps) {
+export default function DealsTable({ deals, onView, onEdit, onDelete, onAssign, showAssignedUser = false, }: DealsTableProps) {
   return (
     <div className={styles.tableWrapper}>
       <table className={styles.table}>
@@ -33,6 +35,9 @@ export default function DealsTable({ deals, onView, onEdit, onDelete, }: DealsTa
             <th>Mã</th>
             <th>Tên Deal</th>
             <th>Customer</th>
+            {showAssignedUser && (
+              <th>Người phụ trách</th>
+            )}
             <th>Giá trị</th>
             <th>Pipeline</th>
             <th>Xác suất</th>
@@ -50,6 +55,12 @@ export default function DealsTable({ deals, onView, onEdit, onDelete, }: DealsTa
               <td>
                 {deal.customer.fullName}
               </td>
+
+              {showAssignedUser && (
+                <td>
+                  {deal.assignedUser.fullName}
+                </td>
+              )}
 
               <td>
                 {formatMoney(
@@ -80,6 +91,12 @@ export default function DealsTable({ deals, onView, onEdit, onDelete, }: DealsTa
                   <button type="button" onClick={() => onEdit(deal)}>
                     Sửa
                   </button>
+
+                  {onAssign && (
+                    <button type="button" onClick={() => onAssign(deal)}>
+                      Phân công
+                    </button>
+                  )}
 
                   <button type="button" className={styles.deleteButton}
                     onClick={() => onDelete(deal)}

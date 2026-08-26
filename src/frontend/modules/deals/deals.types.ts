@@ -58,6 +58,7 @@ export interface PipelineStageOption {
 
 export interface DealMetaResponse {
   stages: PipelineStageOption[];
+  salesUsers: DealSalesUserOption[];
 }
 
 export interface CreateDealInput {
@@ -66,6 +67,7 @@ export interface CreateDealInput {
   dealName: string;
   dealValue: number;
   expectedCloseDate?: string;
+  assignedUserId?: number;
 }
 
 export interface UpdateDealInput {
@@ -75,6 +77,10 @@ export interface UpdateDealInput {
   expectedCloseDate?: string;
 }
 
+export interface AssignDealInput {
+  assignedUserId: number;
+}
+
 export interface DealMutationResponse {
   message: string;
   data: Deal;
@@ -82,4 +88,10 @@ export interface DealMutationResponse {
 
 export interface UpdateDealStageInput {
   stageId: number;
+}
+
+export interface DealSalesUserOption {
+  userId: number;
+  fullName: string;
+  email: string;
 }

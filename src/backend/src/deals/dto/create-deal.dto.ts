@@ -34,6 +34,12 @@ export class CreateDealDto {
   dealValue!: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  assignedUserId?: number;
+
+  @IsOptional()
   @IsDateString()
   expectedCloseDate?: string;
 }

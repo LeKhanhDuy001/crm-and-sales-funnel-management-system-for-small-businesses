@@ -18,6 +18,12 @@ type DealsRepositoryMock = {
   findMany: jest.MockedFunction<DealsRepository['findMany']>;
   count: jest.MockedFunction<DealsRepository['count']>;
   findOwnedById: jest.MockedFunction<DealsRepository['findOwnedById']>;
+  findById: jest.MockedFunction<DealsRepository['findById']>;
+  findCustomerById: jest.MockedFunction<DealsRepository['findCustomerById']>;
+  findUserById: jest.MockedFunction<DealsRepository['findUserById']>;
+  findActiveUsersByRole: jest.MockedFunction<
+    DealsRepository['findActiveUsersByRole']
+  >;
   findCustomerAccessible: jest.MockedFunction<
     DealsRepository['findCustomerAccessible']
   >;
@@ -27,6 +33,7 @@ type DealsRepositoryMock = {
   >;
   findInitialStage: jest.MockedFunction<DealsRepository['findInitialStage']>;
   createWithLog: jest.MockedFunction<DealsRepository['createWithLog']>;
+  assignWithLog: jest.MockedFunction<DealsRepository['assignWithLog']>;
   updateWithLog: jest.MockedFunction<DealsRepository['updateWithLog']>;
   getLinkedRecordCount: jest.MockedFunction<
     DealsRepository['getLinkedRecordCount']
@@ -37,7 +44,7 @@ type DealsRepositoryMock = {
   >;
 };
 
-describe('DealsService - Sales quản lý Deal', () => {
+describe('DealsService - quản lý Deal', () => {
   let dealsService: DealsService;
   let dealsRepository: DealsRepositoryMock;
   const salesUser = {
@@ -45,6 +52,13 @@ describe('DealsService - Sales quản lý Deal', () => {
     fullName: 'Nguyễn Văn Sales',
     email: 'sales@crm.com',
     role: Role.SALES,
+  } as AuthenticatedUser;
+
+  const salesManagerUser = {
+    userId: 2,
+    fullName: 'Nguyễn Văn Manager',
+    email: 'manager@crm.com',
+    role: Role.SALES_MANAGER,
   } as AuthenticatedUser;
 
   const leadStage = {
@@ -103,6 +117,19 @@ describe('DealsService - Sales quản lý Deal', () => {
       findOwnedById: jest.fn() as jest.MockedFunction<
         DealsRepository['findOwnedById']
       >,
+      findById: jest.fn() as jest.MockedFunction<DealsRepository['findById']>,
+
+      findCustomerById: jest.fn() as jest.MockedFunction<
+        DealsRepository['findCustomerById']
+      >,
+
+      findUserById: jest.fn() as jest.MockedFunction<
+        DealsRepository['findUserById']
+      >,
+
+      findActiveUsersByRole: jest.fn() as jest.MockedFunction<
+        DealsRepository['findActiveUsersByRole']
+      >,
       findCustomerAccessible: jest.fn() as jest.MockedFunction<
         DealsRepository['findCustomerAccessible']
       >,
@@ -117,6 +144,9 @@ describe('DealsService - Sales quản lý Deal', () => {
       >,
       createWithLog: jest.fn() as jest.MockedFunction<
         DealsRepository['createWithLog']
+      >,
+      assignWithLog: jest.fn() as jest.MockedFunction<
+        DealsRepository['assignWithLog']
       >,
       updateWithLog: jest.fn() as jest.MockedFunction<
         DealsRepository['updateWithLog']
@@ -194,15 +224,45 @@ describe('DealsService - Sales quản lý Deal', () => {
       expect(result.pagination.total).toBe(0);
       expect(result.pagination.totalPages).toBe(0);
     });
+    it('Sales Manager xem được toàn bộ Deal, không bị giới hạn theo người phụ trách', async () => {
+      dealsRepository.findMany.mockResolvedValue([deal]);
+      dealsRepository.count.mockResolvedValue(1);
+
+      const query = {
+        page: 1,
+        limit: 20,
+      } as DealQueryDto;
+
+      await dealsService.findAll(query, salesManagerUser);
+
+      expect(dealsRepository.findMany).toHaveBeenCalledWith(
+        {
+          search: undefined,
+          stageId: undefined,
+          salesUserId: undefined,
+        },
+        0,
+        20,
+      );
+
+      expect(dealsRepository.count).toHaveBeenCalledWith({
+        search: undefined,
+        stageId: undefined,
+        salesUserId: undefined,
+      });
+    });
   });
 
   describe('getMeta', () => {
-    it('lấy danh sách Pipeline Stage và ánh xạ xác suất', async () => {
+    it('Sales lấy Pipeline Stage nhưng không lấy danh sách Sales', async () => {
       dealsRepository.findPipelineStages.mockResolvedValue([
         proposalStage,
         negotiationStage,
       ]);
-      const result = await dealsService.getMeta();
+
+      const result = await dealsService.getMeta(salesUser);
+
+      expect(dealsRepository.findActiveUsersByRole).not.toHaveBeenCalled();
 
       expect(result).toEqual({
         stages: [
@@ -219,7 +279,47 @@ describe('DealsService - Sales quản lý Deal', () => {
             probability: 70,
           },
         ],
+        salesUsers: [],
       });
+    });
+
+    it('Sales Manager lấy Pipeline Stage và danh sách Sales đang hoạt động', async () => {
+      dealsRepository.findPipelineStages.mockResolvedValue([
+        proposalStage,
+        negotiationStage,
+      ]);
+
+      dealsRepository.findActiveUsersByRole.mockResolvedValue([
+        {
+          userid: 5,
+          fullname: 'Nguyễn Văn Sales',
+          email: 'sales@crm.com',
+        },
+        {
+          userid: 6,
+          fullname: 'Trần Thị Sales',
+          email: 'sales2@crm.com',
+        },
+      ]);
+
+      const result = await dealsService.getMeta(salesManagerUser);
+
+      expect(dealsRepository.findActiveUsersByRole).toHaveBeenCalledWith(
+        Role.SALES,
+      );
+
+      expect(result.salesUsers).toEqual([
+        {
+          userId: 5,
+          fullName: 'Nguyễn Văn Sales',
+          email: 'sales@crm.com',
+        },
+        {
+          userId: 6,
+          fullName: 'Trần Thị Sales',
+          email: 'sales2@crm.com',
+        },
+      ]);
     });
   });
 
@@ -239,6 +339,15 @@ describe('DealsService - Sales quản lý Deal', () => {
       await expect(dealsService.findOne(999, salesUser)).rejects.toThrow(
         'Không tìm thấy Deal.',
       );
+    });
+    it('Sales Manager xem được Deal không phụ thuộc người phụ trách', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+
+      const result = await dealsService.findOne(7, salesManagerUser);
+
+      expect(dealsRepository.findById).toHaveBeenCalledWith(7);
+      expect(dealsRepository.findOwnedById).not.toHaveBeenCalled();
+      expect(result.dealId).toBe(7);
     });
   });
 
@@ -352,6 +461,199 @@ describe('DealsService - Sales quản lý Deal', () => {
         ),
       ).rejects.toThrow('Giai đoạn "Unconfigured" có xác suất không hợp lệ.');
       expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
+    });
+    it('BR-29 - Sales Manager tạo Deal và chọn Sales phụ trách thành công', async () => {
+      dealsRepository.findCustomerById.mockResolvedValue({ customerid: 3 });
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 6,
+        fullname: 'Trần Thị Sales',
+        email: 'sales2@crm.com',
+        status: true,
+        roles: { rolename: 'Sales' },
+      });
+
+      dealsRepository.findInitialStage.mockResolvedValue(leadStage);
+
+      dealsRepository.createWithLog.mockResolvedValue({
+        ...deal,
+        assigneduserid: 6,
+        stageid: 1,
+        probability: 10,
+        expectedrevenue: new Prisma.Decimal(1_000_000),
+        pipelinestages: {
+          stageid: 1,
+          stagename: 'Lead',
+          stageorder: 1,
+        },
+        users: {
+          userid: 6,
+          fullname: 'Trần Thị Sales',
+        },
+      });
+
+      const result = await dealsService.create(
+        {
+          customerId: 3,
+          stageId: 1,
+          assignedUserId: 6,
+          dealName: 'Deal Manager tạo',
+          dealValue: 10_000_000,
+        },
+        salesManagerUser,
+        '127.0.0.1',
+      );
+
+      expect(dealsRepository.findCustomerById).toHaveBeenCalledWith(3);
+
+      expect(dealsRepository.findUserById).toHaveBeenCalledWith(6);
+
+      const [data, actorUserId, ipAddress, notifyAssignee] =
+        dealsRepository.createWithLog.mock.calls[0];
+
+      expect(data.assigneduserid).toBe(6);
+      expect(actorUserId).toBe(2);
+      expect(ipAddress).toBe('127.0.0.1');
+      expect(notifyAssignee).toBe(true);
+
+      expect(result.message).toBe('Tạo Deal thành công.');
+    });
+
+    it('BR-29 - từ chối khi Sales Manager tạo Deal nhưng không chọn Sales', async () => {
+      dealsRepository.findCustomerById.mockResolvedValue({ customerid: 3 });
+
+      await expect(
+        dealsService.create(
+          {
+            customerId: 3,
+            stageId: 1,
+            dealName: 'Deal Manager tạo',
+            dealValue: 10_000_000,
+          },
+          salesManagerUser,
+          null,
+        ),
+      ).rejects.toThrow('Vui lòng chọn nhân viên Sales phụ trách Deal.');
+      expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-29 - từ chối khi Sales Manager chọn nhân viên không tồn tại', async () => {
+      dealsRepository.findCustomerById.mockResolvedValue({ customerid: 3 });
+
+      dealsRepository.findUserById.mockResolvedValue(null);
+
+      await expect(
+        dealsService.create(
+          {
+            customerId: 3,
+            stageId: 1,
+            assignedUserId: 999,
+            dealName: 'Deal Manager tạo',
+            dealValue: 10_000_000,
+          },
+          salesManagerUser,
+          null,
+        ),
+      ).rejects.toThrow('Nhân viên Sales không tồn tại.');
+
+      expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-29 - từ chối khi Sales Manager chọn user không phải Sales', async () => {
+      dealsRepository.findCustomerById.mockResolvedValue({ customerid: 3 });
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 1,
+        fullname: 'Nguyễn Văn Admin',
+        email: 'admin@crm.com',
+        status: true,
+        roles: { rolename: 'Admin' },
+      });
+
+      await expect(
+        dealsService.create(
+          {
+            customerId: 3,
+            stageId: 1,
+            assignedUserId: 1,
+            dealName: 'Deal Manager tạo',
+            dealValue: 10_000_000,
+          },
+          salesManagerUser,
+          null,
+        ),
+      ).rejects.toThrow('Người được phân công phải có vai trò Sales.');
+
+      expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-29 - từ chối khi Sales Manager chọn Sales đã bị khóa', async () => {
+      dealsRepository.findCustomerById.mockResolvedValue({ customerid: 3 });
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 6,
+        fullname: 'Trần Thị Sales',
+        email: 'sales2@crm.com',
+        status: false,
+        roles: { rolename: 'Sales' },
+      });
+
+      await expect(
+        dealsService.create(
+          {
+            customerId: 3,
+            stageId: 1,
+            assignedUserId: 6,
+            dealName: 'Deal Manager tạo',
+            dealValue: 10_000_000,
+          },
+          salesManagerUser,
+          null,
+        ),
+      ).rejects.toThrow(
+        'Không thể phân công Deal cho tài khoản Sales đã bị khóa.',
+      );
+
+      expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-29 - Sales không thể tự ý chọn người phụ trách khác khi tạo Deal', async () => {
+      dealsRepository.findCustomerAccessible.mockResolvedValue({
+        customerid: 3,
+      });
+
+      dealsRepository.findInitialStage.mockResolvedValue(leadStage);
+
+      dealsRepository.createWithLog.mockResolvedValue({
+        ...deal,
+        stageid: 1,
+        assigneduserid: 5,
+        probability: 10,
+        expectedrevenue: new Prisma.Decimal(1_000_000),
+        pipelinestages: {
+          stageid: 1,
+          stagename: 'Lead',
+          stageorder: 1,
+        },
+      });
+
+      await dealsService.create(
+        {
+          customerId: 3,
+          stageId: 1,
+          assignedUserId: 6,
+          dealName: 'Deal Sales tạo',
+          dealValue: 10_000_000,
+        },
+        salesUser,
+        null,
+      );
+
+      const data = dealsRepository.createWithLog.mock.calls[0][0];
+
+      expect(data.assigneduserid).toBe(5);
+
+      expect(dealsRepository.findUserById).not.toHaveBeenCalled();
     });
   });
 
@@ -517,6 +819,182 @@ describe('DealsService - Sales quản lý Deal', () => {
         5,
         '192.168.1.10',
       );
+    });
+  });
+
+  describe('assign', () => {
+    it('BR-07, BR-14, BR-18 - Sales Manager phân công Deal thành công', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 6,
+        fullname: 'Trần Thị Sales',
+        email: 'sales2@crm.com',
+        status: true,
+        roles: { rolename: 'Sales' },
+      });
+
+      const reassignedDeal = {
+        ...deal,
+        assigneduserid: 6,
+        users: {
+          userid: 6,
+          fullname: 'Trần Thị Sales',
+        },
+      };
+
+      dealsRepository.assignWithLog.mockResolvedValue(reassignedDeal);
+
+      const result = await dealsService.assign(
+        7,
+        {
+          assignedUserId: 6,
+        },
+        salesManagerUser,
+        '127.0.0.1',
+      );
+
+      expect(dealsRepository.findById).toHaveBeenCalledWith(7);
+      expect(dealsRepository.findUserById).toHaveBeenCalledWith(6);
+      expect(dealsRepository.assignWithLog).toHaveBeenCalledWith(
+        7,
+        6,
+        2,
+        deal,
+        '127.0.0.1',
+      );
+      expect(result.message).toBe('Phân công Deal thành công.');
+      expect(result.data.assignedUser.userId).toBe(6);
+    });
+
+    it('BR-07 - Sales không có quyền phân công Deal', async () => {
+      await expect(
+        dealsService.assign(
+          7,
+          {
+            assignedUserId: 6,
+          },
+          salesUser,
+        ),
+      ).rejects.toThrow('Bạn không có quyền phân công Deal.');
+
+      expect(dealsRepository.findById).not.toHaveBeenCalled();
+      expect(dealsRepository.assignWithLog).not.toHaveBeenCalled();
+    });
+
+    it('từ chối phân công khi Deal không tồn tại', async () => {
+      dealsRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        dealsService.assign(
+          999,
+          {
+            assignedUserId: 6,
+          },
+          salesManagerUser,
+        ),
+      ).rejects.toThrow('Không tìm thấy Deal.');
+
+      expect(dealsRepository.findUserById).not.toHaveBeenCalled();
+
+      expect(dealsRepository.assignWithLog).not.toHaveBeenCalled();
+    });
+
+    it('từ chối phân công khi nhân viên Sales không tồn tại', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+      dealsRepository.findUserById.mockResolvedValue(null);
+
+      await expect(
+        dealsService.assign(
+          7,
+          {
+            assignedUserId: 999,
+          },
+          salesManagerUser,
+        ),
+      ).rejects.toThrow('Nhân viên Sales không tồn tại.');
+
+      expect(dealsRepository.assignWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-07 - từ chối phân công cho user không phải Sales', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 1,
+        fullname: 'Nguyễn Văn Admin',
+        email: 'admin@crm.com',
+        status: true,
+        roles: {
+          rolename: 'Admin',
+        },
+      });
+
+      await expect(
+        dealsService.assign(
+          7,
+          {
+            assignedUserId: 1,
+          },
+          salesManagerUser,
+        ),
+      ).rejects.toThrow('Người được phân công phải có vai trò Sales.');
+
+      expect(dealsRepository.assignWithLog).not.toHaveBeenCalled();
+    });
+
+    it('từ chối phân công cho Sales đã bị khóa', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 6,
+        fullname: 'Trần Thị Sales',
+        email: 'sales2@crm.com',
+        status: false,
+        roles: {
+          rolename: 'Sales',
+        },
+      });
+
+      await expect(
+        dealsService.assign(
+          7,
+          {
+            assignedUserId: 6,
+          },
+          salesManagerUser,
+        ),
+      ).rejects.toThrow(
+        'Không thể phân công Deal cho tài khoản Sales đã bị khóa.',
+      );
+
+      expect(dealsRepository.assignWithLog).not.toHaveBeenCalled();
+    });
+
+    it('từ chối khi Deal đã được phân công cho Sales đang chọn', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 5,
+        fullname: 'Nguyễn Văn Sales',
+        email: 'sales@crm.com',
+        status: true,
+        roles: {
+          rolename: 'Sales',
+        },
+      });
+
+      await expect(
+        dealsService.assign(
+          7,
+          {
+            assignedUserId: 5,
+          },
+          salesManagerUser,
+        ),
+      ).rejects.toThrow('Deal đã được phân công cho nhân viên này.');
+
+      expect(dealsRepository.assignWithLog).not.toHaveBeenCalled();
     });
   });
 

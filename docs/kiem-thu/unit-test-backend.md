@@ -124,13 +124,13 @@ npm test -- leads.service.spec.ts
 |---|---|---|---|---|
 | UNIT-DEAL-001 | `deals.service.spec.ts` | Sales lấy danh sách Deal có tìm kiếm, lọc Pipeline Stage và phân trang | Repository nhận đúng `search`, `stageId`, `salesUserId`, `skip`, `limit`; chỉ lấy Deal thuộc Sales đang đăng nhập và tính đúng pagination | PASS |
 | UNIT-DEAL-002 | `deals.service.spec.ts` | Sales không có Deal phù hợp với điều kiện tìm kiếm | Trả `data = []`, `total = 0` và `totalPages = 0` | PASS |
-| UNIT-DEAL-003 | `deals.service.spec.ts` | Lấy danh sách Pipeline Stage dùng cho form và bộ lọc | Trả đúng stageId, stageName, stageOrder và xác suất tương ứng của từng Pipeline Stage | PASS |
+| UNIT-DEAL-003 | `deals.service.spec.ts` | Sales lấy metadata Pipeline dùng cho Deal | Trả đúng `stageId`, `stageName`, `stageOrder`, `probability`; không truy vấn danh sách Sales và trả `salesUsers = []` | PASS |
 | UNIT-DEAL-004 | `deals.service.spec.ts` | Sales xem chi tiết Deal thuộc quyền quản lý | Repository kiểm tra bằng đúng `dealId` và `salesUserId`; trả đúng thông tin Deal, Customer, Stage và Sales phụ trách | PASS |
 | UNIT-DEAL-005 | `deals.service.spec.ts` | Sales xem Deal không tồn tại hoặc không thuộc quyền quản lý | Ném `NotFoundException` với thông báo `Không tìm thấy Deal.` | PASS |
-| UNIT-DEAL-006 | `deals.service.spec.ts` | BR06, BR08, BR09, BR18 - Tạo Deal hợp lệ | Kiểm tra Customer, Pipeline Stage; tự gán Sales hiện tại; trim tên Deal; tính đúng Probability và Expected Revenue; gọi Repository tạo Deal kèm Activity Log | PASS |
+| UNIT-DEAL-006 | `deals.service.spec.ts` | BR06, BR08, BR09, BR18, BR29 - Sales tạo Deal hợp lệ | Kiểm tra Customer và Stage khởi đầu; tự gán Sales đang đăng nhập làm người phụ trách; trim tên Deal; tính đúng Probability và Expected Revenue; gọi Repository tạo Deal kèm Activity Log | PASS |
 | UNIT-DEAL-007 | `deals.service.spec.ts` | BR06 - Tạo Deal với Customer không tồn tại hoặc không thuộc quyền Sales | Ném `UnprocessableEntityException` với thông báo Customer không thuộc quyền; không tạo Deal | PASS |
-| UNIT-DEAL-008 | `deals.service.spec.ts` | BR06 - Tạo Deal với Pipeline Stage không tồn tại | Ném `UnprocessableEntityException` với thông báo `Giai đoạn Pipeline không tồn tại.`; không tạo Deal | PASS |
-| UNIT-DEAL-009 | `deals.service.spec.ts` | BR08 - Tạo Deal với Pipeline Stage chưa cấu hình xác suất | Ném `UnprocessableEntityException` thông báo Stage chưa được cấu hình xác suất; không tạo Deal | PASS |
+| UNIT-DEAL-008 | `deals.service.spec.ts` | Tạo Deal nhưng Stage được gửi lên không phải Stage đầu tiên của Pipeline | Ném `UnprocessableEntityException` với thông báo `Deal mới phải bắt đầu ở giai đoạn đầu tiên của Pipeline.`; không tạo Deal | PASS |
+| UNIT-DEAL-009 | `deals.service.spec.ts` | BR08 - Tạo Deal khi Stage khởi đầu có Probability ngoài khoảng 0-100 | Ném `UnprocessableEntityException` với thông báo `Giai đoạn "Unconfigured" có xác suất không hợp lệ.`; không tạo Deal | PASS |
 | UNIT-DEAL-010 | `deals.service.spec.ts` | Cập nhật Deal nhưng không truyền dữ liệu thay đổi | Ném `BadRequestException` với thông báo `Không có dữ liệu để cập nhật.`; không truy vấn hoặc cập nhật Deal | PASS |
 | UNIT-DEAL-011 | `deals.service.spec.ts` | Cập nhật Deal không tồn tại hoặc không thuộc quyền Sales | Ném `NotFoundException`; không gọi Repository cập nhật | PASS |
 | UNIT-DEAL-012 | `deals.service.spec.ts` | Cập nhật Deal sang Customer không thuộc quyền Sales | Ném `UnprocessableEntityException`; không cập nhật Deal | PASS |
@@ -147,8 +147,24 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-023 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Won | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
 | UNIT-DEAL-024 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Lost | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
 | UNIT-DEAL-025 | `deals.service.spec.ts` | Chuyển Deal sang Pipeline Stage không tồn tại | Ném `UnprocessableEntityException` với thông báo `Giai đoạn Pipeline không hợp lệ.` | PASS |
-| UNIT-DEAL-026 | `deals.service.spec.ts` | BR08 - Chuyển Deal sang Stage chưa cấu hình xác suất | Ném `UnprocessableEntityException` thông báo Stage chưa được cấu hình xác suất; không cập nhật Deal | PASS |
+| UNIT-DEAL-026 | `deals.service.spec.ts` | BR08 - Chuyển Deal sang Stage có Probability ngoài khoảng 0-100 | Ném `UnprocessableEntityException` với thông báo `Giai đoạn "Unconfigured" có xác suất không hợp lệ.`; không cập nhật Deal | PASS |
 | UNIT-DEAL-027 | `deals.service.spec.ts` | BR08, BR09, BR18 - Chuyển Pipeline Stage thành công | Cập nhật đúng Stage, Probability và Expected Revenue; truyền Deal cũ, User và IP xuống Repository để ghi Activity Log; trả Deal sau cập nhật | PASS |
+| UNIT-DEAL-028 | `deals.service.spec.ts` | Sales Manager xem toàn bộ danh sách Deal | Repository nhận `salesUserId = undefined`; không giới hạn Deal theo người phụ trách; gọi đúng `findMany`, `count`, `skip` và `limit` | PASS |
+| UNIT-DEAL-029 | `deals.service.spec.ts` | Sales Manager lấy Pipeline Stage và danh sách Sales đang hoạt động | Gọi `findActiveUsersByRole(Role.SALES)`; trả đúng danh sách Pipeline Stage và `salesUsers` gồm `userId`, `fullName`, `email` | PASS |
+| UNIT-DEAL-030 | `deals.service.spec.ts` | Sales Manager xem chi tiết Deal không phụ thuộc người phụ trách | Gọi `findById(dealId)` thay vì `findOwnedById`; trả đúng thông tin Deal | PASS |
+| UNIT-DEAL-031 | `deals.service.spec.ts` | BR29 - Sales Manager tạo Deal và chọn Sales phụ trách thành công | Kiểm tra Customer và Sales được chọn; Deal được gán đúng `assignedUserId`; gọi `createWithLog` với Manager là người thực hiện và `notifyAssignee = true`; trả `Tạo Deal thành công.` | PASS |
+| UNIT-DEAL-032 | `deals.service.spec.ts` | BR29 - Sales Manager tạo Deal nhưng không chọn Sales phụ trách | Ném lỗi `Vui lòng chọn nhân viên Sales phụ trách Deal.`; không gọi Repository tạo Deal | PASS |
+| UNIT-DEAL-033 | `deals.service.spec.ts` | BR29 - Sales Manager chọn nhân viên Sales không tồn tại khi tạo Deal | Ném lỗi `Nhân viên Sales không tồn tại.`; không gọi Repository tạo Deal | PASS |
+| UNIT-DEAL-034 | `deals.service.spec.ts` | BR29 - Sales Manager chọn người dùng không có vai trò Sales khi tạo Deal | Ném lỗi `Người được phân công phải có vai trò Sales.`; không gọi Repository tạo Deal | PASS |
+| UNIT-DEAL-035 | `deals.service.spec.ts` | BR29 - Sales Manager chọn tài khoản Sales đã bị khóa khi tạo Deal | Ném lỗi `Không thể phân công Deal cho tài khoản Sales đã bị khóa.`; không gọi Repository tạo Deal | PASS |
+| UNIT-DEAL-036 | `deals.service.spec.ts` | BR29 - Sales cố truyền `assignedUserId` của Sales khác khi tạo Deal | Backend bỏ qua `assignedUserId` được truyền; Deal vẫn tự gán cho Sales đang đăng nhập; không gọi `findUserById` | PASS |
+| UNIT-DEAL-037 | `deals.service.spec.ts` | BR07, BR14, BR18 - Sales Manager phân công Deal sang Sales khác thành công | Kiểm tra Deal và Sales đích; gọi `assignWithLog` với đúng `dealId`, Sales mới, Manager `userId`, Deal cũ và IP; trả `Phân công Deal thành công.` và người phụ trách mới | PASS |
+| UNIT-DEAL-038 | `deals.service.spec.ts` | BR07 - Sales không có quyền phân công Deal | Ném lỗi `Bạn không có quyền phân công Deal.`; không truy vấn Deal và không gọi `assignWithLog` | PASS |
+| UNIT-DEAL-039 | `deals.service.spec.ts` | Phân công Deal không tồn tại | Ném lỗi `Không tìm thấy Deal.`; không tìm Sales đích và không gọi `assignWithLog` | PASS |
+| UNIT-DEAL-040 | `deals.service.spec.ts` | Phân công Deal cho nhân viên Sales không tồn tại | Ném lỗi `Nhân viên Sales không tồn tại.`; không gọi `assignWithLog` | PASS |
+| UNIT-DEAL-041 | `deals.service.spec.ts` | BR07 - Phân công Deal cho người dùng không có vai trò Sales | Ném lỗi `Người được phân công phải có vai trò Sales.`; không gọi `assignWithLog` | PASS |
+| UNIT-DEAL-042 | `deals.service.spec.ts` | Phân công Deal cho tài khoản Sales đã bị khóa | Ném lỗi `Không thể phân công Deal cho tài khoản Sales đã bị khóa.`; không gọi `assignWithLog` | PASS |
+| UNIT-DEAL-043 | `deals.service.spec.ts` | Phân công Deal lại cho chính Sales đang phụ trách | Ném lỗi `Deal đã được phân công cho nhân viên này.`; không gọi `assignWithLog` | PASS |
 
 ## Chức năng tạo quotes
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -264,7 +280,7 @@ Time:        0.923 s
 ```text
 Quản lý Deals và kéo thả giai đoạn pipeline
 Test Suites: 1 passed, 1 total
-Tests:       27 passed, 27 total
+Tests:       43 passed, 43 total
 Snapshots:   0 total
 Time:        21.009 s
 ```
@@ -294,7 +310,7 @@ Time:        23.104 s
 ```
 
 
-**Kết luận:** 162/162 unit test PASS.
+**Kết luận:** 178/178 unit test PASS.
 
 ---
 
@@ -306,4 +322,5 @@ Time:        23.104 s
 | 15/08/2026 | unit test backend cho chức năng convert Lead into Customer | 11 | PASS |
 | 21/08/2026 | unit test backend cho chức năng quản lý Users, quản lý Products | 39 | PASS |
 | 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer, Quản lý Deals và kéo thả giai đoạn pipeline | 53 | PASS |
-| 23/08/2026 | unit test backend cho chức năng tạo quotes, chức năng quản lý tasks, chức năng thông báo | 61 | PASS |
+| 23/08/2026 | unit test backend cho chức năng tạo quotes, chức năng quản lý tasks, chức năng thông báo | 49 | PASS |
+| 26/08/2026 | unit test backend cho chức năng tạo và phân công Deal cho Sales Manager| 16 | PASS |
