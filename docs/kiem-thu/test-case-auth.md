@@ -1,5 +1,11 @@
 # Test Case - Authentication
 
+### Kỹ thuật thiết kế test áp dụng
+
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia dữ liệu đăng nhập thành các nhóm hợp lệ và không hợp lệ như email tồn tại/không tồn tại, mật khẩu đúng/sai, tài khoản hoạt động/bị khóa.
+- **Phân tích giá trị biên (Boundary Value Analysis):** áp dụng cho độ dài mật khẩu, đặc biệt kiểm tra quanh ngưỡng tối thiểu 8 ký tự.
+- **Chuyển trạng thái (State Transition Testing):** áp dụng cho luồng quên mật khẩu → xác thực email → đặt mật khẩu mới → mật khẩu cũ hết hiệu lực → đăng nhập bằng mật khẩu mới.
+
 ## 1. Đăng nhập
 
 | TC ID | Mô tả | Dữ liệu đầu vào | Kết quả mong đợi | Kết quả thực tế | Trạng thái |

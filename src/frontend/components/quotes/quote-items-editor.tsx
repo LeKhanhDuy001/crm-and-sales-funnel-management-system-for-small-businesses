@@ -1,5 +1,6 @@
 import type { QuoteInputItem, QuoteMetaProduct, } from '../../modules/quotes/quotes.types';
 import styles from './quotes-page.module.css';
+import { useState } from 'react';
 
 interface Props {
   items: QuoteInputItem[];
@@ -8,13 +9,14 @@ interface Props {
 }
 
 export default function QuoteItemsEditor({items, products, onChange,}: Props) {
+  const [rowKeys, setRowKeys] = useState<string[]>(() => items.map(() => crypto.randomUUID()));
   function addItem(): void {
     const product = products[0];
 
     if (!product) {
       return;
     }
-
+    setRowKeys((keys) => [...keys, crypto.randomUUID()]);
     onChange([...items, {
         productId: product.productId,
         quantity: 1,
@@ -23,6 +25,7 @@ export default function QuoteItemsEditor({items, products, onChange,}: Props) {
   }
 
   function removeItem(index: number): void {
+    setRowKeys((keys) => keys.filter((_, keyIndex) => keyIndex !== index));
     onChange(items.filter((_, itemIndex) => itemIndex !== index,),);
   }
 
@@ -36,7 +39,7 @@ export default function QuoteItemsEditor({items, products, onChange,}: Props) {
 
       <div className={styles.quoteItems}>
         {items.map((item, index) => (
-          <QuoteItemRow key={index} item={item} products={products}
+          <QuoteItemRow key={rowKeys[index]} item={item} products={products}
             canRemove={items.length > 1}
             onChange={(value) => updateItem(index, value)}
             onRemove={() => removeItem(index)}

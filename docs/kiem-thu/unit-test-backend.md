@@ -216,7 +216,6 @@ npm test -- leads.service.spec.ts
 | UNIT-TASK-029 | `tasks.service.spec.ts` | BR14, BR18 - Sales Manager phân công Task thành công | Cập nhật đúng Sales phụ trách, tạo Notification cho người nhận và ghi Activity Log | PASS |
 
 ## Chức năng thông báo
-## Chức năng quản lý thông báo
 
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
 |---|---|---|---|---|
@@ -228,6 +227,18 @@ npm test -- leads.service.spec.ts
 | UNIT-NOTIFICATION-006 | `notifications.service.spec.ts` | Đánh dấu một thông báo chưa đọc thành đã đọc | Kiểm tra Notification thuộc đúng người dùng, gọi Repository cập nhật `isRead = true` và trả thông báo thành công | PASS |
 | UNIT-NOTIFICATION-007 | `notifications.service.spec.ts` | Đánh dấu tất cả thông báo chưa đọc của người dùng thành đã đọc | Repository chỉ cập nhật Notification thuộc đúng `userId`; trả đúng số lượng Notification được cập nhật | PASS |
 | UNIT-NOTIFICATION-008 | `notifications.service.spec.ts` | Đánh dấu tất cả đã đọc khi người dùng không còn thông báo chưa đọc | Không phát sinh lỗi; trả `updatedCount = 0` | PASS |
+
+## Dashboard
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-DASHBOARD-001 | `dashboard.service.spec.ts` | Admin lấy dữ liệu Dashboard tổng quan | Repository được gọi để lấy số lượng User, Lead, Customer, Deal, Product, Quote, Task, doanh thu Deal Won, Pipeline và Lead mới nhất; trả đúng `overview`, `pipeline` và `recentLeads` sau khi mapping dữ liệu | PASS |
+| UNIT-DASHBOARD-002 | `dashboard.service.spec.ts` | Dashboard Admin không có Deal ở trạng thái Won | Khi tổng `dealValue` của Deal Won là `null`, `overview.totalRevenue` được trả về `0`; không trả `null` hoặc `NaN` | PASS |
+| UNIT-DASHBOARD-003 | `dashboard.service.spec.ts` | Sales Manager lấy dữ liệu Dashboard và tổng hợp doanh thu, Expected Revenue, hiệu suất Sales | Trả đúng `overview`, Pipeline, `salesPerformance` và `attentionDeals`; `pipelineValue`, `expectedRevenue`, `wonRevenue` được tổng hợp đúng từ dữ liệu Repository | PASS |
+| UNIT-DASHBOARD-004 | `dashboard.service.spec.ts` | Dashboard Sales Manager khi không có Sales đang hoạt động | Trả `salesPerformance = []`; không gọi Repository nhóm Deal theo Sales; các số liệu không có dữ liệu được trả về `0` và không phát sinh lỗi | PASS |
+| UNIT-DASHBOARD-005 | `dashboard.service.spec.ts` | Sales lấy Dashboard cá nhân theo đúng `userId` | Repository lấy Lead, Deal, Quote, Task, Pipeline, Deal gần nhất và Task sắp tới theo đúng `userId`; kết quả chỉ chứa dữ liệu thuộc Sales hiện tại | PASS |
+| UNIT-DASHBOARD-006 | `dashboard.service.spec.ts` | Marketing lấy Dashboard và tính tỷ lệ chuyển đổi Lead | Trả đúng tổng Lead, Lead mới trong tháng, Lead Converted, Lead chưa Converted, nguồn Lead, trạng thái Lead và Lead mới nhất; `conversionRate` được tính đúng | PASS |
+| UNIT-DASHBOARD-007 | `dashboard.service.spec.ts` | Dashboard Marketing khi không có Lead | Khi `totalLeads = 0`, trả `conversionRate = 0` và `unconvertedLeads = 0`; không xảy ra chia cho `0` hoặc trả `NaN` | PASS |
+| UNIT-DASHBOARD-008 | `dashboard.service.spec.ts` | Customer Care lấy Dashboard cá nhân theo đúng `userId` | Repository lấy Customer cần chăm sóc, Task hôm nay, Task chưa hoàn thành, Task quá hạn, Activity, Task sắp tới và Activity gần nhất theo đúng `userId`; trả đúng `overview`, `upcomingTasks`, `recentActivities` và `activitiesByType` | PASS |
 
 ## 3. Kết quả tổng hợp
 
@@ -309,8 +320,15 @@ Snapshots:   0 total
 Time:        23.104 s
 ```
 
+```text
+Dashboard
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        0.774 s
+```
 
-**Kết luận:** 178/178 unit test PASS.
+**Kết luận:** 186/186 unit test PASS.
 
 ---
 
@@ -324,3 +342,4 @@ Time:        23.104 s
 | 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer, Quản lý Deals và kéo thả giai đoạn pipeline | 53 | PASS |
 | 23/08/2026 | unit test backend cho chức năng tạo quotes, chức năng quản lý tasks, chức năng thông báo | 49 | PASS |
 | 26/08/2026 | unit test backend cho chức năng tạo và phân công Deal cho Sales Manager| 16 | PASS |
+| 27/08/2026 | unit test backend Dashboard| 8 | PASS |

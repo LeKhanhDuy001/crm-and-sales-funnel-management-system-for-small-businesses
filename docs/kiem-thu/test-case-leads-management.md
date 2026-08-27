@@ -1,5 +1,11 @@
 # Test Case - Quản lý Lead
 
+### Kỹ thuật thiết kế test áp dụng
+
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia dữ liệu Lead thành các nhóm hợp lệ và không hợp lệ như họ tên có/không có, email đúng/sai định dạng, email/SĐT trùng hoặc không trùng, tìm kiếm có/không có kết quả.
+- **Phân tích giá trị biên (Boundary Value Analysis):** áp dụng cho các trường có giới hạn độ dài hoặc miền giá trị khi kiểm tra validation dữ liệu Lead.
+- **Bảng quyết định (Decision Table Testing):** áp dụng cho các trường hợp quyền thao tác phụ thuộc vào vai trò Marketing/Sales và quyền sở hữu Lead.
+
 ## UC2 - Quản lý Lead
 
 | Mã TC | Chức năng / UC | Mục tiêu | Tiền điều kiện | Dữ liệu đầu vào | Các bước thực hiện | Kết quả mong đợi | Kết quả thực tế | Trạng thái |
@@ -60,6 +66,12 @@
 
 ### Minh chứng TC-LEADS-013
 ![TC-LEADS-013 - Sales xem chi tiết Lead](./assets/leads/TC-LEADS-013.png)
+
+### Kỹ thuật thiết kế test áp dụng
+
+- **Bảng quyết định (Decision Table Testing):** kiểm tra điều kiện chuyển đổi Lead dựa trên tổ hợp trạng thái Lead, quyền sở hữu Lead, dữ liệu phone/email và việc Lead đã được chuyển đổi hay chưa.
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia Lead thành các nhóm đủ điều kiện và không đủ điều kiện chuyển đổi.
+- **Chuyển trạng thái (State Transition Testing):** kiểm tra việc Lead chuyển từ trạng thái `Qualified` sang `Converted` và không cho chuyển đổi lại Lead đã ở trạng thái `Converted`.
 
 ## UC3 - Chuyển đổi Lead thành Customer
 

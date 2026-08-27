@@ -1,5 +1,11 @@
 # Test Case - Quản lý Deal và Pipeline
 
+### Kỹ thuật thiết kế test áp dụng
+
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia dữ liệu tạo/cập nhật Deal thành các nhóm hợp lệ và không hợp lệ như Customer hợp lệ/không thuộc quyền, tên Deal có/không có, Deal Value hợp lệ/không hợp lệ, Stage hợp lệ/không hợp lệ.
+- **Phân tích giá trị biên (Boundary Value Analysis):** áp dụng cho giới hạn độ dài tên Deal, giá trị Deal và số chữ số thập phân.
+- **Bảng quyết định (Decision Table Testing):** áp dụng cho các trường hợp quyền thao tác phụ thuộc vào vai trò người dùng và quyền sở hữu Customer/Deal.
+
 ## UC4 - Quản lý Deal
 
 | Mã TC | Chức năng / UC | Mục tiêu | Tiền điều kiện | Dữ liệu đầu vào | Các bước thực hiện | Kết quả mong đợi | Kết quả thực tế | Trạng thái |
@@ -70,6 +76,11 @@
 ### Minh chứng TC-DEALS-016
 ![TC-DEALS-016 - Sales Manager tạo Deal thành công](./assets/deals/TC-DEALS-016.png)
 
+### Kỹ thuật thiết kế test áp dụng
+
+- **Bảng quyết định (Decision Table Testing):** kiểm tra quyền phân công Deal dựa trên tổ hợp vai trò người thực hiện, vai trò người được phân công, trạng thái tài khoản và sự tồn tại của người dùng.
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia đối tượng được phân công thành các nhóm Sales hợp lệ, Sales bị khóa, người dùng không tồn tại và người dùng không có role Sales.
+
 ## UC5 - Phân công Deal
 
 | Mã TC | Chức năng / UC | Mục tiêu | Tiền điều kiện | Dữ liệu đầu vào | Các bước thực hiện | Kết quả mong đợi | Kết quả thực tế | Trạng thái |
@@ -89,6 +100,12 @@
 ### Minh chứng TC-DEALS-019
 ![TC-DEALS-019 - Không thể phân công cho Sales đang bị khóa](./assets/deals/TC-DEALS-019.png)
 
+
+### Kỹ thuật thiết kế test áp dụng
+
+- **Chuyển trạng thái (State Transition Testing):** kiểm tra việc Deal chuyển giữa các Pipeline Stage, chọn lại Stage hiện tại và giới hạn không cho Deal ở trạng thái kết thúc Won/Lost quay lại Stage trước.
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia Stage đích thành nhóm hợp lệ và không tồn tại.
+- **Bảng quyết định (Decision Table Testing):** áp dụng cho quyền thay đổi Stage dựa trên quyền sở hữu Deal của Sales.
 
 ## UC6 - Thay đổi trạng thái Pipeline
 
