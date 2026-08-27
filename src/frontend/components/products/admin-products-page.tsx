@@ -1,8 +1,8 @@
 'use client';
 
-import { type FormEvent, useEffect, useState,} from 'react';
+import { type FormEvent, useEffect, useState, } from 'react';
 import { useRouter } from 'next/navigation';
-import { clearAuth, getAccessToken, } from '../../modules/auth/auth.storage';
+import { getAccessToken } from '../../modules/auth/auth.storage';
 import {
   createProduct,
   deleteProduct,
@@ -11,19 +11,17 @@ import {
   getProducts,
   updateProduct,
 } from '../../modules/products/products.service';
-import type { CreateProductInput, ProductListItem, ProductsPagination, UpdateProductInput,} from '../../modules/products/products.types';
-import { ApiError } from '../../services/api';
+import type { CreateProductInput, ProductListItem, ProductsPagination, UpdateProductInput, } from '../../modules/products/products.types';
 import AdminDashboardLayout from '../dashboard/admin-dashboard-layout';
 import DashboardHeader from '../dashboard/dashboard-header';
-import CreateProductModal from './create-product-modal';
-import EditProductModal from './edit-product-modal';
-import ProductDetailModal from './product-detail-modal';
 import ProductFilters from './product-filters';
 import ProductPagination from './product-pagination';
 import ProductsTable from './products-table';
 import styles from './admin-products-page.module.css';
+import ProductPageModals from './product-page-modals';
+import { getErrorMessage, handleLoadError, handleMutationError } from './product-page-errors';
 
-const DEFAULT_PAGINATION: ProductsPagination = {page: 1, limit: 20, total: 0, totalPages: 0,};
+const DEFAULT_PAGINATION: ProductsPagination = { page: 1, limit: 20, total: 0, totalPages: 0, };
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -72,15 +70,15 @@ export default function AdminProductsPage() {
         setError('');
 
         const response = await getProducts(
-            accessToken,
-            {
-              search: search || undefined,
-              category: category || undefined,
-              status: status === '' ? undefined : status === 'true',
-              page,
-              limit: 20,
-            },
-          );
+          accessToken,
+          {
+            search: search || undefined,
+            category: category || undefined,
+            status: status === '' ? undefined : status === 'true',
+            page,
+            limit: 20,
+          },
+        );
 
         setProducts(response.data);
 
@@ -215,7 +213,7 @@ export default function AdminProductsPage() {
       window.alert(response.message);
       refreshProducts();
     } catch (caughtError) {
-      window.alert(getErrorMessage(caughtError,'Không thể xóa sản phẩm.',),);
+      window.alert(getErrorMessage(caughtError, 'Không thể xóa sản phẩm.',),);
     }
   }
 
@@ -242,7 +240,6 @@ export default function AdminProductsPage() {
               </p>
             </div>
           </div>
-
           <ProductFilters
             searchInput={searchInput}
             category={category}
@@ -250,11 +247,10 @@ export default function AdminProductsPage() {
             categories={categories}
             onSearchInputChange={setSearchInput}
             onSearch={handleSearch}
-            onCategoryChange={(value) => {setPage(1); setCategory(value);}}
-            onStatusChange={(value) => {setPage(1); setStatus(value);}}
+            onCategoryChange={(value) => { setPage(1); setCategory(value); }}
+            onStatusChange={(value) => { setPage(1); setStatus(value); }}
             onCreate={() => setIsCreateOpen(true)}
           />
-
           {isLoading ? (
             <p className={styles.empty}>
               Đang tải danh sách sản phẩm...
@@ -270,11 +266,10 @@ export default function AdminProductsPage() {
           ) : (
             <>
               <ProductsTable products={products}
-                onView={(productId) => {void handleView(productId,);}}
+                onView={(productId) => { void handleView(productId,); }}
                 onEdit={setEditingProduct}
-                onDelete={(product) => {void handleDelete(product,);}}
+                onDelete={(product) => { void handleDelete(product,); }}
               />
-
               <ProductPagination
                 pagination={pagination}
                 onPageChange={setPage}
@@ -283,74 +278,21 @@ export default function AdminProductsPage() {
           )}
         </section>
       </main>
-
-      <ProductDetailModal
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+      <ProductPageModals
+        state={{
+          selectedProduct,
+          editingProduct,
+          isCreateOpen,
+          isSaving,
+        }}
+        actions={{
+          closeDetail: () => setSelectedProduct(null),
+          closeCreate: () => setIsCreateOpen(false),
+          closeEdit: () => setEditingProduct(null),
+          create: handleCreate,
+          update: handleUpdate,
+        }}
       />
-
-      <CreateProductModal
-        isOpen={isCreateOpen}
-        isSaving={isSaving}
-        onClose={() => setIsCreateOpen(false)}
-        onSubmit={handleCreate}
-      />
-
-      {editingProduct && (
-        <EditProductModal key={editingProduct.productId}
-          product={editingProduct}
-          isSaving={isSaving}
-          onClose={() => setEditingProduct(null)}
-          onSubmit={handleUpdate}
-        />
-      )}
     </AdminDashboardLayout>
   );
-}
-
-function getErrorMessage(error: unknown, fallback: string,): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
-function handleLoadError(error: unknown, router: ReturnType<typeof useRouter>, setError: (value: string,) => void,): void {
-  if (error instanceof ApiError) {
-    if (error.statusCode === 401) {
-      clearAuth();
-      router.replace('/login');
-      return;
-    }
-
-    if (error.statusCode === 403) {
-      router.replace('/unauthorized');
-      return;
-    }
-
-    setError(error.message);
-    return;
-  }
-
-  setError('Không thể tải danh sách sản phẩm.',);
-}
-
-function handleMutationError(error: unknown, router: ReturnType<typeof useRouter>,): string | null {
-  if (error instanceof ApiError) {
-    if (error.statusCode === 401) {
-      clearAuth();
-      router.replace('/login');
-      return null;
-    }
-
-    if (error.statusCode === 403) {
-      router.replace('/unauthorized');
-      return null;
-    }
-
-    return error.message;
-  }
-
-  return 'Không thể lưu thông tin sản phẩm.';
 }
