@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import { AuthRepository } from './repositories/auth.repository';
+import { action_type } from '../../generated/prisma/client';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -15,6 +17,10 @@ describe('AuthService', () => {
     signAsync: jest.Mock;
   };
 
+  let authRepository: {
+    createAuthLog: jest.Mock;
+  };
+
   beforeEach(() => {
     usersService = {
       findByEmail: jest.fn(),
@@ -24,9 +30,14 @@ describe('AuthService', () => {
       signAsync: jest.fn(),
     };
 
+    authRepository = {
+      createAuthLog: jest.fn(),
+    };
+
     authService = new AuthService(
       usersService as unknown as UsersService,
       jwtService as unknown as JwtService,
+      authRepository as unknown as AuthRepository,
     );
   });
 
@@ -57,7 +68,9 @@ describe('AuthService', () => {
       email: 'admin.demo@crm.local',
       password,
       rememberMe: false,
-    });
+    },
+      null,
+    );
 
     expect(result.accessToken).toBe('test-access-token');
 
@@ -83,6 +96,12 @@ describe('AuthService', () => {
         expiresIn: 3600,
       },
     );
+
+    expect(authRepository.createAuthLog).toHaveBeenCalledWith(
+      1,
+      action_type.Login,
+      null,
+    );
   });
 
   it('should throw UnauthorizedException when password is incorrect', async () => {
@@ -105,7 +124,9 @@ describe('AuthService', () => {
         email: 'admin.demo@crm.local',
         password: 'WrongPassword123',
         rememberMe: false,
-      }),
+      },
+        null,
+      ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
     expect(jwtService.signAsync).not.toHaveBeenCalled();
