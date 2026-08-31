@@ -32,6 +32,8 @@
 | TC-ACTIVITY-LOGS-020 | UC10 - Phân quyền | Kiểm tra Marketing không được gọi API xem Activity Log | Marketing có token hợp lệ | `GET /api/v1/activity-logs` | 1. Mở Swagger; 2. Authorize bằng token Marketing; 3. Gọi `GET /api/v1/activity-logs`; 4. Execute | HTTP 403; không trả danh sách Activity Log; hiển thị `Bạn không có quyền truy cập chức năng này` | Đã kiểm thử | PASS |
 | TC-ACTIVITY-LOGS-021 | UC10 - Phân quyền | Kiểm tra Customer Care không được gọi API xem Activity Log | Customer Care có token hợp lệ | `GET /api/v1/activity-logs` | 1. Mở Swagger; 2. Authorize bằng token Customer Care; 3. Gọi `GET /api/v1/activity-logs`; 4. Execute | HTTP 403; không trả danh sách Activity Log; hiển thị `Bạn không có quyền truy cập chức năng này` | Đã kiểm thử | PASS |
 | TC-ACTIVITY-LOGS-022 | UC10 - Xác thực | Kiểm tra gọi API Activity Log khi chưa đăng nhập | Không có access token | `GET /api/v1/activity-logs` | 1. Mở Swagger; 2. Xóa token khỏi Authorize; 3. Gọi `GET /api/v1/activity-logs`; 4. Execute | HTTP 401; không trả danh sách Activity Log; hiển thị `Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn` | Đã kiểm thử | PASS |
+| TC-ACTIVITY-LOGS-023 | UC1 - Đăng nhập| Kiểm tra hệ thống ghi Activity Log khi người dùng đăng nhập thành công | 1. Tài khoản tồn tại và `status = true`.<br>2. Mật khẩu đúng. | Không có dữ liệu ban đầu | 1. Mở prisma studio<br> 2. Kiểm tra dòng login được ghi log | Login được ghi log | Đã kiểm thử | PASS |
+| TC-ACTIVITY-LOGS-024 | UC1 - Đăng xuất  | Kiểm tra hệ thống ghi Activity Log khi người dùng chủ động đăng xuất | 1. Người dùng đã đăng nhập thành công.<br>2. Có `accessToken` hợp lệ. |  Không có dữ liệu ban đầu | 1. Mở prisma studio<br> 2. Kiểm tra dòng logout được ghi log | Logout được ghi log | Đã kiểm thử | PASS |
 
 ### Minh chứng TC-ACTIVITY-LOGS-001
 ![TC-ACTIVITY-LOGS-001 - Admin xem được danh sách Activity Log](./assets/activily-logs/TC-ACTIVITY-LOGS-001.png)
@@ -102,3 +104,9 @@
 
 ### Minh chứng TC-ACTIVITY-LOGS-022
 ![TC-ACTIVITY-LOGS-022 - Gọi API Activity Log khi chưa đăng nhập](./assets/activily-logs/TC-ACTIVITY-LOGS-022.png)
+
+### Minh chứng TC-ACTIVITY-LOGS-023
+![TC-ACTIVITY-LOGS-023 - Hệ thống ghi Activity Log khi người dùng đăng nhập thành công](./assets/activily-logs/TC-ACTIVITY-LOGS-023.png)
+
+### Minh chứng TC-ACTIVITY-LOGS-024
+![TC-ACTIVITY-LOGS-024 - Hệ thống ghi Activity Log khi người dùng chủ động đăng xuất](./assets/activily-logs/TC-ACTIVITY-LOGS-024.png)
