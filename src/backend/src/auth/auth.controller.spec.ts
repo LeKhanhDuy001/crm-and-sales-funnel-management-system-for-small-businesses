@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import type { Request } from 'express';
 
 describe('AuthController', () => {
   let authController: AuthController;
@@ -44,9 +45,17 @@ describe('AuthController', () => {
 
     authService.login.mockResolvedValue(expectedResult);
 
-    const result = await authController.login(loginDto);
+    const request = {ip: '127.0.0.1',} as unknown as Request;
 
-    expect(authService.login).toHaveBeenCalledWith(loginDto);
+    const result = await authController.login(
+      loginDto,
+      request,
+    );
+
+    expect(authService.login).toHaveBeenCalledWith(
+      loginDto,
+      '127.0.0.1',
+    );
 
     expect(result).toEqual(expectedResult);
   });
