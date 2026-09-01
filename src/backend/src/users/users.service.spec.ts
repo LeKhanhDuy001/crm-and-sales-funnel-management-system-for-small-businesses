@@ -30,6 +30,7 @@ type UsersRepositoryMock = {
   deleteUser: jest.Mock;
   findById: jest.Mock;
   updatePassword: jest.Mock;
+  findFirstAdmin: jest.Mock;
 };
 
 describe('UsersService - Admin quản lý Users', () => {
@@ -41,6 +42,12 @@ describe('UsersService - Admin quản lý Users', () => {
   const adminUser = {
     userId: 1,
     email: 'admin@crm.com',
+    role: 'Admin',
+  } as unknown as AuthenticatedUser;
+
+  const normalAdminUser = {
+    userId: 6,
+    email: 'admin.demo@crm.local',
     role: 'Admin',
   } as unknown as AuthenticatedUser;
 
@@ -85,6 +92,7 @@ describe('UsersService - Admin quản lý Users', () => {
       deleteUser: jest.fn(),
       findById: jest.fn(),
       updatePassword: jest.fn(),
+      findFirstAdmin: jest.fn(),
     };
 
     usersService = new UsersService(
@@ -362,12 +370,121 @@ describe('UsersService - Admin quản lý Users', () => {
   });
 
   describe('remove', () => {
-    it('không cho Admin xóa chính tài khoản đang đăng nhập', async () => {
-      await expect(usersService.remove(1, adminUser)).rejects.toThrow(
+    it('không cho Admin thường xóa chính tài khoản đang đăng nhập', async () => {
+      const normalAdmin = {
+        userid: 6,
+        fullname: 'Quản trị viên Demo',
+        email: 'admin.demo@crm.local',
+        phone: '0900000001',
+        status: true,
+        createdat: new Date('2026-08-06T16:33:08.118Z'),
+        roles: {
+          roleid: 1,
+          rolename: 'Admin',
+        },
+      };
+
+      usersRepository.findDetailById.mockResolvedValue(normalAdmin);
+      usersRepository.findFirstAdmin.mockResolvedValue({ userid: 1 });
+      await expect(usersService.remove(6, normalAdminUser)).rejects.toThrow(
         new ForbiddenException('Bạn không thể xóa tài khoản đang đăng nhập.'),
       );
 
-      expect(usersRepository.findDetailById).not.toHaveBeenCalled();
+      expect(usersRepository.deleteUser).not.toHaveBeenCalled();
+      expect(usersRepository.deactivateUser).not.toHaveBeenCalled();
+    });
+
+    it('không cho Admin khác xóa Super Admin', async () => {
+      const superAdmin = {
+        userid: 1,
+        fullname: 'Nguyễn Văn Admin',
+        email: 'admin@crm.com',
+        phone: '0901000001',
+        status: true,
+        createdat: new Date('2026-07-31T18:29:20.020Z'),
+        roles: {
+          roleid: 1,
+          rolename: 'Admin',
+        },
+      };
+
+      usersRepository.findDetailById.mockResolvedValue(superAdmin);
+      usersRepository.findFirstAdmin.mockResolvedValue({ userid: 1 });
+
+      await expect(usersService.remove(1, normalAdminUser)).rejects.toThrow(
+        new ForbiddenException('Không thể xóa tài khoản Super Admin.'),
+      );
+      expect(usersRepository.getRelationCounts).not.toHaveBeenCalled();
+      expect(usersRepository.deleteUser).not.toHaveBeenCalled();
+      expect(usersRepository.deactivateUser).not.toHaveBeenCalled();
+    });
+
+    it('không cho Super Admin tự xóa chính mình', async () => {
+      const superAdmin = {
+        userid: 1,
+        fullname: 'Nguyễn Văn Admin',
+        email: 'admin@crm.com',
+        phone: '0901000001',
+        status: true,
+        createdat: new Date('2026-07-31T18:29:20.020Z'),
+        roles: {
+          roleid: 1,
+          rolename: 'Admin',
+        },
+      };
+
+      usersRepository.findDetailById.mockResolvedValue(superAdmin);
+      usersRepository.findFirstAdmin.mockResolvedValue({ userid: 1 });
+
+      await expect(usersService.remove(1, adminUser)).rejects.toThrow(
+        new ForbiddenException('Không thể xóa tài khoản Super Admin.'),
+      );
+
+      expect(usersRepository.getRelationCounts).not.toHaveBeenCalled();
+      expect(usersRepository.deleteUser).not.toHaveBeenCalled();
+      expect(usersRepository.deactivateUser).not.toHaveBeenCalled();
+    });
+
+    it('Super Admin được xóa Admin thường khác', async () => {
+      const otherAdmin = {
+        userid: 6,
+        fullname: 'Quản trị viên Demo',
+        email: 'admin.demo@crm.local',
+        phone: '0900000001',
+        status: true,
+        createdat: new Date('2026-08-06T16:33:08.118Z'),
+        roles: {
+          roleid: 1,
+          rolename: 'Admin',
+        },
+      };
+
+      usersRepository.findDetailById.mockResolvedValue(otherAdmin);
+      usersRepository.findFirstAdmin.mockResolvedValue({ userid: 1 });
+      usersRepository.getRelationCounts.mockResolvedValue({
+        _count: {
+          activities: 0,
+          activitylogs: 0,
+          deals: 0,
+          leads: 0,
+          notifications: 0,
+          quotes: 0,
+          tasks: 0,
+        },
+      });
+      usersRepository.deleteUser.mockResolvedValue(undefined);
+      const result = await usersService.remove(6, adminUser);
+
+      expect(usersRepository.deleteUser).toHaveBeenCalledWith(
+        6,
+        1,
+        expect.objectContaining({
+          userId: 6,
+          roleId: 1,
+          roleName: 'Admin',
+        }),
+      );
+      expect(result.mode).toBe('deleted');
     });
 
     it('ném NotFoundException khi User cần xóa không tồn tại', async () => {
@@ -419,6 +536,49 @@ describe('UsersService - Admin quản lý Users', () => {
 
       expect(usersRepository.deleteUser).not.toHaveBeenCalled();
       expect(result.mode).toBe('deactivated');
+    });
+
+    it('Admin thường được xóa Admin thường khác', async () => {
+      const otherAdmin = {
+        userid: 73,
+        fullname: 'Nguyễn Minh Anh',
+        email: 'minh.anh@crm.test',
+        phone: '0901000001',
+        status: true,
+        createdat: new Date('2026-08-25T20:40:28.787Z'),
+        roles: {
+          roleid: 1,
+          rolename: 'Admin',
+        },
+      };
+
+      usersRepository.findDetailById.mockResolvedValue(otherAdmin);
+      usersRepository.findFirstAdmin.mockResolvedValue({ userid: 1 });
+
+      usersRepository.getRelationCounts.mockResolvedValue({
+        _count: {
+          activities: 0,
+          activitylogs: 0,
+          deals: 0,
+          leads: 0,
+          notifications: 0,
+          quotes: 0,
+          tasks: 0,
+        },
+      });
+
+      usersRepository.deleteUser.mockResolvedValue(undefined);
+      const result = await usersService.remove(73, normalAdminUser);
+      expect(usersRepository.deleteUser).toHaveBeenCalledWith(
+        73,
+        6,
+        expect.objectContaining({
+          userId: 73,
+          roleId: 1,
+          roleName: 'Admin',
+        }),
+      );
+      expect(result.mode).toBe('deleted');
     });
 
     it('xóa vật lý User khi chưa phát sinh dữ liệu nghiệp vụ', async () => {

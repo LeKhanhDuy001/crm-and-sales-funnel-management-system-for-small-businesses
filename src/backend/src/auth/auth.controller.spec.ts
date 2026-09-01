@@ -45,17 +45,11 @@ describe('AuthController', () => {
 
     authService.login.mockResolvedValue(expectedResult);
 
-    const request = {ip: '127.0.0.1',} as unknown as Request;
+    const request = { ip: '127.0.0.1' } as unknown as Request;
 
-    const result = await authController.login(
-      loginDto,
-      request,
-    );
+    const result = await authController.login(loginDto, request);
 
-    expect(authService.login).toHaveBeenCalledWith(
-      loginDto,
-      '127.0.0.1',
-    );
+    expect(authService.login).toHaveBeenCalledWith(loginDto, '127.0.0.1');
 
     expect(result).toEqual(expectedResult);
   });

@@ -169,6 +169,22 @@ export class UsersRepository {
     });
   }
 
+  async findFirstAdmin() {
+    return this.prisma.users.findFirst({
+      where: {
+        roles: {
+          rolename: 'Admin',
+        },
+      },
+      orderBy: {
+        userid: 'asc',
+      },
+      select: {
+        userid: true,
+      },
+    });
+  }
+
   async createUser(data: CreateUserData, actorUserId: number) {
     return this.prisma.$transaction(async (transaction) => {
       const user = await transaction.users.create({

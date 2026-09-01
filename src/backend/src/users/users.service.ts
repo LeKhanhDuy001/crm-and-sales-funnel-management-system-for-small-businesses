@@ -216,16 +216,21 @@ export class UsersService {
    * @returns Kết quả xóa hoặc khóa tài khoản.
    */
   async remove(userId: number, currentUser: AuthenticatedUser) {
-    if (userId === currentUser.userId) {
-      throw new ForbiddenException(
-        'Bạn không thể xóa tài khoản đang đăng nhập.',
-      );
-    }
-
     const user = await this.usersRepository.findDetailById(userId);
 
     if (!user) {
       throw new NotFoundException('Không tìm thấy người dùng.');
+    }
+
+    const firstAdmin = await this.usersRepository.findFirstAdmin();
+
+    if (firstAdmin && userId === firstAdmin.userid) {
+      throw new ForbiddenException('Không thể xóa tài khoản Super Admin.');
+    }
+    if (userId === currentUser.userId) {
+      throw new ForbiddenException(
+        'Bạn không thể xóa tài khoản đang đăng nhập.',
+      );
     }
 
     const relationResult = await this.usersRepository.getRelationCounts(userId);

@@ -64,11 +64,12 @@ describe('AuthService', () => {
 
     jwtService.signAsync.mockResolvedValue('test-access-token');
 
-    const result = await authService.login({
-      email: 'admin.demo@crm.local',
-      password,
-      rememberMe: false,
-    },
+    const result = await authService.login(
+      {
+        email: 'admin.demo@crm.local',
+        password,
+        rememberMe: false,
+      },
       null,
     );
 
@@ -120,11 +121,12 @@ describe('AuthService', () => {
     });
 
     await expect(
-      authService.login({
-        email: 'admin.demo@crm.local',
-        password: 'WrongPassword123',
-        rememberMe: false,
-      },
+      authService.login(
+        {
+          email: 'admin.demo@crm.local',
+          password: 'WrongPassword123',
+          rememberMe: false,
+        },
         null,
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);

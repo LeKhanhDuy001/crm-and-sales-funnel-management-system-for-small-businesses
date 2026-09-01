@@ -7,6 +7,7 @@
 - Phân vùng tương đương: dữ liệu người dùng hợp lệ/không hợp lệ; email mới/email đã tồn tại; role hợp lệ/không hợp lệ; User tồn tại/không tồn tại.
 - Bảng quyết định: kiểm tra xóa vật lý hoặc khóa tài khoản dựa trên việc User đã phát sinh dữ liệu nghiệp vụ hay chưa.
 - Phân quyền: kiểm tra chỉ Admin được phép quản lý Users.
+- Bảng quyết định phân quyền Admin: Super Admin là tài khoản có role Admin và userId nhỏ nhất; Super Admin không được xóa, Super Admin được xóa Admin thường và các Admin thường được phép xóa lẫn nhau nhưng không được tự xóa.
 
 | Mã TC | Chức năng / UC | Mục tiêu | Tiền điều kiện | Dữ liệu đầu vào | Các bước thực hiện | Kết quả mong đợi | Kết quả thực tế | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
@@ -40,7 +41,7 @@
 | TC-USERS-028 | UC11 - Khóa User | Kiểm tra Admin thay đổi trạng thái User sang bị khóa | Admin đã đăng nhập; User tồn tại và đang hoạt động | Chuyển trạng thái sang khóa | 1. Chọn sửa User; 2. Chuyển trạng thái sang bị khóa; 3. Nhấn lưu | User chuyển sang `status=false`; danh sách hiển thị trạng thái tài khoản đã khóa | Đã kiểm thử | PASS |
 | TC-USERS-029 | UC11 - Xóa User | Kiểm tra xóa vật lý User chưa phát sinh dữ liệu nghiệp vụ | Admin đã đăng nhập; User tồn tại; User chưa có Activity, Activity Log, Deal, Lead, Notification, Quote hoặc Task liên quan | Chọn User chưa phát sinh dữ liệu | 1. Mở Quản lý người dùng; 2. Nhấn **Xóa**; 3. Xác nhận; 4. Kiểm tra danh sách; 5. Kiểm tra bảng `users` bằng Prisma Studio | Hiển thị `Xóa người dùng thành công.`; trả `mode=deleted`; User không còn trong bảng `users`; Activity Log Delete được tạo | Đã kiểm thử | PASS |
 | TC-USERS-030 | UC11 - BR20 | Kiểm tra không xóa vật lý User đã phát sinh dữ liệu nghiệp vụ | Admin đã đăng nhập; User có ít nhất một dữ liệu liên kết như Lead, Deal, Task, Quote, Notification, Activity hoặc Activity Log | Chọn User đã phát sinh dữ liệu nghiệp vụ | 1. Mở Quản lý người dùng; 2. Nhấn **Xóa**; 3. Xác nhận; 4. Kiểm tra Prisma Studio | Hệ thống thông báo `Người dùng đã phát sinh dữ liệu nghiệp vụ nên tài khoản đã được khóa thay vì xóa vật lý.`; trả `mode=deactivated`; User vẫn còn trong DB và `status=false`; dữ liệu liên quan không bị xóa | Đã kiểm thử | PASS |
-| TC-USERS-031 | UC11 - Xóa User | Kiểm tra Admin không được tự xóa tài khoản đang đăng nhập | Admin đang đăng nhập và có token hợp lệ | `DELETE /api/v1/users/{id}` với ID chính Admin đang đăng nhập | 1. Mở Swagger; 2. Authorize bằng token Admin; 3. Xác định `userId` của chính Admin; 4. Gọi DELETE đúng ID đó; 5. Execute | HTTP 403; hiển thị `Bạn không thể xóa tài khoản đang đăng nhập.`; tài khoản Admin không bị thay đổi | Đã kiểm thử | PASS |
+| TC-USERS-031 | UC11 - Xóa User | Kiểm tra Admin thường không được tự xóa tài khoản đang đăng nhập | Admin thường đang đăng nhập và có token hợp lệ; Admin này không phải Super Admin | `DELETE /api/v1/users/{id}` với ID chính Admin thường đang đăng nhập | 1. Mở Swagger; 2. Authorize bằng token Admin thường; 3. Xác định `userId` của chính Admin; 4. Gọi DELETE đúng ID đó; 5. Execute | HTTP 403; hiển thị `Bạn không thể xóa tài khoản đang đăng nhập.`; tài khoản Admin không bị thay đổi | Đã kiểm thử | PASS |
 | TC-USERS-032 | UC11 - Xóa User | Kiểm tra xóa User ID không tồn tại | Admin có token hợp lệ | `DELETE /api/v1/users/999` | 1. Mở Swagger; 2. Authorize Admin; 3. Gọi `DELETE /api/v1/users/999`; 4. Execute | HTTP 404; hiển thị `Không tìm thấy người dùng.`; dữ liệu DB không thay đổi | Đã kiểm thử | PASS |
 | TC-USERS-033 | UC11 - BR18 | Kiểm tra tạo User có ghi Activity Log | Admin đã tạo thành công User mới | User vừa tạo | 1. Tạo User trên giao diện; 2. Ghi lại User ID; 3. Mở Activity Log hoặc Prisma Studio; 4. Tìm log theo User vừa tạo | Có Activity Log với `action=Create`, `tablename=users`, `recordid` đúng User vừa tạo và người thực hiện là đúng Admin; `new_value` chứa thông tin User mới nhưng không chứa mật khẩu | Đã kiểm thử | PASS |
 | TC-USERS-034 | UC11 - BR18 | Kiểm tra cập nhật thông tin User có ghi Activity Log | Admin đã cập nhật thành công một User | User vừa cập nhật | 1. Cập nhật họ tên/email/số điện thoại hoặc trạng thái User; 2. Mở Activity Log; 3. Tìm log tương ứng | Có Activity Log với `action=Update`, `tablename=users`, đúng `recordid`, đúng Admin thực hiện; có dữ liệu trước và sau thay đổi | Đã kiểm thử | PASS |
@@ -51,6 +52,10 @@
 | TC-USERS-039 | UC11 - Phân quyền | Kiểm tra Marketing không được gọi API quản lý Users | Marketing có token hợp lệ | `GET /api/v1/users` | 1. Mở Swagger; 2. Authorize bằng token Marketing; 3. Gọi `GET /api/v1/users`; 4. Execute | HTTP 403; không trả danh sách Users | Đã kiểm thử | PASS |
 | TC-USERS-040 | UC11 - Phân quyền | Kiểm tra Customer Care không được gọi API quản lý Users | Customer Care có token hợp lệ | `GET /api/v1/users` | 1. Mở Swagger; 2. Authorize bằng token Customer Care; 3. Gọi `GET /api/v1/users`; 4. Execute | HTTP 403; không trả danh sách Users | Đã kiểm thử | PASS |
 | TC-USERS-041 | UC11 - Xác thực | Kiểm tra gọi API Users khi chưa đăng nhập | Không có access token | `GET /api/v1/users` | 1. Mở Swagger; 2. Clear Authorize; 3. Gọi `GET /api/v1/users`; 4. Execute | HTTP 401; không trả danh sách Users | Đã kiểm thử | PASS |
+| TC-USERS-042 | UC11 - Xóa User / Super Admin | Kiểm tra Admin thường không được xóa Super Admin | Super Admin tồn tại và là tài khoản có role Admin với userId nhỏ nhất; Admin thường đã đăng nhập | `DELETE /api/v1/users/1` | 1. Đăng nhập bằng Admin thường; 2. Mở Swagger; 3. Authorize bằng token Admin thường; 4. Gọi `DELETE /api/v1/users/1`; 5. Execute; 6. Kiểm tra bảng `users` | HTTP 403; hiển thị `Không thể xóa tài khoản Super Admin.`; Super Admin vẫn tồn tại và không bị khóa | Đã kiểm thử | PASS |
+| TC-USERS-043 | UC11 - Xóa User / Super Admin | Kiểm tra Super Admin không được tự xóa chính mình | Đăng nhập bằng Super Admin có userId nhỏ nhất trong các Admin | `DELETE /api/v1/users/1` | 1. Đăng nhập bằng Super Admin; 2. Mở Swagger; 3. Authorize bằng token Super Admin; 4. Gọi `DELETE /api/v1/users/1`; 5. Execute; 6. Kiểm tra bảng `users` | HTTP 403; hiển thị `Không thể xóa tài khoản Super Admin.`; tài khoản Super Admin không bị thay đổi | Đã kiểm thử | PASS |
+| TC-USERS-044 | UC11 - Xóa User / Super Admin | Kiểm tra Super Admin được phép xóa Admin thường | Super Admin đã đăng nhập; Admin thường tồn tại và chưa phát sinh dữ liệu nghiệp vụ | ID của một Admin thường | 1. Đăng nhập bằng Super Admin; 2. Chọn Admin thường; 3. Thực hiện xóa; 4. Xác nhận; | Xóa thành công;  Admin thường bị xóa khỏi bảng `users`; Activity Log Delete ghi nhận Super Admin là người thực hiện | Đã kiểm thử | PASS |
+| TC-USERS-045 | UC11 - Xóa User / Admin | Kiểm tra Admin thường được phép xóa Admin thường khác | Có ít nhất hai Admin thường; Admin A đã đăng nhập; Admin B chưa phát sinh dữ liệu nghiệp vụ | ID của Admin B | 1. Đăng nhập bằng Admin A; 2. Chọn Admin B; 3. Thực hiện xóa; 4. Xác nhận; | Xóa thành công; Admin B bị xóa; Admin A vẫn hoạt động; Activity Log Delete ghi nhận đúng Admin A là người thực hiện | Đã kiểm thử | PASS |
 
 ### Minh chứng TC-USERS-001
 ![TC-USERS-001 - Admin xem được danh sách người dùng](./assets/users/TC-USERS-001.png)
@@ -181,3 +186,15 @@
 
 ### Minh chứng TC-USERS-041
 ![TC-USERS-041 - Gọi API Users khi chưa đăng nhập](./assets/users/TC-USERS-041.png)
+
+### Minh chứng TC-USERS-042
+![TC-USERS-042 - Admin thường không được xóa Super Admin](./assets/users/TC-USERS-042.png)
+
+### Minh chứng TC-USERS-043
+![TC-USERS-043 - Super Admin không được tự xóa chính mình](./assets/users/TC-USERS-043.png)
+
+### Minh chứng TC-USERS-044
+![TC-USERS-044 - Super Admin được phép xóa Admin thường](./assets/users/TC-USERS-044.png)
+
+### Minh chứng TC-USERS-045
+![TC-USERS-045 - Admin thường được phép xóa Admin thường khác](./assets/users/TC-USERS-045.png)

@@ -50,13 +50,17 @@ npm test -- leads.service.spec.ts
 | UNIT-USER-010 | `users.service.spec.ts` | BR16 - Cập nhật sang email đang thuộc User khác | Ném `ConflictException`; không gọi Repository cập nhật User | PASS |
 | UNIT-USER-011 | `users.service.spec.ts` | BR18 - Admin thay đổi Role của User | Repository cập nhật roleId mới và nhận Audit action `Assign` chứa Role cũ và Role mới | PASS |
 | UNIT-USER-012 | `users.service.spec.ts` | Admin cập nhật User nhưng dữ liệu không thay đổi | Trả thông báo `Không có thông tin thay đổi.` và không gọi Repository cập nhật | PASS |
-| UNIT-USER-013 | `users.service.spec.ts` | Admin xóa chính tài khoản đang đăng nhập | Ném `ForbiddenException`; không thực hiện truy vấn xóa User | PASS |
+| UNIT-USER-013 | `users.service.spec.ts` | Admin thường xóa chính tài khoản đang đăng nhập | Ném `ForbiddenException` với thông báo `Bạn không thể xóa tài khoản đang đăng nhập.`; không xóa hoặc khóa User | PASS |
 | UNIT-USER-014 | `users.service.spec.ts` | Xóa User không tồn tại | Ném `NotFoundException` với thông báo `Không tìm thấy người dùng.` | PASS |
 | UNIT-USER-015 | `users.service.spec.ts` | BR20 - Xóa User đã phát sinh dữ liệu nghiệp vụ | Không xóa vật lý; gọi `deactivateUser`, chuyển status thành false và trả mode `deactivated` | PASS |
 | UNIT-USER-016 | `users.service.spec.ts` | BR20 - Xóa User chưa phát sinh dữ liệu nghiệp vụ | Gọi `deleteUser`, không gọi `deactivateUser` và trả mode `deleted` | PASS |
 | UNIT-USER-017 | `users.service.spec.ts` | Chuẩn hóa email trước khi tìm User | Email được trim, chuyển về chữ thường và truyền đúng vào Repository | PASS |
 | UNIT-USER-018 | `users.service.spec.ts` | Tìm User theo ID | Repository được gọi với đúng User ID và trả về đúng User | PASS |
 | UNIT-USER-019 | `users.service.spec.ts` | Cập nhật mật khẩu đã mã hóa thông qua Repository | Repository `updatePassword` được gọi với đúng User ID và password hash | PASS |
+| UNIT-USER-020 | `users.service.spec.ts` | Admin thường cố xóa Super Admin | Ném `ForbiddenException` với thông báo `Không thể xóa tài khoản Super Admin.`; không xóa hoặc khóa Super Admin | PASS |
+| UNIT-USER-021 | `users.service.spec.ts` | Super Admin tự xóa chính tài khoản | Ném `ForbiddenException` với thông báo `Không thể xóa tài khoản Super Admin.`; không xóa hoặc khóa Super Admin | PASS |
+| UNIT-USER-022 | `users.service.spec.ts` | Super Admin xóa Admin thường khác | Cho phép xóa Admin thường; gọi `deleteUser` với đúng User cần xóa và Super Admin là người thực hiện | PASS |
+| UNIT-USER-023 | `users.service.spec.ts` | Admin thường xóa Admin thường khác | Cho phép xóa Admin thường khác; gọi `deleteUser` với đúng User cần xóa và Admin hiện tại là người thực hiện | PASS |
 
 ## Chức năng quản lý sản phẩm
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -256,9 +260,9 @@ Time:        8.654 s
 ```text
 Quản lý Users
 Test Suites: 1 passed, 1 total
-Tests:       19 passed, 19 total
+Tests:       23 passed, 23 total
 Snapshots:   0 total
-Time:        8.629 s
+Time:        17.614 s
 ```
 
 ```text
@@ -325,7 +329,7 @@ Snapshots:   0 total
 Time:        0.774 s
 ```
 
-**Kết luận:** 183/183 unit test PASS.
+**Kết luận:** 187/187 unit test PASS.
 
 ---
 
@@ -340,3 +344,4 @@ Time:        0.774 s
 | 23/08/2026 | unit test backend cho chức năng tạo quotes, chức năng quản lý tasks, chức năng thông báo | 49 | PASS |
 | 26/08/2026 | unit test backend cho chức năng tạo và phân công Deal cho Sales Manager| 16 | PASS |
 | 27/08/2026 | unit test backend Dashboard| 8 | PASS |
+| 01/09/2026 | Bổ sung unit test phân quyền xóa Admin và bảo vệ Super Admin | 4 | PASS |
