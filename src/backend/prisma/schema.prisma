@@ -17,6 +17,7 @@ model activities {
   description  String?
   activitytime DateTime? @map("activity_time") @db.Timestamp(6)
   result       String?
+  status       activity_status @default(Pending)
 
   deals deals @relation(fields: [dealid], references: [dealid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_deal")
   users users @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction, map: "fk_activity_user")
@@ -265,4 +266,10 @@ enum action_type {
   Convert
   Send_Quote   @map("Send Quote")
   Change_Stage @map("Change Stage")
+}
+
+enum activity_status {
+  Pending
+  Completed
+  Cancelled
 }
