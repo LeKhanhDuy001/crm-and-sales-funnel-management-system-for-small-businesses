@@ -1,4 +1,11 @@
-import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsString, MaxLength, } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ActivityType } from '../enums/activity-type.enum';
 
 export class CreateActivityDto {

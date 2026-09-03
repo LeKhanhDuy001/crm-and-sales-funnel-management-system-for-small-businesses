@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { action_type, Prisma, activity_status, } from '../../../generated/prisma/client';
+import {
+  action_type,
+  Prisma,
+  activity_status,
+} from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const activitySelect = {
@@ -37,7 +41,9 @@ const activitySelect = {
   },
 } satisfies Prisma.activitiesSelect;
 
-export type ActivityWithRelations = Prisma.activitiesGetPayload<{ select: typeof activitySelect; }>;
+export type ActivityWithRelations = Prisma.activitiesGetPayload<{
+  select: typeof activitySelect;
+}>;
 
 export interface CreateActivityData {
   dealId: number;
@@ -51,11 +57,11 @@ export interface CreateActivityData {
 
 @Injectable()
 export class ActivitiesRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   findSalesDealsForActivity(userId: number) {
     return this.prisma.deals.findMany({
-      where: { assigneduserid: userId, },
+      where: { assigneduserid: userId },
       select: {
         dealid: true,
         dealname: true,
@@ -67,7 +73,7 @@ export class ActivitiesRepository {
           },
         },
       },
-      orderBy: { dealname: 'asc', },
+      orderBy: { dealname: 'asc' },
     });
   }
 
@@ -83,10 +89,7 @@ export class ActivitiesRepository {
               },
               {
                 status: {
-                  notIn: [
-                    'Completed',
-                    'Cancelled',
-                  ],
+                  notIn: ['Completed', 'Cancelled'],
                 },
               },
             ],
@@ -104,13 +107,13 @@ export class ActivitiesRepository {
           },
         },
       },
-      orderBy: { dealname: 'asc', },
+      orderBy: { dealname: 'asc' },
     });
   }
 
   findDealById(dealId: number) {
     return this.prisma.deals.findUnique({
-      where: { dealid: dealId, },
+      where: { dealid: dealId },
       select: {
         dealid: true,
         dealname: true,
@@ -133,7 +136,7 @@ export class ActivitiesRepository {
     });
   }
 
-  findActiveAssignedTaskForDeal(dealId: number, userId: number,) {
+  findActiveAssignedTaskForDeal(dealId: number, userId: number) {
     return this.prisma.tasks.findFirst({
       where: {
         dealid: dealId,
@@ -144,34 +147,33 @@ export class ActivitiesRepository {
           },
           {
             status: {
-              notIn: [
-                'Completed',
-                'Cancelled',
-              ],
+              notIn: ['Completed', 'Cancelled'],
             },
           },
         ],
       },
-      select: {taskid: true,},
+      select: { taskid: true },
     });
   }
 
   findById(activityId: number) {
     return this.prisma.activities.findUnique({
-      where: { activityid: activityId, },
+      where: { activityid: activityId },
       select: activitySelect,
     });
   }
 
   findManyByUser(userId: number) {
     return this.prisma.activities.findMany({
-      where: { userid: userId, },
-      orderBy: { activitytime: 'desc', },
+      where: { userid: userId },
+      orderBy: { activitytime: 'desc' },
       select: activitySelect,
     });
   }
 
-  async createWithActivityLog(input: CreateActivityData,): Promise<ActivityWithRelations> {
+  async createWithActivityLog(
+    input: CreateActivityData,
+  ): Promise<ActivityWithRelations> {
     return this.prisma.$transaction(async (transaction) => {
       // BR-31: Activity mới phải ở trạng thái Pending và chưa có kết quả chăm sóc.
       const activity = await transaction.activities.create({
@@ -221,15 +223,14 @@ export class ActivitiesRepository {
   ): Promise<ActivityWithRelations> {
     return this.prisma.$transaction(async (transaction) => {
       // BR-31: Khi có kết quả chăm sóc, Activity chuyển sang trạng thái Completed.
-      const activity =
-        await transaction.activities.update({
-          where: { activityid: activityId, },
-          data: {
-            result,
-            status: activity_status.Completed,
-          },
-          select: activitySelect,
-        });
+      const activity = await transaction.activities.update({
+        where: { activityid: activityId },
+        data: {
+          result,
+          status: activity_status.Completed,
+        },
+        select: activitySelect,
+      });
 
       // BR-18: cập nhật kết quả Activity phải được ghi vào Activity Log.
       await transaction.activitylogs.create({
@@ -261,29 +262,26 @@ export class ActivitiesRepository {
     actorUserId: number,
     ipAddress?: string,
   ): Promise<ActivityWithRelations> {
-    return this.prisma.$transaction(
-      async (transaction) => {
-        const activity =
-          await transaction.activities.update({
-            where: { activityid: activityId, },
-            data: { status: activity_status.Cancelled, },
-            select: activitySelect,
-          });
+    return this.prisma.$transaction(async (transaction) => {
+      const activity = await transaction.activities.update({
+        where: { activityid: activityId },
+        data: { status: activity_status.Cancelled },
+        select: activitySelect,
+      });
 
-        // BR-18: hủy Activity phải được ghi vào Activity Log.
-        await transaction.activitylogs.create({
-          data: {
-            userid: actorUserId,
-            action: action_type.Update,
-            tablename: 'activities',
-            recordid: activityId,
-            ipaddress: ipAddress ?? null,
-            oldvalue: { status: currentActivity.status, },
-            newvalue: { status: activity.status, },
-          },
-        });
-        return activity;
-      },
-    );
+      // BR-18: hủy Activity phải được ghi vào Activity Log.
+      await transaction.activitylogs.create({
+        data: {
+          userid: actorUserId,
+          action: action_type.Update,
+          tablename: 'activities',
+          recordid: activityId,
+          ipaddress: ipAddress ?? null,
+          oldvalue: { status: currentActivity.status },
+          newvalue: { status: activity.status },
+        },
+      });
+      return activity;
+    });
   }
 }

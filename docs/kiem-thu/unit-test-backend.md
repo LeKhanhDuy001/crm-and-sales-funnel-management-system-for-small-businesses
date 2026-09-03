@@ -241,6 +241,35 @@ npm test -- leads.service.spec.ts
 | UNIT-DASHBOARD-007 | `dashboard.service.spec.ts` | Dashboard Marketing khi không có Lead | Khi `totalLeads = 0`, trả `conversionRate = 0` và `unconvertedLeads = 0`; không xảy ra chia cho `0` hoặc trả `NaN` | PASS |
 | UNIT-DASHBOARD-008 | `dashboard.service.spec.ts` | Customer Care lấy Dashboard cá nhân theo đúng `userId` | Repository lấy Customer cần chăm sóc, Task hôm nay, Task chưa hoàn thành, Task quá hạn, Activity, Task sắp tới và Activity gần nhất theo đúng `userId`; trả đúng `overview`, `upcomingTasks`, `recentActivities` và `activitiesByType` | PASS |
 
+## Chức năng quản lý Activities
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-ACTIVITY-001 | `activities.service.spec.ts` | Người dùng lấy danh sách Activity của chính mình | Repository được gọi với đúng `userId`; trả đúng danh sách Activity sau khi mapping dữ liệu | PASS |
+| UNIT-ACTIVITY-002 | `activities.service.spec.ts` | Người dùng có Role không hỗ trợ truy cập chức năng Activity | Ném `ForbiddenException` với thông báo `Bạn không có quyền sử dụng chức năng Activity.`; không truy vấn Repository | PASS |
+| UNIT-ACTIVITY-003 | `activities.service.spec.ts` | Sales lấy metadata Deal dùng để tạo Activity | Gọi `findSalesDealsForActivity` với đúng Sales `userId`; trả đúng Deal và Customer thuộc quyền Sales | PASS |
+| UNIT-ACTIVITY-004 | `activities.service.spec.ts` | Customer Care lấy metadata Deal dùng để tạo Activity | Gọi `findCustomerCareDealsForActivity` với đúng Customer Care `userId`; chỉ trả Deal thuộc phạm vi chăm sóc | PASS |
+| UNIT-ACTIVITY-005 | `activities.service.spec.ts` | Xem chi tiết Activity thuộc người dùng hiện tại | Repository được gọi với đúng Activity ID; trả đúng Activity, Deal, Customer và trạng thái | PASS |
+| UNIT-ACTIVITY-006 | `activities.service.spec.ts` | Người dùng xem Activity của người khác | Ném `NotFoundException` với thông báo không có quyền truy cập Activity | PASS |
+| UNIT-ACTIVITY-007 | `activities.service.spec.ts` | Xem Activity không tồn tại | Ném `NotFoundException`; không trả dữ liệu Activity | PASS |
+| UNIT-ACTIVITY-008 | `activities.service.spec.ts` | BR15, BR18 - Sales tạo Activity cho Deal mình phụ trách | Trim nội dung và mô tả; Repository nhận đúng Deal, User, loại Activity, thời gian và IP; Activity được tạo ở trạng thái `Pending`, `result = null` | PASS |
+| UNIT-ACTIVITY-009 | `activities.service.spec.ts` | Sales tạo Activity cho Deal của Sales khác | Ném `NotFoundException`; không gọi Repository tạo Activity | PASS |
+| UNIT-ACTIVITY-010 | `activities.service.spec.ts` | Tạo Activity với Deal không tồn tại | Ném `NotFoundException` với thông báo `Không tìm thấy Deal.`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-011 | `activities.service.spec.ts` | Tạo Activity với nội dung chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo nội dung hoạt động không được để trống; không tạo Activity | PASS |
+| UNIT-ACTIVITY-012 | `activities.service.spec.ts` | Tạo Activity với mô tả chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo mô tả hoạt động không được để trống; không tạo Activity | PASS |
+| UNIT-ACTIVITY-013 | `activities.service.spec.ts` | Customer Care tạo Activity khi có Task đang hoạt động được phân công | Cho phép tạo Activity và gán đúng Customer Care đang đăng nhập làm người thực hiện | PASS |
+| UNIT-ACTIVITY-014 | `activities.service.spec.ts` | Customer Care tạo Activity khi Task đã `Completed` | Ném `NotFoundException`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-015 | `activities.service.spec.ts` | Customer Care tạo Activity khi Task đã `Cancelled` | Ném `NotFoundException`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-016 | `activities.service.spec.ts` | Customer Care chăm sóc Deal có Task thuộc người khác | Ném `NotFoundException`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-017 | `activities.service.spec.ts` | Cập nhật kết quả Activity thành công | Trim kết quả; gọi Repository cập nhật và ghi Activity Log; trạng thái chuyển từ `Pending` sang `Completed` | PASS |
+| UNIT-ACTIVITY-018 | `activities.service.spec.ts` | Cập nhật kết quả Activity của người khác | Ném `NotFoundException`; không gọi Repository cập nhật kết quả | PASS |
+| UNIT-ACTIVITY-019 | `activities.service.spec.ts` | Cập nhật kết quả chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo kết quả chăm sóc không được để trống | PASS |
+| UNIT-ACTIVITY-020 | `activities.service.spec.ts` | Cập nhật kết quả Activity đã `Cancelled` | Ném `UnprocessableEntityException` với thông báo Activity đã bị hủy; không cập nhật kết quả | PASS |
+| UNIT-ACTIVITY-021 | `activities.service.spec.ts` | BR18 - Hủy Activity đang `Pending` | Gọi Repository hủy và ghi Activity Log; trạng thái Activity chuyển sang `Cancelled` | PASS |
+| UNIT-ACTIVITY-022 | `activities.service.spec.ts` | Hủy Activity đã `Completed` | Ném `UnprocessableEntityException` với thông báo Activity đã hoàn thành nên không thể hủy | PASS |
+| UNIT-ACTIVITY-023 | `activities.service.spec.ts` | Hủy lại Activity đã `Cancelled` | Ném `UnprocessableEntityException` với thông báo Activity đã được hủy; không cập nhật lại | PASS |
+| UNIT-ACTIVITY-024 | `activities.service.spec.ts` | Hủy Activity của người khác | Ném `NotFoundException`; không gọi Repository hủy Activity | PASS |
+
 ## 3. Kết quả tổng hợp
 
 ```text
@@ -329,7 +358,15 @@ Snapshots:   0 total
 Time:        0.774 s
 ```
 
-**Kết luận:** 187/187 unit test PASS.
+```text
+Quản lý Activities
+Test Suites: 1 passed, 1 total
+Tests:       24 passed, 24 total
+Snapshots:   0 total
+Time:        5.115 s
+```
+
+**Kết luận:** 211/211 unit test PASS.
 
 ---
 
@@ -345,3 +382,4 @@ Time:        0.774 s
 | 26/08/2026 | unit test backend cho chức năng tạo và phân công Deal cho Sales Manager| 16 | PASS |
 | 27/08/2026 | unit test backend Dashboard| 8 | PASS |
 | 01/09/2026 | Bổ sung unit test phân quyền xóa Admin và bảo vệ Super Admin | 4 | PASS |
+| 02/09/2026 | Hoàn thiện unit test backend cho chức năng quản lý Activities | 24 | PASS |

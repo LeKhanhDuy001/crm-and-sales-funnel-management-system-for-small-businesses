@@ -1,5 +1,15 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards, Patch, } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -15,14 +25,14 @@ import { UpdateActivityResultDto } from './dto/update-activity-result.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.SALES, Role.CUSTOMER_CARE)
 export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService,) { }
+  constructor(private readonly activitiesService: ActivitiesService) {}
 
   @Get()
   findAll(
     @Req()
     request: AuthenticatedRequest,
   ) {
-    return this.activitiesService.findAll(request.user,);
+    return this.activitiesService.findAll(request.user);
   }
 
   @Get('meta')
@@ -30,7 +40,7 @@ export class ActivitiesController {
     @Req()
     request: AuthenticatedRequest,
   ) {
-    return this.activitiesService.getMeta(request.user,);
+    return this.activitiesService.getMeta(request.user);
   }
 
   @Get(':id')
@@ -40,7 +50,7 @@ export class ActivitiesController {
     @Req()
     request: AuthenticatedRequest,
   ) {
-    return this.activitiesService.findOne(activityId, request.user,);
+    return this.activitiesService.findOne(activityId, request.user);
   }
 
   @Post()
@@ -50,7 +60,7 @@ export class ActivitiesController {
     @Req()
     request: AuthenticatedRequest,
   ) {
-    return this.activitiesService.create(dto, request.user, request.ip,);
+    return this.activitiesService.create(dto, request.user, request.ip);
   }
 
   @Patch(':id/result')
@@ -77,10 +87,6 @@ export class ActivitiesController {
     @Req()
     request: AuthenticatedRequest,
   ) {
-    return this.activitiesService.cancel(
-      activityId,
-      request.user,
-      request.ip,
-    );
+    return this.activitiesService.cancel(activityId, request.user, request.ip);
   }
 }
