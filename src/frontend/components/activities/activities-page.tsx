@@ -12,47 +12,15 @@ import {
 } from '../../modules/activities/activities.service';
 import type {
   Activity,
-  ActivityType,
   ActivityDealOption,
   CreateActivityInput,
-  ActivityStatus,
 } from '../../modules/activities/activities.types';
 import { ApiError } from '../../services/api';
 import styles from './activities-page.module.css';
 import CreateActivityModal from './create-activity-modal';
 import UpdateActivityResultModal from './update-activity-result-modal';
-
-function getActivityTypeLabel(type: ActivityType,): string {
-  switch (type) {
-    case 'Call':
-      return 'Gọi điện';
-    case 'Email':
-      return 'Email';
-    case 'Meeting':
-      return 'Cuộc hẹn';
-    default:
-      return type;
-  }
-}
-
-function getActivityStatusLabel(
-  status: ActivityStatus,
-): string {
-  switch (status) {
-    case 'Pending':
-      return 'Chờ thực hiện';
-    case 'Completed':
-      return 'Hoàn thành';
-    case 'Cancelled':
-      return 'Đã hủy';
-    default:
-      return status;
-  }
-}
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString('vi-VN');
-}
+import ActivityTable from './activity-table';
+import ActivityDetailModal from './activity-detail-modal';
 
 export default function ActivitiesPage() {
   const router = useRouter();
@@ -264,7 +232,6 @@ export default function ActivitiesPage() {
       </div>
     );
   }
-
   return (
     <main className={styles.page}>
       <div className={styles.header}>
@@ -275,7 +242,6 @@ export default function ActivitiesPage() {
             cuộc hẹn với khách hàng.
           </p>
         </div>
-
         <button type="button" className={styles.createButton}
           disabled={dealOptions.length === 0}
           title={dealOptions.length === 0 ? 'Bạn chưa có Deal được phân công chăm sóc.' : undefined}
@@ -295,109 +261,14 @@ export default function ActivitiesPage() {
           Chưa có hoạt động chăm sóc nào.
         </div>
       ) : (
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Mã</th>
-                <th>Loại</th>
-                <th>Nội dung</th>
-                <th>Khách hàng</th>
-                <th>Deal</th>
-                <th>Thời gian</th>
-                <th>Kết quả</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {activities.map((activity) => (
-                <tr key={activity.activityId}>
-                  <td>
-                    {activity.activityCode}
-                  </td>
-
-                  <td>
-                    <span className={styles.typeBadge}>
-                      {getActivityTypeLabel(
-                        activity.activityType,
-                      )}
-                    </span>
-                  </td>
-
-                  <td>
-                    {activity.subject || '-'}
-                  </td>
-
-                  <td>
-                    <strong>
-                      {activity.customer.fullName}
-                    </strong>
-
-                    {activity.customer.company && (
-                      <span className={styles.subText}>
-                        {activity.customer.company}
-                      </span>
-                    )}
-                  </td>
-
-                  <td>
-                    {activity.deal.dealName}
-                  </td>
-
-                  <td>
-                    {formatDate(activity.activityTime,)}
-                  </td>
-
-                  <td>
-                    {activity.result || 'Chưa cập nhật'}
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.statusBadge} ${styles[
-                        `status${activity.status}`
-                      ]
-                        }`}
-                    >
-                      {getActivityStatusLabel(
-                        activity.status,
-                      )}
-                    </span>
-                  </td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <button type="button" className={styles.detailButton}
-                        onClick={() => setSelectedActivity(activity)}
-                      >
-                        Chi tiết
-                      </button>
-
-                      {activity.status !== 'Cancelled' && (
-                        <button type="button" className={styles.resultButton}
-                          onClick={() => setUpdatingActivity(activity)}
-                        >
-                          Cập nhật kết quả
-                        </button>
-                      )}
-
-                      {activity.status === 'Pending' && (
-                        <button type="button" className={styles.cancelButton}
-                          disabled={cancellingActivityId === activity.activityId}
-                          onClick={() => { void handleCancelActivity(activity,); }}
-                        >
-                          {cancellingActivityId === activity.activityId ? 'Đang hủy...' : 'Hủy'}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ActivityTable
+          activities={activities}
+          cancellingActivityId={cancellingActivityId}
+          onSelect={setSelectedActivity}
+          onUpdateResult={setUpdatingActivity}
+          onCancel={handleCancelActivity}
+        />
       )}
-
       {isCreateOpen && (
         <CreateActivityModal
           deals={dealOptions}
@@ -406,7 +277,6 @@ export default function ActivitiesPage() {
           onSubmit={handleCreateActivity}
         />
       )}
-
       {updatingActivity && (
         <UpdateActivityResultModal
           key={updatingActivity.activityId}
@@ -416,91 +286,11 @@ export default function ActivitiesPage() {
           onSubmit={handleUpdateResult}
         />
       )}
-
       {selectedActivity && (
-        <div className={styles.overlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>
-                  {selectedActivity.activityCode}
-                </h2>
-
-                <p>
-                  {getActivityTypeLabel(
-                    selectedActivity.activityType,
-                  )}
-                </p>
-              </div>
-
-              <button type="button" className={styles.closeButton}
-                onClick={() => setSelectedActivity(null)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className={styles.detailGrid}>
-              <span>Nội dung</span>
-              <strong>
-                {selectedActivity.subject || '-'}
-              </strong>
-
-              <span>Mô tả</span>
-              <strong>
-                {selectedActivity.description || '-'}
-              </strong>
-
-              <span>Khách hàng</span>
-              <strong>
-                {selectedActivity.customer.fullName}
-              </strong>
-
-              <span>Công ty</span>
-              <strong>
-                {selectedActivity.customer.company ||
-                  '-'}
-              </strong>
-
-              <span>Deal</span>
-              <strong>
-                {selectedActivity.deal.dealName}
-              </strong>
-
-              <span>Người thực hiện</span>
-              <strong>
-                {selectedActivity.user.fullName}
-              </strong>
-
-              <span>Thời gian</span>
-              <strong>
-                {formatDate(
-                  selectedActivity.activityTime,
-                )}
-              </strong>
-
-              <span>Kết quả</span>
-              <strong>
-                {selectedActivity.result || 'Chưa cập nhật'}
-              </strong>
-              <span>Trạng thái</span>
-              <strong>
-                {getActivityStatusLabel(selectedActivity.status,)}
-              </strong>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedActivity(null)
-                }
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
+        <ActivityDetailModal
+          activity={selectedActivity}
+          onClose={() => setSelectedActivity(null)}
+        />
       )}
     </main>
   );
