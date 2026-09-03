@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '../../../generated/prisma/client';
 
 interface SalesPerformanceAggregate {
   assigneduserid: number;
@@ -11,6 +12,36 @@ interface SalesPerformanceAggregate {
     expectedrevenue: unknown;
   };
 }
+
+const attentionDealSelect = {
+  dealid: true,
+  dealname: true,
+  dealvalue: true,
+  probability: true,
+  expectedrevenue: true,
+  expectedclosedate: true,
+  status: true,
+  pipelinestages: {
+    select: {
+      stagename: true,
+    },
+  },
+  users: {
+    select: {
+      fullname: true,
+    },
+  },
+  customers: {
+    select: {
+      fullname: true,
+      company: true,
+    },
+  },
+} satisfies Prisma.dealsSelect;
+
+type AttentionDeal = Prisma.dealsGetPayload<{
+  select: typeof attentionDealSelect;
+}>;
 
 @Injectable()
 export class DashboardRepository {
@@ -148,14 +179,7 @@ export class DashboardRepository {
   countOpenDeals() {
     return this.prisma.deals.count({
       where: {
-        OR: [
-          {
-            status: null,
-          },
-          {
-            status: { notIn: ['Won', 'Lost'] },
-          },
-        ],
+        status: { notIn: ['Won', 'Lost'] },
       },
     });
   }
@@ -163,16 +187,7 @@ export class DashboardRepository {
   aggregateOpenDeals() {
     return this.prisma.deals.aggregate({
       where: {
-        OR: [
-          {
-            status: null,
-          },
-          {
-            status: {
-              notIn: ['Won', 'Lost'],
-            },
-          },
-        ],
+        status: { notIn: ['Won', 'Lost'] },
       },
       _sum: {
         dealvalue: true,
@@ -205,31 +220,15 @@ export class DashboardRepository {
     });
   }
 
-  findDealsNeedingAttention(limit: number) {
+  findDealsNeedingAttention(limit: number): Promise<AttentionDeal[]> {
     return this.prisma.deals.findMany({
       take: limit,
       where: {
         expectedclosedate: { not: null },
-        OR: [{ status: null }, { status: { notIn: ['Won', 'Lost'] } }],
+        status: { notIn: ['Won', 'Lost'] },
       },
       orderBy: { expectedclosedate: 'asc' },
-      select: {
-        dealid: true,
-        dealname: true,
-        dealvalue: true,
-        probability: true,
-        expectedrevenue: true,
-        expectedclosedate: true,
-        status: true,
-        pipelinestages: { select: { stagename: true } },
-        users: { select: { fullname: true } },
-        customers: {
-          select: {
-            fullname: true,
-            company: true,
-          },
-        },
-      },
+      select: attentionDealSelect,
     });
   }
 
@@ -251,7 +250,7 @@ export class DashboardRepository {
     return this.prisma.deals.aggregate({
       where: {
         assigneduserid: userId,
-        OR: [{ status: null }, { status: { notIn: ['Won', 'Lost'] } }],
+        status: { notIn: ['Won', 'Lost'] },
       },
       _sum: {
         dealvalue: true,

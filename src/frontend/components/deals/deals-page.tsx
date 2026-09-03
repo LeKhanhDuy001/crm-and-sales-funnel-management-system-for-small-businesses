@@ -5,26 +5,25 @@ import { useRouter } from 'next/navigation';
 import { clearAuth, getAccessToken, } from '../../modules/auth/auth.storage';
 import { getCustomers } from '../../modules/customers/customers.service';
 import type { Customer } from '../../modules/customers/customers.types';
-import { deleteDeal, getDealMeta, getDeals, } from '../../modules/deals/deals.service';
-import type { Deal, DealPagination, PipelineStageOption, } from '../../modules/deals/deals.types';
+import { assignDeal, deleteDeal, getDealMeta, getDeals, } from '../../modules/deals/deals.service';
+import type { Deal, DealPagination, PipelineStageOption, DealSalesUserOption, } from '../../modules/deals/deals.types';
 import { ApiError } from '../../services/api';
-import CreateDealModal from './create-deal-modal';
-import DealsTable from './deals-table';
-import styles from './deals-page.module.css';
-import EditDealModal from './edit-deal-modal';
-import { getDealStageLabel } from '../../modules/deals/deal-stage-labels';
-import PipelineBoard from './pipeline-board';
+import DealsPageContent, { type DealViewMode } from './deals-page-content';
 
 const DEFAULT_PAGINATION: DealPagination = { page: 1, limit: 20, total: 0, totalPages: 0, };
-type DealViewMode = 'list' | 'pipeline';
 
-export default function DealsPage() {
+interface DealsPageProps {
+    mode?: 'sales' | 'manager';
+}
+
+export default function DealsPage({ mode = 'sales', }: DealsPageProps) {
     const router = useRouter();
+    const isManager = mode === 'manager';
 
     const [deals, setDeals] = useState<Deal[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [stages, setStages] = useState<PipelineStageOption[]>([]);
-
+    const [salesUsers, setSalesUsers] = useState<DealSalesUserOption[]>([]);
     const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
 
     const [searchInput, setSearchInput] = useState('');
@@ -40,6 +39,12 @@ export default function DealsPage() {
     const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
     const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+
+    const [assigningDeal, setAssigningDeal] = useState<Deal | null>(null);
+
+    const [isAssigning, setIsAssigning] = useState(false);
+
+    const [assignError, setAssignError] = useState('');
 
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -74,6 +79,7 @@ export default function DealsPage() {
                 setDeals(dealsResponse.data,);
                 setPagination(dealsResponse.pagination,);
                 setStages(metaResponse.stages,);
+                setSalesUsers(metaResponse.salesUsers ?? []);
                 setCustomers(customersResponse.data,);
             } catch (caughtError) {
                 if (caughtError instanceof ApiError) {
@@ -144,6 +150,58 @@ export default function DealsPage() {
         }
     }
 
+    async function handleAssign(assignedUserId: number,): Promise<void> {
+        if (!assigningDeal) {
+            return;
+        }
+
+        const token = getAccessToken();
+
+        if (!token) {
+            router.replace('/login');
+            return;
+        }
+
+        try {
+            setIsAssigning(true);
+            setAssignError('');
+
+            const response = await assignDeal(
+                token,
+                assigningDeal.dealId,
+                {
+                    assignedUserId,
+                },
+            );
+
+            window.alert(response.message);
+
+            setAssigningDeal(null);
+
+            setRefreshKey((value) => value + 1,);
+        } catch (caughtError) {
+            if (caughtError instanceof ApiError) {
+                if (caughtError.statusCode === 401) {
+                    clearAuth();
+                    router.replace('/login');
+                    return;
+                }
+
+                if (caughtError.statusCode === 403) {
+                    router.replace('/unauthorized');
+                    return;
+                }
+
+                setAssignError(caughtError.message);
+                return;
+            }
+
+            setAssignError('Không thể phân công Deal.',);
+        } finally {
+            setIsAssigning(false);
+        }
+    }
+
     function handleDealChanged(updatedDeal: Deal,): void {
         setDeals((currentDeals) =>
             currentDeals.map((deal) =>
@@ -163,204 +221,74 @@ export default function DealsPage() {
     const token = getAccessToken();
 
     return (
-        <main className={styles.page}>
-            <div className={styles.pageHeader}>
-                <div>
-                    <h1>Quản lý Deal</h1>
-                    <p>
-                        Quản lý các cơ hội bán hàng
-                        được phân cho bạn.
-                    </p>
-                </div>
+        <DealsPageContent
+            state={{
+                isManager,
+                token,
+                deals,
+                customers,
+                stages,
+                salesUsers,
+                pagination,
+                searchInput,
+                stageFilter,
+                viewMode,
+                page,
+                isLoading,
+                error,
+                isCreateOpen,
+                selectedDeal,
+                editingDeal,
+                assigningDeal,
+                isAssigning,
+                assignError,
+            }}
+            actions={{
+                onSearch: handleSearch,
+                onSearchInputChange: setSearchInput,
+                onCreateOpen: () => setIsCreateOpen(true),
+                onViewModeChange: (nextViewMode) => {
+                    setViewMode(nextViewMode);
+                    setPage(1);
+                },
+                onStageFilterChange: (value) => {
+                    setPage(1);
+                    setStageFilter(value);
+                },
+                onView: setSelectedDeal,
+                onEdit: setEditingDeal,
+                onDelete: (deal) => {
+                    void handleDelete(deal);
+                },
+                onAssignOpen: (deal) => {
+                    setAssignError('');
+                    setAssigningDeal(deal);
+                },
+                onPageChange: setPage,
+                onDealChanged: handleDealChanged,
+                onCreateClose: () => setIsCreateOpen(false),
+                onCreateSuccess: () => {
+                    setIsCreateOpen(false);
+                    setRefreshKey((value) => value + 1);
+                },
+                onDetailClose: () => setSelectedDeal(null),
+                onEditClose: () => setEditingDeal(null),
+                onEditSuccess: () => {
+                    setEditingDeal(null);
+                    setRefreshKey((value) => value + 1);
+                },
+                onAssignClose: () => {
+                    if (isAssigning) {
+                        return;
+                    }
 
-                <button type="button" className={styles.primaryButton}
-                    onClick={() => setIsCreateOpen(true)}
-                >
-                    + Thêm Deal
-                </button>
-            </div>
-
-            <section className={styles.panel}>
-                <div className={styles.viewTabs}>
-                    <button type="button"
-                        className={viewMode === 'list' ? styles.viewTabActive : styles.viewTab}
-                        onClick={() => { setViewMode('list'); setPage(1); }}
-                    >
-                        Danh sách
-                    </button>
-
-                    <button type="button"
-                        className={viewMode === 'pipeline' ? styles.viewTabActive : styles.viewTab}
-                        onClick={() => {
-                            setViewMode('pipeline',);
-                            setPage(1);
-                        }}
-                    >
-                        Pipeline
-                    </button>
-                </div>
-                <div className={styles.filters}>
-                    <form className={styles.searchForm} onSubmit={handleSearch}>
-                        <input type="search"
-                            placeholder="Tìm theo tên Deal, Customer, công ty..."
-                            value={searchInput}
-                            onChange={(event) => setSearchInput(event.target.value,)}
-                        />
-
-                        <button type="submit">
-                            Tìm kiếm
-                        </button>
-                    </form>
-
-                    {viewMode === 'list' && (
-                        <select value={stageFilter}
-                            onChange={(event) => { setPage(1); setStageFilter(event.target.value,); }}
-                        >
-                            <option value="">
-                                Tất cả giai đoạn
-                            </option>
-                            {stages.map((stage) => (
-                                <option key={stage.stageId} value={stage.stageId}>
-                                    {getDealStageLabel(stage.stageName,)}
-                                </option>
-                            ))}
-                        </select>
-                    )}
-                </div>
-
-                {isLoading && (
-                    <p className={styles.stateMessage}>
-                        Đang tải danh sách Deal...
-                    </p>
-                )}
-
-                {!isLoading && error && (
-                    <p className={styles.errorMessage}>
-                        {error}
-                    </p>
-                )}
-
-                {!isLoading && !error && deals.length === 0 &&
-                    viewMode === 'list' && (
-                        <p className={styles.stateMessage}>
-                            Không tìm thấy Deal phù hợp.
-                        </p>
-                    )}
-
-                {!isLoading && !error && deals.length > 0 &&
-                    viewMode === 'list' && (
-                        <>
-                            <DealsTable
-                                deals={deals}
-                                onView={setSelectedDeal}
-                                onEdit={setEditingDeal}
-                                onDelete={(deal) => { void handleDelete(deal); }}
-                            />
-
-                            <div className={styles.pagination}>
-                                <button type="button" disabled={page <= 1}
-                                    onClick={() => setPage((value) => value - 1)}
-                                >
-                                    Trước
-                                </button>
-
-                                <span>
-                                    Trang {pagination.page}
-                                    {' / '}
-                                    {Math.max(pagination.totalPages, 1,)}
-                                </span>
-
-                                <button type="button"
-                                    disabled={page >= pagination.totalPages}
-                                    onClick={() => setPage((value) => value + 1)}
-                                >
-                                    Sau
-                                </button>
-                            </div>
-                        </>
-                    )}
-
-                {!isLoading && !error &&
-                    viewMode === 'pipeline' &&
-                    token && (
-                        <PipelineBoard
-                            token={token}
-                            deals={deals}
-                            stages={stages}
-                            onDealChanged={handleDealChanged}
-                        />
-                    )}
-            </section>
-
-            {isCreateOpen && token && (
-                <CreateDealModal token={token}
-                    customers={customers} stages={stages}
-                    onClose={() => setIsCreateOpen(false)}
-                    onSuccess={() => { setIsCreateOpen(false); setRefreshKey((value) => value + 1,); }}
-                />
-            )}
-
-            {selectedDeal && (
-                <div className={styles.modalBackdrop}>
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h2>
-                                Chi tiết {selectedDeal.dealCode}
-                            </h2>
-
-                            <button type="button"
-                                className={styles.closeButton}
-                                onClick={() => setSelectedDeal(null)}
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        <div className={styles.detailGrid}>
-                            <span>Tên Deal</span>
-                            <strong>
-                                {selectedDeal.dealName}
-                            </strong>
-
-                            <span>Customer</span>
-                            <strong>
-                                {selectedDeal.customer.fullName}
-                            </strong>
-
-                            <span>Giai đoạn</span>
-                            <strong>
-                                {getDealStageLabel(selectedDeal.stage.stageName,)}
-                            </strong>
-
-                            <span>Xác suất</span>
-                            <strong>
-                                {selectedDeal.probability ?? 0}%
-                            </strong>
-
-                            <span>Giá trị</span>
-                            <strong>
-                                {selectedDeal.dealValue.toLocaleString('vi-VN',)}{' '}
-                                đ
-                            </strong>
-
-                            <span>Doanh thu kỳ vọng</span>
-                            <strong>
-                                {(selectedDeal.expectedRevenue ?? 0).toLocaleString('vi-VN',)}{' '}
-                                đ
-                            </strong>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {editingDeal && token && (
-                <EditDealModal token={token}
-                    deal={editingDeal}
-                    customers={customers}
-                    onClose={() => setEditingDeal(null)}
-                    onSuccess={() => { setEditingDeal(null); setRefreshKey((value) => value + 1,); }}
-                />
-            )}
-        </main>
+                    setAssignError('');
+                    setAssigningDeal(null);
+                },
+                onAssignSubmit: (assignedUserId) => {
+                    void handleAssign(assignedUserId);
+                },
+            }}
+        />
     );
 }

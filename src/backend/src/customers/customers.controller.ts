@@ -23,11 +23,11 @@ import { CustomersService } from './customers.service';
 @ApiBearerAuth('access-token')
 @Controller('customers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.SALES, Role.CUSTOMER_CARE)
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Get()
+  @Roles(Role.SALES, Role.CUSTOMER_CARE, Role.SALES_MANAGER)
   @ApiOperation({ summary: 'Xem danh sách Customer theo quyền' })
   findAll(
     @Query()
@@ -40,6 +40,7 @@ export class CustomersController {
   }
 
   @Get(':id')
+  @Roles(Role.SALES, Role.CUSTOMER_CARE)
   @ApiOperation({ summary: 'Xem chi tiết Customer' })
   findOne(
     @Param('id', ParseIntPipe)
@@ -51,6 +52,7 @@ export class CustomersController {
   }
 
   @Patch(':id')
+  @Roles(Role.SALES, Role.CUSTOMER_CARE)
   @ApiOperation({ summary: 'Cập nhật thông tin Customer' })
   update(
     @Param('id', ParseIntPipe)

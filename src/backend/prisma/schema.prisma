@@ -74,7 +74,7 @@ model deals {
   probability       Int?
   expectedrevenue   Decimal?  @map("expected_revenue") @db.Decimal(18, 2)
   expectedclosedate DateTime? @map("expected_close_date") @db.Date
-  status            String?   @db.VarChar(30)
+  status            String    @db.VarChar(30)
   createddate       DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
 
   activities     activities[]
@@ -140,9 +140,10 @@ model notifications {
 }
 
 model pipelinestages {
-  stageid    Int    @id(map: "pipelinestages_pkey") @default(autoincrement()) @map("id")
-  stagename  String @map("stage_name") @db.VarChar(100)
-  stageorder Int    @map("stage_order")
+  stageid     Int    @id(map: "pipelinestages_pkey") @default(autoincrement()) @map("id")
+  stagename   String @map("stage_name") @db.VarChar(100)
+  stageorder  Int    @map("stage_order")
+  probability Int
 
   deals deals[]
 

@@ -7,6 +7,7 @@ import { getLeads, convertLead, } from '../../modules/leads/leads.service';
 import type { Lead } from '../../modules/leads/leads.types';
 import { ApiError } from '../../services/api';
 import styles from './sales-leads-page.module.css';
+import SalesLeadDetailModal from './sales-lead-detail-modal';
 
 export default function SalesLeadsPage() {
   const router = useRouter();
@@ -264,88 +265,7 @@ export default function SalesLeadsPage() {
         </div>
       )}
       {selectedLead && (
-        <div className={styles.modalOverlay} onClick={handleCloseLeadDetail}>
-          <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>Thông tin Lead</h2>
-
-                <p>
-                  Mã Lead: LD
-                  {String(selectedLead.leadId).padStart(3, '0',)}
-                </p>
-              </div>
-
-              <button type="button" className={styles.closeButton} onClick={handleCloseLeadDetail}>
-                ×
-              </button>
-            </div>
-
-            <div className={styles.detailGrid}>
-              <div className={styles.detailItem}>
-                <span>Họ tên</span>
-                <strong>
-                  {selectedLead.fullName}
-                </strong>
-              </div>
-
-              <div className={styles.detailItem}>
-                <span>Công ty</span>
-                <strong>
-                  {selectedLead.company ?? 'Chưa có'}
-                </strong>
-              </div>
-
-              <div className={styles.detailItem}>
-                <span>Email</span>
-                <strong>
-                  {selectedLead.email ?? 'Chưa có'}
-                </strong>
-              </div>
-
-              <div className={styles.detailItem}>
-                <span>Điện thoại</span>
-                <strong>
-                  {selectedLead.phone ?? 'Chưa có'}
-                </strong>
-              </div>
-
-              <div className={styles.detailItem}>
-                <span>Nguồn Lead</span>
-                <strong>
-                  {selectedLead.source?.sourceName ??
-                    'Không xác định'}
-                </strong>
-              </div>
-
-              <div className={styles.detailItem}>
-                <span>Nhân viên phụ trách</span>
-                <strong>
-                  {selectedLead.assignedUser?.fullName ??
-                    'Chưa phân công'}
-                </strong>
-              </div>
-
-              <div className={styles.detailItem}>
-                <span>Trạng thái</span>
-                <strong>
-                  {selectedLead.status ??
-                    'Chưa xác định'}
-                </strong>
-              </div>
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button
-                type="button"
-                className={styles.closeDetailButton}
-                onClick={handleCloseLeadDetail}
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
+        <SalesLeadDetailModal lead={selectedLead} onClose={handleCloseLeadDetail} />
       )}
     </section>
   );

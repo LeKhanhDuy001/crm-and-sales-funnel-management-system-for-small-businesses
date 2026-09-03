@@ -201,7 +201,7 @@ describe('LeadsService - convertLead', () => {
     expect(leadsRepository.convertToCustomer).not.toHaveBeenCalled();
   });
 
-  // BR04: Lead phải có ít nhất phone hoặc email.
+  // BR04: Lead phải có đầy đủ số điện thoại hoặc email.
   it('không cho chuyển Lead khi thiếu cả số điện thoại và email', async () => {
     leadsRepository.findByIdForConversion.mockResolvedValue({
       ...validLead,
@@ -216,14 +216,14 @@ describe('LeadsService - convertLead', () => {
     await expect(
       service.convertLead(validLead.leadid, currentUser),
     ).rejects.toThrow(
-      'Lead phải có số điện thoại hoặc email trước khi chuyển đổi.',
+      'Lead phải có đầy đủ số điện thoại và email trước khi chuyển đổi.',
     );
 
     expect(leadsRepository.convertToCustomer).not.toHaveBeenCalled();
   });
 
-  // BR04: Chỉ cần có phone thì vẫn đủ điều kiện.
-  it('cho phép chuyển Lead khi có phone nhưng không có email', async () => {
+  // BR04: Lead thiếu email thì không đủ điền kiện chuyển đổi.
+  it('không cho phép chuyển Lead khi có phone nhưng thiếu email', async () => {
     const leadWithPhoneOnly = {
       ...validLead,
       phone: '0911000003',
@@ -237,16 +237,23 @@ describe('LeadsService - convertLead', () => {
       email: null,
     });
 
-    await service.convertLead(validLead.leadid, currentUser);
+    leadsRepository.findByIdForConversion.mockResolvedValue(leadWithPhoneOnly);
 
-    expect(leadsRepository.convertToCustomer).toHaveBeenCalledWith(
-      validLead.leadid,
-      currentUser.userId,
+    await expect(
+      service.convertLead(validLead.leadid, currentUser),
+    ).rejects.toThrow(UnprocessableEntityException);
+
+    await expect(
+      service.convertLead(validLead.leadid, currentUser),
+    ).rejects.toThrow(
+      'Lead phải có đầy đủ số điện thoại và email trước khi chuyển đổi.',
     );
+
+    expect(leadsRepository.convertToCustomer).not.toHaveBeenCalled();
   });
 
-  // BR04: Chỉ cần có email thì vẫn đủ điều kiện.
-  it('cho phép chuyển Lead khi có email nhưng không có phone', async () => {
+  // BR04: Lead thiếu số điện thoại thì không đủ điều kiện chuyển đổi.
+  it('không cho phép chuyển Lead khi có email nhưng thiếu phone', async () => {
     const leadWithEmailOnly = {
       ...validLead,
       phone: null,
@@ -260,11 +267,16 @@ describe('LeadsService - convertLead', () => {
       phone: null,
     });
 
-    await service.convertLead(validLead.leadid, currentUser);
+    await expect(
+      service.convertLead(validLead.leadid, currentUser),
+    ).rejects.toThrow(UnprocessableEntityException);
 
-    expect(leadsRepository.convertToCustomer).toHaveBeenCalledWith(
-      validLead.leadid,
-      currentUser.userId,
+    await expect(
+      service.convertLead(validLead.leadid, currentUser),
+    ).rejects.toThrow(
+      'Lead phải có đầy đủ số điện thoại và email trước khi chuyển đổi.',
     );
+
+    expect(leadsRepository.convertToCustomer).not.toHaveBeenCalled();
   });
 });

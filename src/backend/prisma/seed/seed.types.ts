@@ -8,10 +8,11 @@ export type UserKey =
 
 export type SourceKey = 'website' | 'facebook' | 'referral';
 
-export type StageKey = 'qualification' | 'proposal' | 'negotiation' | 'won';
+export type StageKey =
+  'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
 
 export type ProductKey = 'crmPackage' | 'training';
 
 export type LeadKey = 'newLead' | 'qualifiedLead' | 'convertedLead';
 
-export type DealKey = 'qualification' | 'proposal' | 'won';
+export type DealKey = 'qualified' | 'proposal' | 'won';

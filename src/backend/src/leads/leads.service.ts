@@ -317,9 +317,9 @@ export class LeadsService {
 
     const hasEmail = Boolean(lead.email?.trim());
 
-    if (!hasPhone && !hasEmail) {
+    if (!hasPhone || !hasEmail) {
       throw new UnprocessableEntityException(
-        'Lead phải có số điện thoại hoặc email trước khi chuyển đổi.',
+        'Lead phải có đầy đủ số điện thoại và email trước khi chuyển đổi.',
       );
     }
 

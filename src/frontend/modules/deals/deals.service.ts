@@ -8,6 +8,7 @@ import type {
     DealsResponse,
     UpdateDealInput,
     UpdateDealStageInput,
+    AssignDealInput,
 } from './deals.types';
 
 function buildQueryString(query: DealQuery,): string {
@@ -69,6 +70,17 @@ export async function createDeal(accessToken: string, input: CreateDealInput,): 
         '/deals',
         {
             method: 'POST',
+            accessToken,
+            body: input,
+        },
+    );
+}
+
+export async function assignDeal(accessToken: string, dealId: number, input: AssignDealInput,): Promise<DealMutationResponse> {
+    return apiRequest<DealMutationResponse>(
+        `/deals/${dealId}/assignment`,
+        {
+            method: 'PATCH',
             accessToken,
             body: input,
         },

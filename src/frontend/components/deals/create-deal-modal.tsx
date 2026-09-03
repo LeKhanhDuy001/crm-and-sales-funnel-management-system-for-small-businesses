@@ -4,7 +4,7 @@ import { type FormEvent, useMemo, useState, } from 'react';
 import type { Customer } from '../../modules/customers/customers.types';
 import { validateDealForm, type DealFormErrors, } from '../../modules/deals/deal-form-validation';
 import { createDeal } from '../../modules/deals/deals.service';
-import type { PipelineStageOption } from '../../modules/deals/deals.types';
+import type { PipelineStageOption, DealSalesUserOption, } from '../../modules/deals/deals.types';
 import { ApiError } from '../../services/api';
 import styles from './deals-page.module.css';
 
@@ -12,13 +12,17 @@ interface CreateDealModalProps {
   token: string;
   customers: Customer[];
   stages: PipelineStageOption[];
+  salesUsers?: DealSalesUserOption[];
+  requireAssignee?: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function CreateDealModal({token, customers, stages, onClose, onSuccess,}: CreateDealModalProps) {
+export default function CreateDealModal({ token, customers, stages, salesUsers = [], requireAssignee = false, onClose, onSuccess, }: CreateDealModalProps) {
   const [customerId, setCustomerId] = useState('');
   const [stageId, setStageId] = useState('');
+  const [assignedUserId, setAssignedUserId] = useState('');
+  const [assigneeError, setAssigneeError] = useState('');
   const [dealName, setDealName] = useState('');
   const [dealValue, setDealValue] = useState('');
   const [expectedCloseDate, setExpectedCloseDate,] = useState('');
@@ -50,11 +54,22 @@ export default function CreateDealModal({token, customers, stages, onClose, onSu
   async function handleSubmit(event: FormEvent<HTMLFormElement>,): Promise<void> {
     event.preventDefault();
 
-    const validationErrors = validateDealForm({customerId, stageId, dealName, dealValue,}, true,);
+    const validationErrors = validateDealForm(
+      {
+        customerId,
+        stageId,
+        dealName,
+        dealValue,
+      },
+      true,
+    );
+
+    const nextAssigneeError = requireAssignee && !assignedUserId ? 'Vui lòng chọn nhân viên Sales phụ trách Deal.' : '';
 
     setErrors(validationErrors);
+    setAssigneeError(nextAssigneeError);
 
-    if (Object.keys(validationErrors).length > 0) {
+    if (Object.keys(validationErrors).length > 0 || nextAssigneeError) {
       return;
     }
 
@@ -70,6 +85,7 @@ export default function CreateDealModal({token, customers, stages, onClose, onSu
           dealName: dealName.trim(),
           dealValue: Number(dealValue),
           expectedCloseDate: expectedCloseDate || undefined,
+          ...(requireAssignee ? { assignedUserId: Number(assignedUserId), } : {}),
         },
       );
       window.alert(response.message);
@@ -92,7 +108,7 @@ export default function CreateDealModal({token, customers, stages, onClose, onSu
         <div className={styles.modalHeader}>
           <h2>Thêm Deal mới</h2>
 
-          <button type="button" className={styles.closeButton} onClick={onClose}>
+          <button type="button" className={styles.closeButton} onClick={onClose} disabled={isSubmitting}>
             ×
           </button>
         </div>
@@ -121,6 +137,41 @@ export default function CreateDealModal({token, customers, stages, onClose, onSu
               </span>
             )}
           </label>
+
+          {requireAssignee && (
+            <label>
+              Nhân viên Sales phụ trách *
+              <select value={assignedUserId} disabled={isSubmitting}
+                onChange={(event) => {
+                  setAssignedUserId(event.target.value);
+                  setAssigneeError('');
+                }}
+
+              >
+                <option value="">
+                  -- Chọn nhân viên Sales --
+                </option>
+
+                {salesUsers.map((sales) => (
+                  <option key={sales.userId} value={sales.userId}>
+                    {sales.fullName} - {sales.email}
+                  </option>
+                ))}
+              </select>
+
+              {assigneeError && (
+                <span className={styles.errorText}>
+                  {assigneeError}
+                </span>
+              )}
+            </label>
+          )}
+
+          {requireAssignee && salesUsers.length === 0 && (
+            <p className={styles.submitError}>
+              Không có nhân viên Sales đang hoạt động để phân công.
+            </p>
+          )}
 
           <label>
             Tên Deal *
@@ -212,7 +263,7 @@ export default function CreateDealModal({token, customers, stages, onClose, onSu
 
             <button type="submit"
               className={styles.primaryButton}
-              disabled={isSubmitting}
+              disabled={isSubmitting || (requireAssignee && salesUsers.length === 0)}
             >
               {isSubmitting ? 'Đang lưu...' : 'Tạo Deal'}
             </button>

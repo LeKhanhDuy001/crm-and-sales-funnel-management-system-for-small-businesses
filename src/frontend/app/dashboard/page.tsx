@@ -109,25 +109,29 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-8 flex h-72 items-end gap-3 border-b border-l border-slate-300 px-4 pt-8">
-            {[35, 52, 43, 68, 58, 74, 62, 82, 70, 88, 76, 94].map(
-              (height, index) => (
-                <div
-                  key={index}
-                  className="flex h-full flex-1 items-end"
-                  title={`Tháng ${index + 1}`}
-                >
-                  <div
-                    className="w-full rounded-t bg-slate-300 hover:bg-slate-500"
-                    style={{ height: `${height}%` }}
-                  />
-                </div>
-              ),
-            )}
+            {[
+              { month: 1, height: 35 },
+              { month: 2, height: 52 },
+              { month: 3, height: 43 },
+              { month: 4, height: 68 },
+              { month: 5, height: 58 },
+              { month: 6, height: 74 },
+              { month: 7, height: 62 },
+              { month: 8, height: 82 },
+              { month: 9, height: 70 },
+              { month: 10, height: 88 },
+              { month: 11, height: 76 },
+              { month: 12, height: 94 },
+            ].map(({ month, height }) => (
+              <div key={month} className="flex h-full flex-1 items-end" title={`Tháng ${month}`}>
+                <div className="w-full rounded-t bg-slate-300 hover:bg-slate-500" style={{ height: `${height}%` }} />
+              </div>
+            ))}
           </div>
 
           <div className="mt-3 grid grid-cols-12 gap-3 px-4 text-center text-xs text-slate-500">
-            {Array.from({ length: 12 }, (_, index) => (
-              <span key={index}>T{index + 1}</span>
+            {Array.from({ length: 12 }, (_, monthIndex) => monthIndex + 1).map((month) => (
+              <span key={month}>T{month}</span>
             ))}
           </div>
         </article>
