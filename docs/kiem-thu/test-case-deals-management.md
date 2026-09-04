@@ -102,10 +102,9 @@
 
 
 ### Kỹ thuật thiết kế test áp dụng
-
-- **Chuyển trạng thái (State Transition Testing):** kiểm tra việc Deal chuyển giữa các Pipeline Stage, chọn lại Stage hiện tại và giới hạn không cho Deal ở trạng thái kết thúc Won/Lost quay lại Stage trước.
-- **Phân hoạch tương đương (Equivalence Partitioning):** chia Stage đích thành nhóm hợp lệ và không tồn tại.
-- **Bảng quyết định (Decision Table Testing):** áp dụng cho quyền thay đổi Stage dựa trên quyền sở hữu Deal của Sales.
+- **Chuyển trạng thái (State Transition Testing):** kiểm tra Deal chuyển giữa các Pipeline Stage, chọn lại Stage hiện tại, chuyển sang Won/Lost và giới hạn không cho Deal ở trạng thái kết thúc Won/Lost quay lại Stage trước.
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia Stage đích thành nhóm hợp lệ và không tồn tại; chia lý do thất bại khi chuyển Lost thành nhóm hợp lệ, rỗng và chỉ chứa khoảng trắng.
+- **Bảng quyết định (Decision Table Testing):** kiểm tra quyền thay đổi Pipeline Stage theo tổ hợp Role × quyền phụ trách Deal: Sales chỉ được thao tác Deal mình phụ trách; Sales Manager/Admin được thao tác Deal bất kỳ; role khác bị từ chối.
 
 ## UC6 - Thay đổi trạng thái Pipeline
 
@@ -113,13 +112,18 @@
 |---|---|---|---|---|---|---|---|---|
 | TC-DEALS-022 | UC6 - Đổi Pipeline Stage | Kiểm tra Sales chuyển Stage Deal hợp lệ | Sales đã đăng nhập; Deal ID 7 thuộc Sales; Deal value = `10000000`; Deal chưa ở Won/Lost | Deal ID: 7; Stage đích: Negotiation; Probability = 70% | 1. Mở Pipeline; 2. Chọn Deal ID 7; 3. Chuyển Deal sang Negotiation | Stage chuyển sang Negotiation; Probability = 70%; Expected Revenue = `7000000`; ghi Activity Log; hiển thị `Cập nhật giai đoạn Deal thành công.` | Đã kiểm thử | PASS |
 | TC-DEALS-023 | UC6 - Đổi Pipeline Stage | Kiểm tra khi chọn đúng Stage hiện tại | Sales đã đăng nhập; Deal ID 7 đang ở Stage được chọn | Stage hiện tại = Stage đích | 1. Chọn Deal; 2. Chọn lại Stage hiện tại | Không cập nhật database; không tạo thay đổi Stage; hiển thị `Deal đang ở giai đoạn này.` | Đã kiểm thử | PASS |
-| TC-DEALS-024 | UC6 - Phân quyền record | Kiểm tra Sales không được đổi Stage Deal của Sales khác | Sales đã đăng nhập; Deal ID 999 không thuộc Sales hiện tại | Deal ID: 999; Stage ID: 3 | 1. Đăng nhập Sales; 2. Gửi yêu cầu thay đổi Stage Deal ID 999 | Không hiển thị Deal trong danh sách giai đoạn Pipeline. | Đã kiểm thử | PASS |
+| TC-DEALS-024 | UC6 / BR33 - Phân quyền record | Kiểm tra Sales không được đổi Stage Deal của Sales khác | Sales đã đăng nhập; tồn tại Deal không thuộc Sales hiện tại | Deal không thuộc quyền Sales; Stage đích hợp lệ | 1. Đăng nhập Sales; 2. Kiểm tra Pipeline; 3. Gửi trực tiếp yêu cầu thay đổi Stage của Deal không thuộc quyền | Deal không xuất hiện trong Pipeline của Sales; nếu gửi trực tiếp API thì trả `404 Not Found` với thông báo `Không tìm thấy Deal.`; Deal không bị cập nhật | Đã kiểm thử | PASS |
 | TC-DEALS-025 | UC6 - Chuyển trạng thái | Kiểm tra Deal ở Won không được chuyển ngược | Sales đã đăng nhập; Deal thuộc Sales; Stage hiện tại = Won | Stage hiện tại: Won; Stage đích: Negotiation | 1. Mở Deal đang Won; 2. Thực hiện chuyển về Negotiation | Không thay đổi Stage; Probability và Expected Revenue giữ nguyên. | Đã kiểm thử | PASS |
 | TC-DEALS-026 | UC6 - Chuyển trạng thái | Kiểm tra Deal ở Lost không được chuyển ngược | Sales đã đăng nhập; Deal thuộc Sales; Stage hiện tại = Lost | Stage hiện tại: Lost; Stage đích: Negotiation | 1. Mở Deal đang Lost; 2. Thực hiện chuyển về Negotiation | Không thay đổi Stage; Probability và Expected Revenue giữ nguyên; hiển thị `Deal đang ở giai đoạn Won hoặc Lost nên không thể thay đổi giai đoạn.` | Đã kiểm thử | PASS |
 | TC-DEALS-027 | UC6 - Đổi Pipeline Stage | Kiểm tra Stage đích không tồn tại | Sales đã đăng nhập; Deal thuộc Sales và chưa Won/Lost | Deal ID: 7; Stage ID: 999 | 1. Chọn Deal; 2. Gửi yêu cầu chuyển sang Stage ID 999 | Không cập nhật Deal; hiển thị `Giai đoạn Pipeline không hợp lệ.` | Đã kiểm thử | PASS |
 | TC-DEALS-028 | UC6 - Chuyển Deal sang Lost | Kiểm tra không cho chuyển Deal sang Lost khi chưa nhập lý do thất bại | Sales đã đăng nhập; Deal thuộc Sales; Deal chưa ở Won/Lost | Stage đích: Lost; Lý do thất bại: trống | 1. Mở Pipeline; 2. Kéo Deal sang Lost; 3. Không nhập lý do; 4. Nhấn **Xác nhận thất bại** | Modal vẫn mở; hiển thị `Vui lòng nhập lý do thất bại.`; Deal không chuyển sang Lost | Đã kiểm thử | PASS |
 | TC-DEALS-029 | UC6 - Chuyển Deal sang Lost | Kiểm tra lý do thất bại chỉ chứa khoảng trắng | Sales đã đăng nhập; Deal thuộc Sales; Deal chưa ở Won/Lost | Stage đích: Lost; Lý do thất bại: `   ` | 1. Mở Pipeline; 2. Kéo Deal sang Lost; 3. Nhập khoảng trắng; 4. Nhấn **Xác nhận thất bại** | Hệ thống xem lý do là rỗng; modal vẫn mở; Deal không chuyển sang Lost; hiển thị `Vui lòng nhập lý do thất bại.` | Đã kiểm thử | PASS |
 | TC-DEALS-030 | UC6 - Chuyển Deal sang Lost | Kiểm tra chuyển Deal sang Lost khi có lý do thất bại hợp lệ | Sales đã đăng nhập; Deal thuộc Sales; Deal chưa ở Won/Lost | Stage đích: Lost; Lý do: `Khách hàng chọn đối thủ.` | 1. Mở Pipeline; 2. Kéo Deal sang Lost; 3. Nhập lý do; 4. Nhấn **Xác nhận thất bại** | Modal đóng; Deal chuyển sang Lost; Probability = 0%; Expected Revenue = 0; hiển thị `Cập nhật giai đoạn Deal thành công.` | Đã kiểm thử | PASS |
+| TC-DEALS-031 | UC6 / BR33 - Phân quyền | Kiểm tra Sales Manager được thay đổi Stage Deal bất kỳ | Sales Manager đã đăng nhập; tồn tại Deal do một Sales phụ trách; Deal chưa Won/Lost | Stage đích hợp lệ | 1. Đăng nhập Sales Manager; 2. Mở **Quản lý Deal**; 3. Chọn **Pipeline**; 4. Chuyển Deal sang Stage khác | Hệ thống cho phép thay đổi Stage; cập nhật Probability và Expected Revenue; ghi Activity Log; hiển thị thông báo thành công | Đã kiểm thử | PASS |
+| TC-DEALS-032 | UC6 / BR33 - Phân quyền | Kiểm tra Admin được thay đổi Stage Deal bất kỳ | Admin đã đăng nhập; tồn tại Deal do Sales phụ trách; Deal chưa Won/Lost | Stage đích hợp lệ | 1. Đăng nhập Admin; 2. Mở **Quản lý Deal**; 3. Chọn **Pipeline**; 4. Chuyển Deal sang Stage khác | Hệ thống cho phép Admin thay đổi Stage; cập nhật Probability và Expected Revenue; ghi Activity Log; hiển thị thông báo thành công | Đã kiểm thử | PASS |
+| TC-DEALS-033 | UC6 / BR33 - Phân quyền | Kiểm tra Customer Care không được thay đổi Stage Deal | Customer Care đã đăng nhập; Deal tồn tại và chưa Won/Lost | `PATCH /api/v1/deals/{dealId}/stage`; Stage ID hợp lệ | 1. Đăng nhập Customer Care; 2. Gửi trực tiếp API đổi Stage Deal | API trả `403`; hiển thị `Bạn không có quyền truy cập chức năng này`; Deal không bị cập nhật; không tạo Activity Log thay đổi Stage | Đã kiểm thử | PASS |
+| TC-DEALS-034 | UC4 - Admin xem Deal | Kiểm tra Admin xem được toàn bộ danh sách Deal | Admin đã đăng nhập; tồn tại Deal của nhiều Sales | Không có | 1. Đăng nhập Admin; 2. Mở **Quản lý Deal**; 3. Kiểm tra danh sách | Trang `/admin/deals` tải thành công; Admin thấy Deal của nhiều Sales; hiển thị người phụ trách; không bị giới hạn theo một Sales | Đã kiểm thử | PASS |
+| TC-DEALS-035 | UC4 - Giao diện Admin Deal | Kiểm tra Admin chỉ có các thao tác Deal được phép | Admin đã đăng nhập | Không có | 1. Mở `/admin/deals`; 2. Kiểm tra danh sách và chi tiết; 3. Mở Pipeline; 4. Kiểm tra các nút thao tác | Admin xem được danh sách, chi tiết và Pipeline; không có `+ Thêm Deal`, `Sửa`, `Xóa`; chức năng đổi Pipeline Stage vẫn sử dụng được | Đã kiểm thử | PASS |
 
 ### Minh chứng TC-DEALS-022
 ![TC-DEALS-022 - Sales chuyển Stage Deal hợp lệ](./assets/deals/TC-DEALS-022.1.png)
@@ -148,3 +152,18 @@
 
 ### Minh chứng TC-DEALS-030
 ![TC-DEALS-030 - Chuyển Deal sang Lost khi có lý do thất bại hợp lệ](./assets/deals/TC-DEALS-030.png)
+
+### Minh chứng TC-DEALS-031
+![TC-DEALS-031 - Sales Manager được thay đổi Stage Deal bất kỳ](./assets/deals/TC-DEALS-031.png)
+
+### Minh chứng TC-DEALS-032
+![TC-DEALS-032 - Admin được thay đổi Stage Deal bất kỳ](./assets/deals/TC-DEALS-032.png)
+
+### Minh chứng TC-DEALS-033
+![TC-DEALS-033 - Customer Care không được thay đổi Stage Deal](./assets/deals/TC-DEALS-033.png)
+
+### Minh chứng TC-DEALS-034
+![TC-DEALS-034 - Admin xem được toàn bộ danh sách Deal](./assets/deals/TC-DEALS-034.png)
+
+### Minh chứng TC-DEALS-035
+![TC-DEALS-035 - Admin chỉ có các thao tác Deal được phép](./assets/deals/TC-DEALS-035.png)

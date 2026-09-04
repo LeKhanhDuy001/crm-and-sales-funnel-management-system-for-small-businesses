@@ -13,12 +13,13 @@ import DealsPageContent, { type DealViewMode } from './deals-page-content';
 const DEFAULT_PAGINATION: DealPagination = { page: 1, limit: 20, total: 0, totalPages: 0, };
 
 interface DealsPageProps {
-    mode?: 'sales' | 'manager';
+    mode?: 'sales' | 'manager' | 'admin';
 }
 
 export default function DealsPage({ mode = 'sales', }: DealsPageProps) {
     const router = useRouter();
     const isManager = mode === 'manager';
+    const isAdmin = mode === 'admin';
 
     const [deals, setDeals] = useState<Deal[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -61,6 +62,13 @@ export default function DealsPage({ mode = 'sales', }: DealsPageProps) {
                 setIsLoading(true);
                 setError('');
 
+                const customersPromise = isAdmin
+                    ? Promise.resolve([] as Customer[])
+                    : getCustomers(token, {
+                        page: 1,
+                        limit: 100,
+                    }).then((response) => response.data);
+
                 const [
                     dealsResponse,
                     metaResponse,
@@ -68,19 +76,22 @@ export default function DealsPage({ mode = 'sales', }: DealsPageProps) {
                 ] = await Promise.all([
                     getDeals(token, {
                         search: search || undefined,
-                        stageId: viewMode === 'list' && stageFilter ? Number(stageFilter) : undefined,
+                        stageId:
+                            viewMode === 'list' && stageFilter
+                                ? Number(stageFilter)
+                                : undefined,
                         page: viewMode === 'pipeline' ? 1 : page,
                         limit: viewMode === 'pipeline' ? 100 : 20,
                     }),
                     getDealMeta(token),
-                    getCustomers(token, { page: 1, limit: 100, }),
+                    customersPromise,
                 ]);
 
-                setDeals(dealsResponse.data,);
-                setPagination(dealsResponse.pagination,);
-                setStages(metaResponse.stages,);
+                setDeals(dealsResponse.data);
+                setPagination(dealsResponse.pagination);
+                setStages(metaResponse.stages);
                 setSalesUsers(metaResponse.salesUsers ?? []);
-                setCustomers(customersResponse.data,);
+                setCustomers(customersResponse);
             } catch (caughtError) {
                 if (caughtError instanceof ApiError) {
                     if (caughtError.statusCode === 401) {
@@ -112,6 +123,7 @@ export default function DealsPage({ mode = 'sales', }: DealsPageProps) {
         search,
         stageFilter,
         viewMode,
+        isAdmin,
     ]);
 
     function handleSearch(event: FormEvent<HTMLFormElement>,): void {
@@ -224,6 +236,7 @@ export default function DealsPage({ mode = 'sales', }: DealsPageProps) {
         <DealsPageContent
             state={{
                 isManager,
+                isAdmin,
                 token,
                 deals,
                 customers,

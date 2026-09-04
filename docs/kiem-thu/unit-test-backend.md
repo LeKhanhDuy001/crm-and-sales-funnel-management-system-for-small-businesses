@@ -143,7 +143,7 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-018 | `deals.service.spec.ts` | BR20 - Xóa Deal đã phát sinh Activity | Ném `UnprocessableEntityException` với thông báo Deal có dữ liệu liên quan; không xóa vật lý | PASS |
 | UNIT-DEAL-019 | `deals.service.spec.ts` | BR20 - Xóa Deal đã phát sinh Task | Ném `UnprocessableEntityException` với thông báo Deal có dữ liệu liên quan; không xóa vật lý | PASS |
 | UNIT-DEAL-020 | `deals.service.spec.ts` | BR18 - Xóa Deal chưa phát sinh Quote, Activity hoặc Task | Gọi `deleteWithLog` với đúng dealId, userId và IP address để xóa Deal và ghi Activity Log | PASS |
-| UNIT-DEAL-021 | `deals.service.spec.ts` | Sales thay đổi Stage của Deal không thuộc quyền quản lý | Ném `NotFoundException`; không tìm Stage đích và không cập nhật Pipeline | PASS |
+| UNIT-DEAL-021 | `deals.service.spec.ts` | BR33 - Sales không được đổi Stage Deal không thuộc quyền mình | Ném `NotFoundException` với thông báo `Không tìm thấy Deal.`; không tìm Stage đích và không cập nhật Pipeline | PASS |
 | UNIT-DEAL-022 | `deals.service.spec.ts` | Chọn lại đúng Pipeline Stage hiện tại của Deal | Không cập nhật database; trả thông báo `Deal đang ở giai đoạn này.` | PASS |
 | UNIT-DEAL-023 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Won | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
 | UNIT-DEAL-024 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Lost | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
@@ -169,6 +169,12 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-044 | `deals.service.spec.ts` | BR10 - Chuyển Deal sang Lost nhưng không nhập lý do thất bại | Ném `UnprocessableEntityException` với thông báo `Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.`; không gọi `changeStageWithLog` | PASS |
 | UNIT-DEAL-045 | `deals.service.spec.ts` | BR10 - Chuyển Deal sang Lost với lý do chỉ chứa khoảng trắng | Trim lý do thành rỗng; ném `UnprocessableEntityException`; không gọi `changeStageWithLog` | PASS |
 | UNIT-DEAL-046 | `deals.service.spec.ts` | BR10, BR18 - Chuyển Deal sang Lost khi có lý do thất bại hợp lệ | Chuyển Stage sang Lost; Probability = 0; Expected Revenue = 0; trim lý do; truyền `lostReason` xuống Repository và trả lại trong response | PASS |
+| UNIT-DEAL-047 | `deals.service.spec.ts` | BR33, BR08, BR09, BR18 - Sales Manager được đổi Stage Deal bất kỳ | Sales Manager được truy cập Deal không phụ thuộc người phụ trách; cập nhật đúng Stage, Probability và Expected Revenue; ghi Activity Log | PASS |
+| UNIT-DEAL-048 | `deals.service.spec.ts` | BR33, BR08, BR09, BR18 - Admin được đổi Stage Deal bất kỳ | Admin được truy cập Deal không phụ thuộc người phụ trách; cập nhật đúng Stage, Probability và Expected Revenue; ghi Activity Log | PASS |
+| UNIT-DEAL-049 | `deals.service.spec.ts` | BR33 - Từ chối role không có quyền thay đổi Stage Deal | Ném `ForbiddenException` với thông báo không có quyền thay đổi giai đoạn Deal; không cập nhật Pipeline Stage | PASS |
+| UNIT-DEAL-050 | `deals.service.spec.ts` | Admin xem toàn bộ danh sách Deal | Repository nhận `salesUserId = undefined`; Admin không bị giới hạn Deal theo người phụ trách; trả đúng dữ liệu và pagination | PASS |
+| UNIT-DEAL-051 | `deals.service.spec.ts` | Admin lấy Pipeline Stage và danh sách Sales đang hoạt động | Gọi `findActiveUsersByRole(Role.SALES)`; trả đúng Pipeline Stage và danh sách `salesUsers` | PASS |
+| UNIT-DEAL-052 | `deals.service.spec.ts` | Admin xem chi tiết Deal không phụ thuộc người phụ trách | Gọi `findById(dealId)` thay vì `findOwnedById`; trả đúng thông tin Deal | PASS |
 
 ## Chức năng tạo quotes
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -324,7 +330,7 @@ Time:        0.923 s
 ```text
 Quản lý Deals và kéo thả giai đoạn pipeline
 Test Suites: 1 passed, 1 total
-Tests:       43 passed, 43 total
+Tests: 52 passed, 52 total
 Snapshots:   0 total
 Time:        21.009 s
 ```
@@ -369,7 +375,7 @@ Snapshots:   0 total
 Time:        5.115 s
 ```
 
-**Kết luận:** 214/214 unit test PASS.
+**Kết luận:** 220/220 unit test PASS.
 
 ---
 
@@ -386,4 +392,4 @@ Time:        5.115 s
 | 27/08/2026 | unit test backend Dashboard| 8 | PASS |
 | 01/09/2026 | Bổ sung unit test phân quyền xóa Admin và bảo vệ Super Admin | 4 | PASS |
 | 02/09/2026 | Hoàn thiện unit test backend cho chức năng quản lý Activities | 24 | PASS |
-| 04/09/2026 | Bổ sung unit test BR10 cho lý do thất bại khi chuyển Deal sang Lost | 3 | PASS |
+| 04/09/2026 | Bổ sung unit test BR10 cho lý do thất bại khi chuyển Deal sang Lost, BR33 phân quyền thay đổi Pipeline Stage và quyền Admin xem Deal | 9 | PASS |

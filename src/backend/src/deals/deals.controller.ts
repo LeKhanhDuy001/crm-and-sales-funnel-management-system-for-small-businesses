@@ -34,19 +34,19 @@ export class DealsController {
   constructor(private readonly dealsService: DealsService) {}
 
   @Get()
-  @Roles(Role.SALES, Role.SALES_MANAGER)
+  @Roles(Role.SALES, Role.SALES_MANAGER, Role.ADMIN)
   findAll(@Query() query: DealQueryDto, @Req() request: AuthenticatedRequest) {
     return this.dealsService.findAll(query, request.user);
   }
 
   @Get('meta')
-  @Roles(Role.SALES, Role.SALES_MANAGER)
+  @Roles(Role.SALES, Role.SALES_MANAGER, Role.ADMIN)
   getMeta(@Req() request: AuthenticatedRequest) {
     return this.dealsService.getMeta(request.user);
   }
 
   @Get(':id')
-  @Roles(Role.SALES, Role.SALES_MANAGER)
+  @Roles(Role.SALES, Role.SALES_MANAGER, Role.ADMIN)
   findOne(
     @Param('id', ParseIntPipe) dealId: number,
     @Req() request: AuthenticatedRequest,
@@ -96,7 +96,7 @@ export class DealsController {
   }
 
   @Patch(':id/stage')
-  @Roles(Role.SALES)
+  @Roles(Role.SALES, Role.SALES_MANAGER, Role.ADMIN)
   async changeStage(
     @Param('id', ParseIntPipe)
     dealId: number,

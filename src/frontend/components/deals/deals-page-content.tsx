@@ -15,6 +15,7 @@ export type DealViewMode = 'list' | 'pipeline';
 
 interface DealsPageContentState {
   isManager: boolean;
+  isAdmin: boolean;
   token: string | null;
   deals: Deal[];
   customers: Customer[];
@@ -64,6 +65,7 @@ interface DealsPageContentProps {
 export default function DealsPageContent({ state, actions }: DealsPageContentProps) {
   const {
     isManager,
+    isAdmin,
     token,
     deals,
     customers,
@@ -90,35 +92,40 @@ export default function DealsPageContent({ state, actions }: DealsPageContentPro
         <div>
           <h1>Quản lý Deal</h1>
           <p>
-            {isManager
-              ? 'Quản lý Deal và phân công cho nhân viên Sales.'
-              : 'Quản lý các cơ hội bán hàng được phân cho bạn.'}
+            {isAdmin
+              ? 'Theo dõi toàn bộ Deal và Pipeline trong hệ thống.'
+              : isManager
+                ? 'Quản lý Deal và phân công cho nhân viên Sales.'
+                : 'Quản lý các cơ hội bán hàng được phân cho bạn.'}
           </p>
         </div>
 
-        <button type="button" className={styles.primaryButton} onClick={actions.onCreateOpen}>
-          + Thêm Deal
-        </button>
+        {!isAdmin && (
+          <button type="button"
+            className={styles.primaryButton}
+            onClick={actions.onCreateOpen}
+          >
+            + Thêm Deal
+          </button>
+        )}
       </div>
 
       <section className={styles.panel}>
-        {!isManager && (
-          <div className={styles.viewTabs}>
-            <button type="button"
-              className={viewMode === 'list' ? styles.viewTabActive : styles.viewTab}
-              onClick={() => actions.onViewModeChange('list')}
-            >
-              Danh sách
-            </button>
+        <div className={styles.viewTabs}>
+          <button type="button"
+            className={viewMode === 'list' ? styles.viewTabActive : styles.viewTab}
+            onClick={() => actions.onViewModeChange('list')}
+          >
+            Danh sách
+          </button>
 
-            <button type="button"
-              className={viewMode === 'pipeline' ? styles.viewTabActive : styles.viewTab}
-              onClick={() => actions.onViewModeChange('pipeline')}
-            >
-              Pipeline
-            </button>
-          </div>
-        )}
+          <button type="button"
+            className={viewMode === 'pipeline' ? styles.viewTabActive : styles.viewTab}
+            onClick={() => actions.onViewModeChange('pipeline')}
+          >
+            Pipeline
+          </button>
+        </div>
 
         <div className={styles.filters}>
           <form className={styles.searchForm} onSubmit={actions.onSearch}>
@@ -167,9 +174,9 @@ export default function DealsPageContent({ state, actions }: DealsPageContentPro
             <DealsTable
               deals={deals}
               onView={actions.onView}
-              onEdit={actions.onEdit}
-              onDelete={actions.onDelete}
-              showAssignedUser={isManager}
+              onEdit={isAdmin ? undefined : actions.onEdit}
+              onDelete={isAdmin ? undefined : actions.onDelete}
+              showAssignedUser={isManager || isAdmin}
               onAssign={isManager ? actions.onAssignOpen : undefined}
             />
 
@@ -193,7 +200,7 @@ export default function DealsPageContent({ state, actions }: DealsPageContentPro
           </>
         )}
 
-        {!isManager && !isLoading && !error && viewMode === 'pipeline' && token && (
+        {!isLoading && !error && viewMode === 'pipeline' && token && (
           <PipelineBoard
             token={token}
             deals={deals}
