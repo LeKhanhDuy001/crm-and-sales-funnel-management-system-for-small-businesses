@@ -166,6 +166,9 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-041 | `deals.service.spec.ts` | BR07 - Phân công Deal cho người dùng không có vai trò Sales | Ném lỗi `Người được phân công phải có vai trò Sales.`; không gọi `assignWithLog` | PASS |
 | UNIT-DEAL-042 | `deals.service.spec.ts` | Phân công Deal cho tài khoản Sales đã bị khóa | Ném lỗi `Không thể phân công Deal cho tài khoản Sales đã bị khóa.`; không gọi `assignWithLog` | PASS |
 | UNIT-DEAL-043 | `deals.service.spec.ts` | Phân công Deal lại cho chính Sales đang phụ trách | Ném lỗi `Deal đã được phân công cho nhân viên này.`; không gọi `assignWithLog` | PASS |
+| UNIT-DEAL-044 | `deals.service.spec.ts` | BR10 - Chuyển Deal sang Lost nhưng không nhập lý do thất bại | Ném `UnprocessableEntityException` với thông báo `Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.`; không gọi `changeStageWithLog` | PASS |
+| UNIT-DEAL-045 | `deals.service.spec.ts` | BR10 - Chuyển Deal sang Lost với lý do chỉ chứa khoảng trắng | Trim lý do thành rỗng; ném `UnprocessableEntityException`; không gọi `changeStageWithLog` | PASS |
+| UNIT-DEAL-046 | `deals.service.spec.ts` | BR10, BR18 - Chuyển Deal sang Lost khi có lý do thất bại hợp lệ | Chuyển Stage sang Lost; Probability = 0; Expected Revenue = 0; trim lý do; truyền `lostReason` xuống Repository và trả lại trong response | PASS |
 
 ## Chức năng tạo quotes
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -366,7 +369,7 @@ Snapshots:   0 total
 Time:        5.115 s
 ```
 
-**Kết luận:** 211/211 unit test PASS.
+**Kết luận:** 214/214 unit test PASS.
 
 ---
 
@@ -383,3 +386,4 @@ Time:        5.115 s
 | 27/08/2026 | unit test backend Dashboard| 8 | PASS |
 | 01/09/2026 | Bổ sung unit test phân quyền xóa Admin và bảo vệ Super Admin | 4 | PASS |
 | 02/09/2026 | Hoàn thiện unit test backend cho chức năng quản lý Activities | 24 | PASS |
+| 04/09/2026 | Bổ sung unit test BR10 cho lý do thất bại khi chuyển Deal sang Lost | 3 | PASS |

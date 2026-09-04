@@ -117,6 +117,9 @@
 | TC-DEALS-025 | UC6 - Chuyển trạng thái | Kiểm tra Deal ở Won không được chuyển ngược | Sales đã đăng nhập; Deal thuộc Sales; Stage hiện tại = Won | Stage hiện tại: Won; Stage đích: Negotiation | 1. Mở Deal đang Won; 2. Thực hiện chuyển về Negotiation | Không thay đổi Stage; Probability và Expected Revenue giữ nguyên. | Đã kiểm thử | PASS |
 | TC-DEALS-026 | UC6 - Chuyển trạng thái | Kiểm tra Deal ở Lost không được chuyển ngược | Sales đã đăng nhập; Deal thuộc Sales; Stage hiện tại = Lost | Stage hiện tại: Lost; Stage đích: Negotiation | 1. Mở Deal đang Lost; 2. Thực hiện chuyển về Negotiation | Không thay đổi Stage; Probability và Expected Revenue giữ nguyên; hiển thị `Deal đang ở giai đoạn Won hoặc Lost nên không thể thay đổi giai đoạn.` | Đã kiểm thử | PASS |
 | TC-DEALS-027 | UC6 - Đổi Pipeline Stage | Kiểm tra Stage đích không tồn tại | Sales đã đăng nhập; Deal thuộc Sales và chưa Won/Lost | Deal ID: 7; Stage ID: 999 | 1. Chọn Deal; 2. Gửi yêu cầu chuyển sang Stage ID 999 | Không cập nhật Deal; hiển thị `Giai đoạn Pipeline không hợp lệ.` | Đã kiểm thử | PASS |
+| TC-DEALS-028 | UC6 - Chuyển Deal sang Lost | Kiểm tra không cho chuyển Deal sang Lost khi chưa nhập lý do thất bại | Sales đã đăng nhập; Deal thuộc Sales; Deal chưa ở Won/Lost | Stage đích: Lost; Lý do thất bại: trống | 1. Mở Pipeline; 2. Kéo Deal sang Lost; 3. Không nhập lý do; 4. Nhấn **Xác nhận thất bại** | Modal vẫn mở; hiển thị `Vui lòng nhập lý do thất bại.`; Deal không chuyển sang Lost | Đã kiểm thử | PASS |
+| TC-DEALS-029 | UC6 - Chuyển Deal sang Lost | Kiểm tra lý do thất bại chỉ chứa khoảng trắng | Sales đã đăng nhập; Deal thuộc Sales; Deal chưa ở Won/Lost | Stage đích: Lost; Lý do thất bại: `   ` | 1. Mở Pipeline; 2. Kéo Deal sang Lost; 3. Nhập khoảng trắng; 4. Nhấn **Xác nhận thất bại** | Hệ thống xem lý do là rỗng; modal vẫn mở; Deal không chuyển sang Lost; hiển thị `Vui lòng nhập lý do thất bại.` | Đã kiểm thử | PASS |
+| TC-DEALS-030 | UC6 - Chuyển Deal sang Lost | Kiểm tra chuyển Deal sang Lost khi có lý do thất bại hợp lệ | Sales đã đăng nhập; Deal thuộc Sales; Deal chưa ở Won/Lost | Stage đích: Lost; Lý do: `Khách hàng chọn đối thủ.` | 1. Mở Pipeline; 2. Kéo Deal sang Lost; 3. Nhập lý do; 4. Nhấn **Xác nhận thất bại** | Modal đóng; Deal chuyển sang Lost; Probability = 0%; Expected Revenue = 0; hiển thị `Cập nhật giai đoạn Deal thành công.` | Đã kiểm thử | PASS |
 
 ### Minh chứng TC-DEALS-022
 ![TC-DEALS-022 - Sales chuyển Stage Deal hợp lệ](./assets/deals/TC-DEALS-022.1.png)
@@ -136,3 +139,12 @@
 
 ### Minh chứng TC-DEALS-027
 ![TC-DEALS-027 - Giai đoạn không hợp lệ](./assets/deals/TC-DEALS-027.png)
+
+### Minh chứng TC-DEALS-028
+![TC-DEALS-028 - Không cho chuyển Deal sang Lost khi chưa nhập lý do thất bại](./assets/deals/TC-DEALS-028.png)
+
+### Minh chứng TC-DEALS-029
+![TC-DEALS-029 - Lý do thất bại chỉ chứa khoảng trắng](./assets/deals/TC-DEALS-029.png)
+
+### Minh chứng TC-DEALS-030
+![TC-DEALS-030 - Chuyển Deal sang Lost khi có lý do thất bại hợp lệ](./assets/deals/TC-DEALS-030.png)

@@ -93,6 +93,7 @@ describe('DealsService - quản lý Deal', () => {
     expectedrevenue: new Prisma.Decimal(5_000_000),
     expectedclosedate: new Date('2026-09-30'),
     status: 'Open',
+    lostreason: null,
     createddate: new Date('2026-08-20T08:00:00.000Z'),
     customers: {
       customerid: 3,
@@ -1053,6 +1054,104 @@ describe('DealsService - quản lý Deal', () => {
       expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
     });
 
+    it('BR-10 - từ chối chuyển Deal sang Lost khi không nhập lý do thất bại', async () => {
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+
+      dealsRepository.findStageById.mockResolvedValue({
+        stageid: 5,
+        stagename: 'Lost',
+        stageorder: 6,
+        probability: 0,
+      });
+
+      await expect(
+        dealsService.changeStage(7, { stageId: 5 }, salesUser, '192.168.1.10'),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.',
+        ),
+      );
+
+      expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-10 - từ chối chuyển Deal sang Lost khi lý do chỉ có khoảng trắng', async () => {
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+      dealsRepository.findStageById.mockResolvedValue({
+        stageid: 5,
+        stagename: 'Lost',
+        stageorder: 6,
+        probability: 0,
+      });
+
+      await expect(
+        dealsService.changeStage(
+          7,
+          {
+            stageId: 5,
+            lostReason: '   ',
+          },
+          salesUser,
+          '192.168.1.10',
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.',
+        ),
+      );
+      expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-10, BR-18 - chuyển Deal sang Lost thành công khi có lý do thất bại', async () => {
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+      dealsRepository.findStageById.mockResolvedValue({
+        stageid: 5,
+        stagename: 'Lost',
+        stageorder: 6,
+        probability: 0,
+      });
+      const updatedDeal = {
+        ...deal,
+        stageid: 5,
+        probability: 0,
+        expectedrevenue: new Prisma.Decimal(0),
+        status: 'Lost',
+        lostreason: 'Khách hàng chọn đối thủ.',
+        pipelinestages: {
+          stageid: 5,
+          stagename: 'Lost',
+          stageorder: 6,
+        },
+      } as DealWithRelations;
+
+      dealsRepository.changeStageWithLog.mockResolvedValue(updatedDeal);
+      const result = await dealsService.changeStage(
+        7,
+        {
+          stageId: 5,
+          lostReason: '  Khách hàng chọn đối thủ.  ',
+        },
+        salesUser,
+        '192.168.1.10',
+      );
+
+      const input = dealsRepository.changeStageWithLog.mock.calls[0][0];
+
+      expect(input.dealId).toBe(7);
+      expect(input.stageId).toBe(5);
+      expect(input.stageName).toBe('Lost');
+      expect(input.probability).toBe(0);
+      expect(input.expectedRevenue.toNumber()).toBe(0);
+      expect(input.status).toBe('Lost');
+      expect(input.lostReason).toBe('Khách hàng chọn đối thủ.');
+      expect(input.currentDeal).toBe(deal);
+      expect(input.userId).toBe(5);
+      expect(input.ipAddress).toBe('192.168.1.10');
+      expect(result.message).toBe('Cập nhật giai đoạn Deal thành công.');
+      expect(result.data.status).toBe('Lost');
+      expect(result.data.lostReason).toBe('Khách hàng chọn đối thủ.');
+    });
+
     it('BR-08 - từ chối khi Stage đích có xác suất không hợp lệ', async () => {
       dealsRepository.findStageById.mockResolvedValue({
         stageid: 6,
@@ -1095,6 +1194,7 @@ describe('DealsService - quản lý Deal', () => {
       expect(input.stageName).toBe('Negotiation');
       expect(input.probability).toBe(70);
       expect(input.expectedRevenue.toNumber()).toBe(7_000_000);
+      expect(input.lostReason).toBeNull();
       expect(input.currentDeal).toBe(deal);
       expect(input.userId).toBe(5);
       expect(input.ipAddress).toBe('192.168.1.10');

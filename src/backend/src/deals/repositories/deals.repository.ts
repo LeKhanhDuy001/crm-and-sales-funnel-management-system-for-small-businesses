@@ -35,6 +35,7 @@ export interface ChangeDealStageData {
   probability: number;
   expectedRevenue: Prisma.Decimal;
   status: string;
+  lostReason: string | null;
   currentDeal: DealWithRelations;
   userId: number;
   ipAddress?: string;
@@ -51,6 +52,7 @@ export const dealSelect = {
   expectedrevenue: true,
   expectedclosedate: true,
   status: true,
+  lostreason: true,
   createddate: true,
 
   customers: {
@@ -398,6 +400,7 @@ export class DealsRepository {
           probability: input.probability,
           expectedrevenue: input.expectedRevenue,
           status: input.status,
+          lostreason: input.lostReason,
         },
         select: dealSelect,
       });
@@ -419,6 +422,7 @@ export class DealsRepository {
                 ? null
                 : Number(input.currentDeal.expectedrevenue),
             status: input.currentDeal.status,
+            lostReason: input.currentDeal.lostreason,
           },
 
           newvalue: {
@@ -427,6 +431,7 @@ export class DealsRepository {
             probability: input.probability,
             expectedRevenue: Number(input.expectedRevenue),
             status: input.status,
+            lostReason: input.lostReason,
           },
         },
       });

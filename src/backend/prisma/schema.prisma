@@ -76,6 +76,7 @@ model deals {
   expectedrevenue   Decimal?  @map("expected_revenue") @db.Decimal(18, 2)
   expectedclosedate DateTime? @map("expected_close_date") @db.Date
   status            String    @db.VarChar(30)
+  lostreason        String?   @map("lost_reason") @db.VarChar(500)
   createddate       DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
 
   activities     activities[]

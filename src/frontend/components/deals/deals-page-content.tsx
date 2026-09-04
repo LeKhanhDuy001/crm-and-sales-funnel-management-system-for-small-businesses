@@ -247,6 +247,13 @@ export default function DealsPageContent({ state, actions }: DealsPageContentPro
 
               <span>Doanh thu kỳ vọng</span>
               <strong>{(selectedDeal.expectedRevenue ?? 0).toLocaleString('vi-VN')} đ</strong>
+
+              {selectedDeal.status === 'Lost' && (
+                <>
+                  <span>Lý do thất bại</span>
+                  <strong>{selectedDeal.lostReason || '-'}</strong>
+                </>
+              )}
             </div>
           </div>
         </div>

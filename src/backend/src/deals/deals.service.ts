@@ -381,6 +381,7 @@ export class DealsService {
         deal.expectedrevenue === null ? null : Number(deal.expectedrevenue),
       expectedCloseDate: deal.expectedclosedate,
       status: deal.status,
+      lostReason: deal.lostreason,
       createdDate: deal.createddate,
 
       customer: {
@@ -531,6 +532,19 @@ export class DealsService {
       );
     }
 
+    const normalizedTargetStage = targetStage.stagename.trim().toLowerCase();
+
+    const lostReason = dto.lostReason?.trim() || null;
+
+    // BR-10: Deal chuyển sang Lost bắt buộc phải có lý do thất bại.
+    if (normalizedTargetStage === 'lost' && !lostReason) {
+      throw new UnprocessableEntityException(
+        'Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.',
+      );
+    }
+
+    const nextLostReason = normalizedTargetStage === 'lost' ? lostReason : null;
+
     // BR-08: cập nhật lại xác suất
     const probability = this.requireStageProbability(
       targetStage.probability,
@@ -552,6 +566,7 @@ export class DealsService {
       probability,
       expectedRevenue,
       status,
+      lostReason: nextLostReason,
       currentDeal,
       userId: user.userId,
       ipAddress,
