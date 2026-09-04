@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
@@ -8,6 +8,8 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { DashboardService } from './dashboard.service';
+import { ForecastService } from './forecast.service';
+import { ForecastQueryDto } from './dto/forecast-query.dto';
 import { CustomerCareDashboardResponseDto } from './dto/customer-care-dashboard-response.dto';
 import { MarketingDashboardResponseDto } from './dto/marketing-dashboard-response.dto';
 import { SalesDashboardResponseDto } from './dto/sales-dashboard-response.dto';
@@ -22,7 +24,10 @@ interface AuthenticatedRequest extends Request {
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class DashboardController {
-  constructor(private readonly dashboardService: DashboardService) {}
+  constructor(
+    private readonly dashboardService: DashboardService,
+    private readonly forecastService: ForecastService,
+  ) {}
 
   @Get('admin')
   @Roles(Role.ADMIN)
@@ -32,18 +37,23 @@ export class DashboardController {
 
   @Get('sales-manager')
   @Roles(Role.SALES_MANAGER)
-  @ApiOkResponse({
-    type: SalesManagerDashboardResponseDto,
-  })
+  @ApiOkResponse({ type: SalesManagerDashboardResponseDto })
   getSalesManagerDashboard() {
     return this.dashboardService.getSalesManagerDashboard();
   }
 
+  @Get('forecast')
+  @Roles(Role.SALES_MANAGER, Role.ADMIN)
+  getForecast(
+    @Query()
+    query: ForecastQueryDto,
+  ) {
+    return this.forecastService.getForecast(query);
+  }
+
   @Get('sales')
   @Roles(Role.SALES)
-  @ApiOkResponse({
-    type: SalesDashboardResponseDto,
-  })
+  @ApiOkResponse({ type: SalesDashboardResponseDto })
   getSalesDashboard(@Req() request: AuthenticatedRequest) {
     return this.dashboardService.getSalesDashboard(request.user.userId);
   }

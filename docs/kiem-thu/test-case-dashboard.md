@@ -59,3 +59,32 @@
 
 ### Minh chứng TC-DASHBOARD-012
 ![TC-DASHBOARD-012 - Kiểm tra giao diện không crash khi không tải được Dashboard](./assets/dashboard/TC-DASHBOARD-012.png)
+
+### Kỹ thuật thiết kế test áp dụng
+- **Phân hoạch tương đương (Equivalence Partitioning):** kiểm tra kỳ Forecast hợp lệ, kỳ không có Deal và người dùng có/không có quyền xem Forecast.
+- **Phân tích giá trị biên (Boundary Value Analysis):** kiểm tra `fromDate = toDate` và trường hợp `fromDate > toDate`.
+- **Bảng quyết định (Decision Table Testing):** kiểm tra quyền xem Forecast theo Role: Admin và Sales Manager được phép; Sales không được phép.
+
+| Mã TC | Chức năng / UC | Mục tiêu | Tiền điều kiện | Dữ liệu đầu vào | Các bước thực hiện | Kết quả mong đợi | Kết quả thực tế | Trạng thái |
+|---|---|---|---|---|---|---|---|---|
+| TC-DASHBOARD-013 | UC9 - Forecast doanh thu | Kiểm tra Sales Manager xem Forecast theo kỳ trên giao diện | Sales Manager đã đăng nhập; hệ thống có Deal đang mở có Expected Close Date trong tháng 09/2026| Từ ngày: `01/09/2026`;<br>Đến ngày: `30/09/2026` | 1. Đăng nhập bằng tài khoản Sales Manager.<br>2. Mở Dashboard Sales Manager.<br>3. Tại khu vực `Dự báo doanh thu`, chọn Từ ngày `01/09/2026`.<br>4. Chọn Đến ngày `30/09/2026`.<br>5. Nhấn `Xem dự báo`.<br>6. Quan sát kết quả hiển thị. | Giao diện hiển thị `Deal đang mở trong kỳ = 7`; `Giá trị Pipeline = 203.000.000 ₫`; `Doanh thu dự báo = 109.700.000 ₫`; không xuất hiện lỗi tải dữ liệu | Đã kiểm thử | PASS |
+| TC-DASHBOARD-014 | UC9 - Forecast doanh thu | Kiểm tra Admin xem Forecast theo kỳ trên giao diện | Admin đã đăng nhập; hệ thống có Deal đang mở có Expected Close Date trong tháng 09/2026 | Từ ngày: `01/09/2026`;<br>Đến ngày: `30/09/2026` | 1. Đăng nhập bằng tài khoản Admin.<br>2. Mở Dashboard Admin.<br>3. Tại khu vực `Dự báo doanh thu`, chọn Từ ngày `01/09/2026`.<br>4. Chọn Đến ngày `30/09/2026`.<br>5. Nhấn `Xem dự báo`.<br>6. Quan sát kết quả hiển thị. | Giao diện hiển thị `Deal đang mở trong kỳ = 7`; `Giá trị Pipeline = 203.000.000 ₫`; `Doanh thu dự báo = 109.700.000 ₫`; không xuất hiện lỗi tải dữ liệu | Đã kiểm thử | PASS |
+| TC-DASHBOARD-015 | UC9 - Forecast phân quyền | Kiểm tra Sales không được xem Forecast toàn hệ thống | Sales đã đăng nhập và có access token hợp lệ | `GET /api/v1/dashboard/forecast?fromDate=2026-09-01&toDate=2026-09-30` | 1. Đăng nhập Sales.<br>2. Gửi request Forecast.<br>3. Quan sát response. | HTTP `403 Forbidden`; thông báo `Bạn không có quyền truy cập chức năng này` | Đã kiểm thử | PASS |
+| TC-DASHBOARD-016 | UC9 - Forecast kiểm tra kỳ | Kiểm tra từ chối khi ngày bắt đầu sau ngày kết thúc | Sales Manager đã đăng nhập | `fromDate = 2026-10-01`; `toDate = 2026-09-30` | 1. Gửi request Forecast với khoảng ngày không hợp lệ.<br>2. Quan sát response. | HTTP `422 Unprocessable Entity`; thông báo `Ngày bắt đầu không được sau ngày kết thúc.` | Đã kiểm thử | PASS |
+| TC-DASHBOARD-017 | UC9 - Forecast BR34 | Kiểm tra số liệu Forecast khớp dữ liệu database | Sales Manager đã đăng nhập; database có Deal test trong tháng 09/2026 | Kỳ `01/09/2026 - 30/09/2026` | 1. Truy vấn các Deal có `status NOT IN ('Won','Lost')` và `expected_close_date` nằm trong kỳ.<br>2. Tính `COUNT`, `SUM(deal_value)`, `SUM(expected_revenue)`.<br>3. Gọi API Forecast.<br>4. Đối chiếu kết quả. | Database và API cùng trả `7` Deal; Pipeline = `203.000.000`; Forecast Revenue = `109.700.000`; Deal Won/Lost và Deal ngoài kỳ không được tính | Đã kiểm thử | PASS |
+
+### Minh chứng TC-DASHBOARD-013
+![TC-DASHBOARD-013 - Sales Manager xem Forecast theo kỳ trên giao diện](./assets/dashboard/TC-DASHBOARD-013.png)
+
+### Minh chứng TC-DASHBOARD-014
+![TC-DASHBOARD-014 - Admin xem Forecast theo kỳ trên giao diện](./assets/dashboard/TC-DASHBOARD-014.png)
+
+### Minh chứng TC-DASHBOARD-015
+![TC-DASHBOARD-015 - Sales không được xem Forecast toàn hệ thống](./assets/dashboard/TC-DASHBOARD-015.png)
+
+### Minh chứng TC-DASHBOARD-016
+![TC-DASHBOARD-016 - Từ chối khi ngày bắt đầu sau ngày kết thúc](./assets/dashboard/TC-DASHBOARD-016.png)
+
+### Minh chứng TC-DASHBOARD-017
+![TC-DASHBOARD-017 - Số liệu Forecast khớp dữ liệu database](./assets/dashboard/TC-DASHBOARD-017.1.png)
+![TC-DASHBOARD-017 - Số liệu Forecast khớp dữ liệu database](./assets/dashboard/TC-DASHBOARD-017.2.png)

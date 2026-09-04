@@ -33,6 +33,19 @@ export interface AdminDashboardData {
   recentLeads: RecentLead[];
 }
 
+export interface ForecastQuery {
+  fromDate: string;
+  toDate: string;
+}
+
+export interface ForecastData {
+  fromDate: string;
+  toDate: string;
+  totalOpenDeals: number;
+  pipelineValue: number;
+  forecastRevenue: number;
+}
+
 export interface SalesManagerOverview {
   totalSales: number;
   openDeals: number;

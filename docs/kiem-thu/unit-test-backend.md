@@ -250,6 +250,15 @@ npm test -- leads.service.spec.ts
 | UNIT-DASHBOARD-007 | `dashboard.service.spec.ts` | Dashboard Marketing khi không có Lead | Khi `totalLeads = 0`, trả `conversionRate = 0` và `unconvertedLeads = 0`; không xảy ra chia cho `0` hoặc trả `NaN` | PASS |
 | UNIT-DASHBOARD-008 | `dashboard.service.spec.ts` | Customer Care lấy Dashboard cá nhân theo đúng `userId` | Repository lấy Customer cần chăm sóc, Task hôm nay, Task chưa hoàn thành, Task quá hạn, Activity, Task sắp tới và Activity gần nhất theo đúng `userId`; trả đúng `overview`, `upcomingTasks`, `recentActivities` và `activitiesByType` | PASS |
 
+## Forecast doanh thu
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-FORECAST-001 | `forecast.service.spec.ts` | BR34 - Tổng hợp Forecast của Deal đang mở trong kỳ | Repository nhận đúng `fromDate` và `toDateExclusive`; trả đúng `totalOpenDeals`, `pipelineValue` và `forecastRevenue` | PASS |
+| UNIT-FORECAST-002 | `forecast.service.spec.ts` | BR34 - Forecast khi kỳ không có Deal | Trả `totalOpenDeals = 0`, `pipelineValue = 0`, `forecastRevenue = 0`; không trả `null` hoặc `NaN` | PASS |
+| UNIT-FORECAST-003 | `forecast.service.spec.ts` | BR34 - Ngày bắt đầu sau ngày kết thúc | Ném `UnprocessableEntityException` với thông báo `Ngày bắt đầu không được sau ngày kết thúc.`; không gọi Repository | PASS |
+| UNIT-FORECAST-004 | `forecast.service.spec.ts` | BR34 - Forecast trong cùng một ngày | Cho phép `fromDate = toDate`; Repository nhận đầu ngày được chọn và đầu ngày kế tiếp làm mốc exclusive | PASS |
+
 ## Chức năng quản lý Activities
 
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -368,6 +377,13 @@ Time:        0.774 s
 ```
 
 ```text
+Forecast doanh thu
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        0.897 s
+
+```text
 Quản lý Activities
 Test Suites: 1 passed, 1 total
 Tests:       24 passed, 24 total
@@ -375,7 +391,7 @@ Snapshots:   0 total
 Time:        5.115 s
 ```
 
-**Kết luận:** 220/220 unit test PASS.
+**Kết luận:** 224/224 unit test PASS.
 
 ---
 
@@ -393,3 +409,4 @@ Time:        5.115 s
 | 01/09/2026 | Bổ sung unit test phân quyền xóa Admin và bảo vệ Super Admin | 4 | PASS |
 | 02/09/2026 | Hoàn thiện unit test backend cho chức năng quản lý Activities | 24 | PASS |
 | 04/09/2026 | Bổ sung unit test BR10 cho lý do thất bại khi chuyển Deal sang Lost, BR33 phân quyền thay đổi Pipeline Stage và quyền Admin xem Deal | 9 | PASS |
+| 04/09/2026 | Bổ sung unit test BR34 cho chức năng Forecast doanh thu theo kỳ | 4 | PASS |
