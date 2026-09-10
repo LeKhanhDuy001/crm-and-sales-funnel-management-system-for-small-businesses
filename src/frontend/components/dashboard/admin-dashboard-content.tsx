@@ -3,6 +3,7 @@
 import type { AdminDashboardData } from '../../modules/dashboard/dashboard.types';
 import styles from './admin-dashboard.module.css';
 import StatCard from './stat-card';
+import ForecastPanel from './forecast-panel';
 
 interface AdminDashboardContentProps {
   dashboard: AdminDashboardData;
@@ -46,6 +47,8 @@ export default function AdminDashboardContent({ dashboard, onLogout }: AdminDash
         <StatCard title="Nhiệm vụ chưa hoàn thành" value={overview.pendingTasks} icon="✅" />
         <StatCard title="Doanh thu thành công" value={revenue} icon="💰" />
       </section>
+
+      <ForecastPanel />
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>

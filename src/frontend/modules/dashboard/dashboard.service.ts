@@ -2,6 +2,8 @@ import { apiRequest } from '../../services/api';
 import type {
   AdminDashboardData,
   CustomerCareDashboardData,
+  ForecastData,
+  ForecastQuery,
   MarketingDashboardData,
   SalesDashboardData,
   SalesManagerDashboardData,
@@ -75,4 +77,19 @@ export async function getCustomerCareDashboard(
   accessToken: string,
 ): Promise<CustomerCareDashboardData> {
   return getDashboard<CustomerCareDashboardData>('/dashboard/customer-care', accessToken,);
+}
+
+/**
+ * Lấy Forecast doanh thu theo kỳ.
+ */
+export async function getForecast(accessToken: string, query: ForecastQuery,): Promise<ForecastData> {
+  const params = new URLSearchParams({
+    fromDate: query.fromDate,
+    toDate: query.toDate,
+  });
+
+  return getDashboard<ForecastData>(
+    `/dashboard/forecast?${params.toString()}`,
+    accessToken,
+  );
 }

@@ -12,6 +12,9 @@ import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { action_type } from '../../generated/prisma/client';
+import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
+import { AuthRepository } from './repositories/auth.repository';
 
 const NORMAL_SESSION_SECONDS = 60 * 60;
 const REMEMBERED_SESSION_SECONDS = 60 * 60 * 24 * 7;
@@ -21,6 +24,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly authRepository: AuthRepository,
   ) {}
 
   /**
@@ -30,7 +34,10 @@ export class AuthService {
    * @returns JWT access token và thông tin người dùng đã được lọc.
    * @throws UnauthorizedException Khi tài khoản không tồn tại, bị khóa hoặc mật khẩu không chính xác.
    */
-  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
+  async login(
+    loginDto: LoginDto,
+    ipAddress: string | null,
+  ): Promise<LoginResponseDto> {
     const normalizedEmail = loginDto.email.trim().toLowerCase();
 
     const user = await this.usersService.findByEmail(normalizedEmail);
@@ -67,6 +74,13 @@ export class AuthService {
       expiresIn,
     });
 
+    // BR18: Đăng nhập thành công phải ghi Activity Log.
+    await this.authRepository.createAuthLog(
+      user.userid,
+      action_type.Login,
+      ipAddress,
+    );
+
     return {
       message: 'Đăng nhập thành công',
       accessToken,
@@ -78,6 +92,20 @@ export class AuthService {
         role: user.roles.rolename,
       },
     };
+  }
+
+  async logout(
+    user: AuthenticatedUser,
+    ipAddress: string | null,
+  ): Promise<{ message: string }> {
+    // BR18: Đăng xuất chủ động phải được ghi Activity Log.
+    await this.authRepository.createAuthLog(
+      user.userId,
+      action_type.Logout,
+      ipAddress,
+    );
+
+    return { message: 'Đăng xuất thành công' };
   }
 
   /**

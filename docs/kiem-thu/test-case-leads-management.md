@@ -109,3 +109,56 @@
 
 ### Minh chứng TC-LEADS-021
 ![TC-LEADS-021 - Lead phải có cả số điện thoại và email thì mới được chuyển đổi](./assets/leads/TC-LEADS-021.png)
+
+## UC15 - Phân công Lead
+
+### Kỹ thuật thiết kế test áp dụng
+
+- **Phân hoạch tương đương (Equivalence Partitioning):** chia các trường hợp Sales hợp lệ, Sales bị khóa, người dùng không phải Sales và Lead không hợp lệ.
+- **Bảng quyết định (Decision Table):** kiểm tra kết hợp vai trò người thực hiện, trạng thái Sales và trạng thái Lead để quyết định có được phân công hay không.
+- **Chuyển đổi trạng thái (State Transition):** kiểm tra Lead thay đổi từ chưa được phân công hoặc đang thuộc Sales A sang Sales B.
+- **Phân tích giá trị biên (Boundary Value Analysis):** kiểm tra `assignedUserId` không hợp lệ tại biên `0`.
+
+| Mã TC | Chức năng / UC | Mục tiêu | Tiền điều kiện | Dữ liệu đầu vào | Các bước thực hiện | Kết quả mong đợi | Kết quả thực tế | Trạng thái |
+|---|---|---|---|---|---|---|---|---|
+| TC-LEADS-022 | UC15 - Phân công Lead | Kiểm tra Sales Manager phân công Lead cho Sales đang hoạt động thành công | Sales Manager đã đăng nhập; Lead tồn tại và chưa Converted; Sales A tồn tại, role Sales và đang hoạt động | Chọn Lead cần phân công; chọn Sales A | 1. Sales Manager mở chức năng phân công Lead; 2. Chọn Lead; 3. Chọn Sales A; 4. Nhấn **Phân công** | Phân công thành công; Lead được cập nhật người phụ trách thành Sales A; hiển thị thông báo thành công | Đã kiểm thử | PASS |
+| TC-LEADS-023 | UC15 - Phân công lại Lead | Kiểm tra Sales Manager phân công lại Lead từ Sales A sang Sales B | Sales Manager đã đăng nhập; Lead đang thuộc Sales A; Lead chưa Converted; Sales B đang hoạt động | Sales B | 1. Chọn Lead đang thuộc Sales A; 2. Chọn Sales B; 3. Nhấn **Phân công** | Lead đổi người phụ trách từ Sales A sang Sales B; dữ liệu phân công mới được lưu | Đã kiểm thử | PASS |
+| TC-LEADS-024 | UC15 - Sales bị khóa | Kiểm tra API không cho phân công Lead cho Sales bị khóa | Sales Manager đã đăng nhập; có `accessToken` hợp lệ; Lead tồn tại và chưa Converted; tồn tại tài khoản Sales có `status = false` | **URL:** `/api/v1/lead-assignments/{leadId}`<br>**Body:** `{ "assignedUserId": <ID Sales bị khóa> }` | 1. Mở Swagger.<br>2. Nhấn **Authorize** và nhập token Sales Manager.<br>3. Mở `PATCH /api/v1/lead-assignments/{leadId}`.<br>4. Nhập `leadId` của Lead chưa Converted.<br>5. Nhấn **Try it out**.<br>6. Nhập `assignedUserId` của Sales có `status = false`.<br>7. Nhấn **Execute**. | HTTP 422; Hiển thị `Chỉ được phân công Lead cho nhân viên Sales đang hoạt động` | Đã kiểm thử | PASS |
+| TC-LEADS-025 | UC15 - Sai vai trò | Kiểm tra không cho phân công Lead cho người dùng không có role Sales | Sales Manager đã đăng nhập; Lead hợp lệ; tồn tại user role khác Sales | `assignedUserId` của Admin/Marketing/Customer Care | 1. Mở Swagger; 2. Gọi API phân công Lead; 3. Truyền ID user không phải Sales | HTTP 422; Hiển thị `Chỉ được phân công Lead cho nhân viên Sales đang hoạt động` | Đã kiểm thử | PASS |
+| TC-LEADS-026 | UC15 - Lead Converted | Kiểm tra Lead đã chuyển thành Customer không được phân công lại | Sales Manager đã đăng nhập; Lead có trạng thái `Converted` | Lead Converted; Sales hợp lệ | 1. Chọn hoặc gọi API phân công Lead Converted; 2. Chọn Sales hợp lệ; 3. Thực hiện phân công | Hệ thống từ chối phân công; hiển thị `Lead đã chuyển đổi thành Customer nên không thể phân công` | Đã kiểm thử | PASS |
+| TC-LEADS-027 | UC15 - Phân quyền | Kiểm tra Sales không được phép phân công Lead | Sales đã đăng nhập; Lead và Sales nhận phân công đều tồn tại | API phân công Lead | 1. Mở Swagger; 2. Authorize bằng token Sales; 3. Gọi API phân công Lead | HTTP 403; hiển thị `Bạn không có quyền truy cập chức năng này` | Đã kiểm thử | PASS |
+| TC-LEADS-028 | UC15 - Lead không tồn tại | Kiểm tra không thể phân công Lead không tồn tại | Sales Manager đã đăng nhập; Sales nhận phân công hợp lệ | `leadId` không tồn tại | 1. Mở Swagger; 2. Gọi API phân công với `leadId` không tồn tại; 3. Execute | HTTP 404; `Lead không tồn tại` | Đã kiểm thử | PASS |
+| TC-LEADS-029 | UC15 - Validate assignedUserId | Kiểm tra `assignedUserId` không hợp lệ tại giá trị biên | Sales Manager đã đăng nhập; Lead hợp lệ | `assignedUserId = 0` | 1. Mở Swagger; 2. Gọi API phân công Lead; 3. Gửi `assignedUserId = 0`; 4. Execute | HTTP 400; hệ thống báo dữ liệu không hợp lệ; Lead không bị thay đổi | Đã kiểm thử | PASS |
+| TC-LEADS-030 | UC15 - Notification | Kiểm tra Sales nhận Notification khi được phân công Lead | Sales Manager đã đăng nhập; Lead hợp lệ; Sales A active | Phân công Lead cho Sales A | 1. Thực hiện phân công Lead thành công; 2. Mở Notification của Sales A hoặc kiểm tra bảng `notifications` | Tạo Notification cho đúng Sales A; nội dung liên quan đến Lead được giao; `isRead = false` | Đã kiểm thử | PASS |
+| TC-LEADS-031 | UC15 - Activity Log | Kiểm tra thao tác phân công Lead được ghi Activity Log | Sales Manager đã đăng nhập; phân công Lead thành công | Lead được giao cho Sales A | 1. Thực hiện phân công Lead; 2. Mở Prisma Studio hoặc Activity Log; 3. Kiểm tra log vừa tạo | Có Activity Log cho thao tác phân công Lead | Đã kiểm thử | PASS |
+
+### Minh chứng TC-LEADS-022
+![TC-LEADS-022 - Sales Manager phân công Lead cho Sales đang hoạt động thành công](./assets/leads/TC-LEADS-022.png)
+
+### Minh chứng TC-LEADS-023
+![TC-LEADS-023 - Sales Manager phân công lại Lead từ Sales A sang Sales B](./assets/leads/TC-LEADS-023.png)
+
+### Minh chứng TC-LEADS-024
+![TC-LEADS-024 - Sales Manager phân công lại Lead từ Sales A sang Sales B](./assets/leads/TC-LEADS-024.png)
+
+### Minh chứng TC-LEADS-025
+![TC-LEADS-025 - Không cho phân công Lead cho người dùng không có role Sales](./assets/leads/TC-LEADS-025.png)
+
+### Minh chứng TC-LEADS-026
+![TC-LEADS-026 - Lead đã chuyển thành Customer không được phân công lại](./assets/leads/TC-LEADS-026.png)
+
+### Minh chứng TC-LEADS-027
+![TC-LEADS-027 - Sales không được phép phân công Lead](./assets/leads/TC-LEADS-027.png)
+
+### Minh chứng TC-LEADS-028
+![TC-LEADS-028 - Không thể phân công Lead không tồn tại](./assets/leads/TC-LEADS-028.png)
+
+### Minh chứng TC-LEADS-029
+![TC-LEADS-029 - assignedUserId không hợp lệ tại giá trị biên](./assets/leads/TC-LEADS-029.png)
+
+### Minh chứng TC-LEADS-030
+![TC-LEADS-030 - Sales nhận Notification khi được phân công Lead](./assets/leads/TC-LEADS-030.1.png)
+![TC-LEADS-030 - Sales nhận Notification khi được phân công Lead](./assets/leads/TC-LEADS-030.2.png)
+
+### Minh chứng TC-LEADS-031
+![TC-LEADS-031 - assignedUserId không hợp lệ tại giá trị biên](./assets/leads/TC-LEADS-031.png)

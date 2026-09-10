@@ -24,6 +24,7 @@ export interface Deal {
   expectedRevenue: number | null;
   expectedCloseDate: string | null;
   status: string | null;
+  lostReason: string | null;
   createdDate: string | null;
   customer: DealCustomer;
   stage: DealStage;
@@ -88,6 +89,7 @@ export interface DealMutationResponse {
 
 export interface UpdateDealStageInput {
   stageId: number;
+  lostReason?: string;
 }
 
 export interface DealSalesUserOption {

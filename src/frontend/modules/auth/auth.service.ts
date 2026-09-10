@@ -55,3 +55,18 @@ export async function resetPassword(
     },
   );
 }
+
+/**
+ * Gửi yêu cầu đăng xuất đến backend để ghi Activity Log.
+ */
+export async function logout(
+  accessToken: string,
+): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>(
+    '/auth/logout',
+    {
+      method: 'POST',
+      accessToken,
+    },
+  );
+}

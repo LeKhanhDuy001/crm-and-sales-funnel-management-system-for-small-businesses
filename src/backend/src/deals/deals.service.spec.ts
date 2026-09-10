@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
@@ -61,6 +62,20 @@ describe('DealsService - quản lý Deal', () => {
     role: Role.SALES_MANAGER,
   } as AuthenticatedUser;
 
+  const adminUser = {
+    userId: 1,
+    fullName: 'Nguyễn Văn Admin',
+    email: 'admin@crm.com',
+    role: Role.ADMIN,
+  } as AuthenticatedUser;
+
+  const customerCareUser = {
+    userId: 8,
+    fullName: 'Nguyễn Văn Customer Care',
+    email: 'care@crm.com',
+    role: Role.CUSTOMER_CARE,
+  } as AuthenticatedUser;
+
   const leadStage = {
     stageid: 1,
     stagename: 'Lead',
@@ -93,6 +108,7 @@ describe('DealsService - quản lý Deal', () => {
     expectedrevenue: new Prisma.Decimal(5_000_000),
     expectedclosedate: new Date('2026-09-30'),
     status: 'Open',
+    lostreason: null,
     createddate: new Date('2026-08-20T08:00:00.000Z'),
     customers: {
       customerid: 3,
@@ -253,6 +269,31 @@ describe('DealsService - quản lý Deal', () => {
     });
   });
 
+  it('Admin xem được toàn bộ Deal, không bị giới hạn theo người phụ trách', async () => {
+    dealsRepository.findMany.mockResolvedValue([deal]);
+    dealsRepository.count.mockResolvedValue(1);
+    const query = { page: 1, limit: 20 } as DealQueryDto;
+    const result = await dealsService.findAll(query, adminUser);
+    expect(dealsRepository.findMany).toHaveBeenCalledWith(
+      {
+        search: undefined,
+        stageId: undefined,
+        salesUserId: undefined,
+      },
+      0,
+      20,
+    );
+
+    expect(dealsRepository.count).toHaveBeenCalledWith({
+      search: undefined,
+      stageId: undefined,
+      salesUserId: undefined,
+    });
+
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].dealId).toBe(7);
+  });
+
   describe('getMeta', () => {
     it('Sales lấy Pipeline Stage nhưng không lấy danh sách Sales', async () => {
       dealsRepository.findPipelineStages.mockResolvedValue([
@@ -323,6 +364,42 @@ describe('DealsService - quản lý Deal', () => {
     });
   });
 
+  it('Admin lấy Pipeline Stage và danh sách Sales đang hoạt động', async () => {
+    dealsRepository.findPipelineStages.mockResolvedValue([
+      proposalStage,
+      negotiationStage,
+    ]);
+    dealsRepository.findActiveUsersByRole.mockResolvedValue([
+      {
+        userid: 5,
+        fullname: 'Nguyễn Văn Sales',
+        email: 'sales@crm.com',
+      },
+      {
+        userid: 6,
+        fullname: 'Trần Thị Sales',
+        email: 'sales2@crm.com',
+      },
+    ]);
+    const result = await dealsService.getMeta(adminUser);
+    expect(dealsRepository.findActiveUsersByRole).toHaveBeenCalledWith(
+      Role.SALES,
+    );
+    expect(result.stages).toHaveLength(2);
+    expect(result.salesUsers).toEqual([
+      {
+        userId: 5,
+        fullName: 'Nguyễn Văn Sales',
+        email: 'sales@crm.com',
+      },
+      {
+        userId: 6,
+        fullName: 'Trần Thị Sales',
+        email: 'sales2@crm.com',
+      },
+    ]);
+  });
+
   describe('findOne', () => {
     it('Sales xem được chi tiết Deal thuộc quyền của mình', async () => {
       dealsRepository.findOwnedById.mockResolvedValue(deal);
@@ -349,6 +426,16 @@ describe('DealsService - quản lý Deal', () => {
       expect(dealsRepository.findOwnedById).not.toHaveBeenCalled();
       expect(result.dealId).toBe(7);
     });
+  });
+
+  it('Admin xem được Deal không phụ thuộc người phụ trách', async () => {
+    dealsRepository.findById.mockResolvedValue(deal);
+    const result = await dealsService.findOne(7, adminUser);
+    expect(dealsRepository.findById).toHaveBeenCalledWith(7);
+    expect(dealsRepository.findOwnedById).not.toHaveBeenCalled();
+    expect(result.dealId).toBe(7);
+    expect(result.dealCode).toBe('DL007');
+    expect(result.assignedUser.userId).toBe(5);
   });
 
   describe('create', () => {
@@ -999,11 +1086,92 @@ describe('DealsService - quản lý Deal', () => {
   });
 
   describe('changeStage', () => {
-    it('từ chối đổi Stage của Deal không thuộc quyền Sales', async () => {
+    it('BR-33 - Sales không được đổi Stage Deal không thuộc quyền mình', async () => {
       dealsRepository.findOwnedById.mockResolvedValue(null);
       await expect(
         dealsService.changeStage(999, { stageId: 3 }, salesUser),
       ).rejects.toThrow('Không tìm thấy Deal.');
+      expect(dealsRepository.findOwnedById).toHaveBeenCalledWith(999, 5);
+      expect(dealsRepository.findById).not.toHaveBeenCalled();
+      expect(dealsRepository.findStageById).not.toHaveBeenCalled();
+      expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-33, BR-08, BR-09, BR-18 - Sales Manager được đổi Stage Deal bất kỳ', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+      dealsRepository.findStageById.mockResolvedValue(negotiationStage);
+      const updatedDeal = {
+        ...deal,
+        stageid: 3,
+        probability: 70,
+        expectedrevenue: new Prisma.Decimal(7_000_000),
+        pipelinestages: {
+          ...deal.pipelinestages,
+          stageid: 3,
+          stagename: 'Negotiation',
+          stageorder: 4,
+        },
+      } as DealWithRelations;
+      dealsRepository.changeStageWithLog.mockResolvedValue(updatedDeal);
+      const result = await dealsService.changeStage(
+        7,
+        { stageId: 3 },
+        salesManagerUser,
+        '192.168.1.20',
+      );
+
+      expect(dealsRepository.findById).toHaveBeenCalledWith(7);
+      expect(dealsRepository.findOwnedById).not.toHaveBeenCalled();
+      const input = dealsRepository.changeStageWithLog.mock.calls[0][0];
+      expect(input.userId).toBe(2);
+      expect(input.stageId).toBe(3);
+      expect(input.probability).toBe(70);
+      expect(input.expectedRevenue.toNumber()).toBe(7_000_000);
+      expect(result.message).toBe('Cập nhật giai đoạn Deal thành công.');
+    });
+
+    it('BR-33, BR-08, BR-09, BR-18 - Admin được đổi Stage Deal bất kỳ', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+      dealsRepository.findStageById.mockResolvedValue(negotiationStage);
+      const updatedDeal = {
+        ...deal,
+        stageid: 3,
+        probability: 70,
+        expectedrevenue: new Prisma.Decimal(7_000_000),
+        pipelinestages: {
+          ...deal.pipelinestages,
+          stageid: 3,
+          stagename: 'Negotiation',
+          stageorder: 4,
+        },
+      } as DealWithRelations;
+
+      dealsRepository.changeStageWithLog.mockResolvedValue(updatedDeal);
+      const result = await dealsService.changeStage(
+        7,
+        { stageId: 3 },
+        adminUser,
+        '192.168.1.30',
+      );
+
+      expect(dealsRepository.findById).toHaveBeenCalledWith(7);
+      expect(dealsRepository.findOwnedById).not.toHaveBeenCalled();
+      const input = dealsRepository.changeStageWithLog.mock.calls[0][0];
+      expect(input.userId).toBe(1);
+      expect(input.stageId).toBe(3);
+
+      expect(result.message).toBe('Cập nhật giai đoạn Deal thành công.');
+    });
+
+    it('BR-33 - từ chối role không có quyền thay đổi Stage Deal', async () => {
+      await expect(
+        dealsService.changeStage(7, { stageId: 3 }, customerCareUser),
+      ).rejects.toThrow(
+        new ForbiddenException('Bạn không có quyền thay đổi giai đoạn Deal.'),
+      );
+
+      expect(dealsRepository.findOwnedById).not.toHaveBeenCalled();
+      expect(dealsRepository.findById).not.toHaveBeenCalled();
       expect(dealsRepository.findStageById).not.toHaveBeenCalled();
       expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
     });
@@ -1053,6 +1221,104 @@ describe('DealsService - quản lý Deal', () => {
       expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
     });
 
+    it('BR-10 - từ chối chuyển Deal sang Lost khi không nhập lý do thất bại', async () => {
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+
+      dealsRepository.findStageById.mockResolvedValue({
+        stageid: 5,
+        stagename: 'Lost',
+        stageorder: 6,
+        probability: 0,
+      });
+
+      await expect(
+        dealsService.changeStage(7, { stageId: 5 }, salesUser, '192.168.1.10'),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.',
+        ),
+      );
+
+      expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-10 - từ chối chuyển Deal sang Lost khi lý do chỉ có khoảng trắng', async () => {
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+      dealsRepository.findStageById.mockResolvedValue({
+        stageid: 5,
+        stagename: 'Lost',
+        stageorder: 6,
+        probability: 0,
+      });
+
+      await expect(
+        dealsService.changeStage(
+          7,
+          {
+            stageId: 5,
+            lostReason: '   ',
+          },
+          salesUser,
+          '192.168.1.10',
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.',
+        ),
+      );
+      expect(dealsRepository.changeStageWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-10, BR-18 - chuyển Deal sang Lost thành công khi có lý do thất bại', async () => {
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+      dealsRepository.findStageById.mockResolvedValue({
+        stageid: 5,
+        stagename: 'Lost',
+        stageorder: 6,
+        probability: 0,
+      });
+      const updatedDeal = {
+        ...deal,
+        stageid: 5,
+        probability: 0,
+        expectedrevenue: new Prisma.Decimal(0),
+        status: 'Lost',
+        lostreason: 'Khách hàng chọn đối thủ.',
+        pipelinestages: {
+          stageid: 5,
+          stagename: 'Lost',
+          stageorder: 6,
+        },
+      } as DealWithRelations;
+
+      dealsRepository.changeStageWithLog.mockResolvedValue(updatedDeal);
+      const result = await dealsService.changeStage(
+        7,
+        {
+          stageId: 5,
+          lostReason: '  Khách hàng chọn đối thủ.  ',
+        },
+        salesUser,
+        '192.168.1.10',
+      );
+
+      const input = dealsRepository.changeStageWithLog.mock.calls[0][0];
+
+      expect(input.dealId).toBe(7);
+      expect(input.stageId).toBe(5);
+      expect(input.stageName).toBe('Lost');
+      expect(input.probability).toBe(0);
+      expect(input.expectedRevenue.toNumber()).toBe(0);
+      expect(input.status).toBe('Lost');
+      expect(input.lostReason).toBe('Khách hàng chọn đối thủ.');
+      expect(input.currentDeal).toBe(deal);
+      expect(input.userId).toBe(5);
+      expect(input.ipAddress).toBe('192.168.1.10');
+      expect(result.message).toBe('Cập nhật giai đoạn Deal thành công.');
+      expect(result.data.status).toBe('Lost');
+      expect(result.data.lostReason).toBe('Khách hàng chọn đối thủ.');
+    });
+
     it('BR-08 - từ chối khi Stage đích có xác suất không hợp lệ', async () => {
       dealsRepository.findStageById.mockResolvedValue({
         stageid: 6,
@@ -1095,6 +1361,7 @@ describe('DealsService - quản lý Deal', () => {
       expect(input.stageName).toBe('Negotiation');
       expect(input.probability).toBe(70);
       expect(input.expectedRevenue.toNumber()).toBe(7_000_000);
+      expect(input.lostReason).toBeNull();
       expect(input.currentDeal).toBe(deal);
       expect(input.userId).toBe(5);
       expect(input.ipAddress).toBe('192.168.1.10');

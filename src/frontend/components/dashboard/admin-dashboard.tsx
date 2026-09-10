@@ -15,6 +15,7 @@ import { ApiError } from '../../services/api';
 import AdminDashboardLayout from './admin-dashboard-layout';
 import AdminDashboardContent from './admin-dashboard-content';
 import styles from './admin-dashboard.module.css';
+import { logout } from '../../modules/auth/auth.service';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -27,9 +28,17 @@ export default function AdminDashboard() {
 
   const [error, setError] = useState('');
 
-  function handleLogout(): void {
-    clearAuth();
-    router.replace('/login');
+  async function handleLogout(): Promise<void> {
+    const accessToken = getAccessToken();
+
+    try {
+      if (accessToken) {
+        await logout(accessToken);
+      }
+    } finally {
+      clearAuth();
+      router.replace('/login');
+    }
   }
 
   useEffect(() => {

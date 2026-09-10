@@ -33,18 +33,15 @@ export class DealsService {
     const page = query.page;
     const limit = query.limit;
     const skip = (page - 1) * limit;
-
     const filter = {
       search: query.search,
       stageId: query.stageId,
       salesUserId: user.role === Role.SALES ? user.userId : undefined,
     };
-
     const [deals, total] = await Promise.all([
       this.dealsRepository.findMany(filter, skip, limit),
       this.dealsRepository.count(filter),
     ]);
-
     return {
       data: deals.map((deal) => this.mapDeal(deal)),
       pagination: {
@@ -62,7 +59,7 @@ export class DealsService {
   async getMeta(user: AuthenticatedUser) {
     const [stages, salesUsers] = await Promise.all([
       this.dealsRepository.findPipelineStages(),
-      user.role === Role.SALES_MANAGER
+      user.role === Role.SALES_MANAGER || user.role === Role.ADMIN
         ? this.dealsRepository.findActiveUsersByRole(Role.SALES)
         : Promise.resolve([]),
     ]);
@@ -214,6 +211,33 @@ export class DealsService {
 
     // BR-18: thao tác xóa Deal phải được ghi Activity Log.
     await this.dealsRepository.deleteWithLog(dealId, user.userId, ipAddress);
+  }
+
+  private async findStageChangeAccessibleDeal(
+    dealId: number,
+    user: AuthenticatedUser,
+  ): Promise<DealWithRelations> {
+    // BR-33: Sales chỉ được đổi Stage hoặc đóng Deal mình phụ trách.
+    if (user.role === Role.SALES) {
+      const deal = await this.dealsRepository.findOwnedById(
+        dealId,
+        user.userId,
+      );
+      if (!deal) {
+        throw new NotFoundException('Không tìm thấy Deal.');
+      }
+      return deal;
+    }
+    // BR-33: Sales Manager và Admin được đổi Stage hoặc đóng Deal.
+    if (user.role === Role.SALES_MANAGER || user.role === Role.ADMIN) {
+      const deal = await this.dealsRepository.findById(dealId);
+      if (!deal) {
+        throw new NotFoundException('Không tìm thấy Deal.');
+      }
+      return deal;
+    }
+
+    throw new ForbiddenException('Bạn không có quyền thay đổi giai đoạn Deal.');
   }
 
   private async findVisibleDeal(
@@ -381,6 +405,7 @@ export class DealsService {
         deal.expectedrevenue === null ? null : Number(deal.expectedrevenue),
       expectedCloseDate: deal.expectedclosedate,
       status: deal.status,
+      lostReason: deal.lostreason,
       createdDate: deal.createddate,
 
       customer: {
@@ -508,7 +533,7 @@ export class DealsService {
     user: AuthenticatedUser,
     ipAddress?: string,
   ) {
-    const currentDeal = await this.findVisibleDeal(dealId, user);
+    const currentDeal = await this.findStageChangeAccessibleDeal(dealId, user);
 
     if (currentDeal.stageid === dto.stageId) {
       return {
@@ -531,6 +556,19 @@ export class DealsService {
       );
     }
 
+    const normalizedTargetStage = targetStage.stagename.trim().toLowerCase();
+
+    const lostReason = dto.lostReason?.trim() || null;
+
+    // BR-10: Deal chuyển sang Lost bắt buộc phải có lý do thất bại.
+    if (normalizedTargetStage === 'lost' && !lostReason) {
+      throw new UnprocessableEntityException(
+        'Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.',
+      );
+    }
+
+    const nextLostReason = normalizedTargetStage === 'lost' ? lostReason : null;
+
     // BR-08: cập nhật lại xác suất
     const probability = this.requireStageProbability(
       targetStage.probability,
@@ -552,6 +590,7 @@ export class DealsService {
       probability,
       expectedRevenue,
       status,
+      lostReason: nextLostReason,
       currentDeal,
       userId: user.userId,
       ipAddress,

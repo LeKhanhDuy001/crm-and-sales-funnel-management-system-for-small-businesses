@@ -2,23 +2,24 @@
 
 import { getSalesManagerDashboard } from '../../modules/dashboard/dashboard.service';
 import DashboardHeader from './dashboard-header';
+import ForecastPanel from './forecast-panel';
 import { formatCurrency, formatDate, } from './dashboard-formatters';
 import DashboardState from './dashboard-state';
 import styles from './role-dashboard.module.css';
 import { useDashboardData } from './use-dashboard-data';
 
 export default function SalesManagerDashboard() {
-  const { data: dashboard, isLoading, error, } = useDashboardData( getSalesManagerDashboard,);
+  const { data: dashboard, isLoading, error, } = useDashboardData(getSalesManagerDashboard,);
 
-  if ( isLoading || error || !dashboard ) {
+  if (isLoading || error || !dashboard) {
     return (
-      <DashboardState isLoading={isLoading} error={error} hasData={Boolean(dashboard)}/>
+      <DashboardState isLoading={isLoading} error={error} hasData={Boolean(dashboard)} />
     );
   }
 
   const { overview, pipeline, salesPerformance, attentionDeals, } = dashboard;
 
-  const maxPipeline = Math.max( ...pipeline.map( (stage) => stage.totalDeals, ), 1,);
+  const maxPipeline = Math.max(...pipeline.map((stage) => stage.totalDeals,), 1,);
 
   return (
     <main className={styles.page}>
@@ -42,19 +43,19 @@ export default function SalesManagerDashboard() {
 
         <Stat
           title="Giá trị Pipeline"
-          value={formatCurrency( overview.pipelineValue,)}
+          value={formatCurrency(overview.pipelineValue,)}
           icon="📊"
         />
 
         <Stat
           title="Doanh thu kỳ vọng"
-          value={formatCurrency( overview.expectedRevenue,)}
+          value={formatCurrency(overview.expectedRevenue,)}
           icon="🎯"
         />
 
         <Stat
           title="Doanh thu thành công"
-          value={formatCurrency( overview.wonRevenue,)}
+          value={formatCurrency(overview.wonRevenue,)}
           icon="💰"
         />
 
@@ -64,6 +65,8 @@ export default function SalesManagerDashboard() {
           icon="✅"
         />
       </section>
+
+      <ForecastPanel />
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>
@@ -79,21 +82,21 @@ export default function SalesManagerDashboard() {
               className={styles.pipelineList}
             >
               {pipeline.map((stage) => (
-                <div key={stage.stageId} className={ styles.pipelineItem}>
-                  <div className={ styles.pipelineTop }>
+                <div key={stage.stageId} className={styles.pipelineItem}>
+                  <div className={styles.pipelineTop}>
                     <span> {stage.stageName} </span>
 
                     <strong> {stage.totalDeals} </strong>
                   </div>
 
-                  <div className={ styles.progressTrack }>
+                  <div className={styles.progressTrack}>
                     <div className={styles.progressBar}
-                      style={{ width: `${
-                          (
+                      style={{
+                        width: `${(
                             stage.totalDeals /
                             maxPipeline
                           ) * 100
-                        }%`,
+                          }%`,
                       }}
                     />
                   </div>
@@ -115,18 +118,18 @@ export default function SalesManagerDashboard() {
             <ul className={styles.list}>
               {attentionDeals.map(
                 (deal) => (
-                  <li key={deal.dealId} className={ styles.listItem}>
-                    <div className={ styles.itemMain }>
-                      <p className={ styles.itemTitle}>
+                  <li key={deal.dealId} className={styles.listItem}>
+                    <div className={styles.itemMain}>
+                      <p className={styles.itemTitle}>
                         {deal.dealName}
                       </p>
 
-                      <p className={ styles.itemMeta}>
+                      <p className={styles.itemMeta}>
                         {deal.customer}
                         {' • '}
                         {deal.assignedUser}
                         {' • '}
-                        {formatDate( deal.expectedCloseDate,)}
+                        {formatDate(deal.expectedCloseDate,)}
                       </p>
                     </div>
 
@@ -155,7 +158,7 @@ export default function SalesManagerDashboard() {
             <p className={styles.empty}> Chưa có dữ liệu hiệu suất.</p>
           ) : (
             <div
-              className={ styles.tableWrapper }
+              className={styles.tableWrapper}
             >
               <table className={styles.table}>
                 <thead>

@@ -5,8 +5,8 @@ import { getDealStageLabel } from '../../modules/deals/deal-stage-labels';
 interface DealsTableProps {
   deals: Deal[];
   onView: (deal: Deal) => void;
-  onEdit: (deal: Deal) => void;
-  onDelete: (deal: Deal) => void;
+  onEdit?: (deal: Deal) => void;
+  onDelete?: (deal: Deal) => void;
   onAssign?: (deal: Deal) => void;
   showAssignedUser?: boolean;
 }
@@ -88,9 +88,11 @@ export default function DealsTable({ deals, onView, onEdit, onDelete, onAssign, 
                     Xem
                   </button>
 
-                  <button type="button" onClick={() => onEdit(deal)}>
-                    Sửa
-                  </button>
+                  {onEdit && (
+                    <button type="button" onClick={() => onEdit(deal)}>
+                      Sửa
+                    </button>
+                  )}
 
                   {onAssign && (
                     <button type="button" onClick={() => onAssign(deal)}>
@@ -98,11 +100,14 @@ export default function DealsTable({ deals, onView, onEdit, onDelete, onAssign, 
                     </button>
                   )}
 
-                  <button type="button" className={styles.deleteButton}
-                    onClick={() => onDelete(deal)}
-                  >
-                    Xóa
-                  </button>
+                  {onDelete && (
+                    <button type="button"
+                      className={styles.deleteButton}
+                      onClick={() => onDelete(deal)}
+                    >
+                      Xóa
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

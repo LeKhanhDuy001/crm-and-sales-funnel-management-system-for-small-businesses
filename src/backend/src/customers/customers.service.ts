@@ -69,7 +69,14 @@ export class CustomersService {
     user: AuthenticatedUser,
     ipAddress?: string,
   ) {
-    const hasUpdateData = [dto.fullName, dto.company, dto.phone, dto.email, dto.address, dto.customerType].some((value) => value !== undefined);
+    const hasUpdateData = [
+      dto.fullName,
+      dto.company,
+      dto.phone,
+      dto.email,
+      dto.address,
+      dto.customerType,
+    ].some((value) => value !== undefined);
     if (!hasUpdateData) {
       throw new BadRequestException('Không có dữ liệu Customer cần cập nhật.');
     }

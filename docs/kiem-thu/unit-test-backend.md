@@ -16,9 +16,6 @@ npm test -- leads.service.spec.ts
 |---|---|---|---|---|
 | UNIT-AUTH-001 | `auth.service.spec.ts` | Đăng nhập với mật khẩu chính xác | Trả về access token và thông tin người dùng | PASS |
 | UNIT-AUTH-002 | `auth.service.spec.ts` | Đăng nhập với mật khẩu sai | Ném `UnauthorizedException`, không tạo JWT | PASS |
-| UNIT-USER-001 | `users.service.spec.ts` | Chuẩn hóa email trước khi tìm kiếm | Email được trim và chuyển thành chữ thường | PASS |
-| UNIT-USER-002 | `users.service.spec.ts` | Tìm người dùng theo ID | Repository được gọi với đúng user ID | PASS |
-| UNIT-USER-003 | `users.service.spec.ts` | Cập nhật mật khẩu | Repository nhận đúng user ID và password hash | PASS |
 | UNIT-AUTH-CTRL-001 | `auth.controller.spec.ts` | Controller xử lý đăng nhập | Gọi đúng `AuthService.login()` | PASS |
 | UNIT-AUTH-CTRL-002 | `auth.controller.spec.ts` | Controller xử lý quên mật khẩu | Gọi đúng `AuthService.forgotPassword()` | PASS |
 | UNIT-AUTH-CTRL-003 | `auth.controller.spec.ts` | Controller xử lý đặt lại mật khẩu | Gọi đúng `AuthService.resetPassword()` | PASS |
@@ -53,13 +50,17 @@ npm test -- leads.service.spec.ts
 | UNIT-USER-010 | `users.service.spec.ts` | BR16 - Cập nhật sang email đang thuộc User khác | Ném `ConflictException`; không gọi Repository cập nhật User | PASS |
 | UNIT-USER-011 | `users.service.spec.ts` | BR18 - Admin thay đổi Role của User | Repository cập nhật roleId mới và nhận Audit action `Assign` chứa Role cũ và Role mới | PASS |
 | UNIT-USER-012 | `users.service.spec.ts` | Admin cập nhật User nhưng dữ liệu không thay đổi | Trả thông báo `Không có thông tin thay đổi.` và không gọi Repository cập nhật | PASS |
-| UNIT-USER-013 | `users.service.spec.ts` | Admin xóa chính tài khoản đang đăng nhập | Ném `ForbiddenException`; không thực hiện truy vấn xóa User | PASS |
+| UNIT-USER-013 | `users.service.spec.ts` | Admin thường xóa chính tài khoản đang đăng nhập | Ném `ForbiddenException` với thông báo `Bạn không thể xóa tài khoản đang đăng nhập.`; không xóa hoặc khóa User | PASS |
 | UNIT-USER-014 | `users.service.spec.ts` | Xóa User không tồn tại | Ném `NotFoundException` với thông báo `Không tìm thấy người dùng.` | PASS |
 | UNIT-USER-015 | `users.service.spec.ts` | BR20 - Xóa User đã phát sinh dữ liệu nghiệp vụ | Không xóa vật lý; gọi `deactivateUser`, chuyển status thành false và trả mode `deactivated` | PASS |
 | UNIT-USER-016 | `users.service.spec.ts` | BR20 - Xóa User chưa phát sinh dữ liệu nghiệp vụ | Gọi `deleteUser`, không gọi `deactivateUser` và trả mode `deleted` | PASS |
 | UNIT-USER-017 | `users.service.spec.ts` | Chuẩn hóa email trước khi tìm User | Email được trim, chuyển về chữ thường và truyền đúng vào Repository | PASS |
 | UNIT-USER-018 | `users.service.spec.ts` | Tìm User theo ID | Repository được gọi với đúng User ID và trả về đúng User | PASS |
 | UNIT-USER-019 | `users.service.spec.ts` | Cập nhật mật khẩu đã mã hóa thông qua Repository | Repository `updatePassword` được gọi với đúng User ID và password hash | PASS |
+| UNIT-USER-020 | `users.service.spec.ts` | Admin thường cố xóa Super Admin | Ném `ForbiddenException` với thông báo `Không thể xóa tài khoản Super Admin.`; không xóa hoặc khóa Super Admin | PASS |
+| UNIT-USER-021 | `users.service.spec.ts` | Super Admin tự xóa chính tài khoản | Ném `ForbiddenException` với thông báo `Không thể xóa tài khoản Super Admin.`; không xóa hoặc khóa Super Admin | PASS |
+| UNIT-USER-022 | `users.service.spec.ts` | Super Admin xóa Admin thường khác | Cho phép xóa Admin thường; gọi `deleteUser` với đúng User cần xóa và Super Admin là người thực hiện | PASS |
+| UNIT-USER-023 | `users.service.spec.ts` | Admin thường xóa Admin thường khác | Cho phép xóa Admin thường khác; gọi `deleteUser` với đúng User cần xóa và Admin hiện tại là người thực hiện | PASS |
 
 ## Chức năng quản lý sản phẩm
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -142,7 +143,7 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-018 | `deals.service.spec.ts` | BR20 - Xóa Deal đã phát sinh Activity | Ném `UnprocessableEntityException` với thông báo Deal có dữ liệu liên quan; không xóa vật lý | PASS |
 | UNIT-DEAL-019 | `deals.service.spec.ts` | BR20 - Xóa Deal đã phát sinh Task | Ném `UnprocessableEntityException` với thông báo Deal có dữ liệu liên quan; không xóa vật lý | PASS |
 | UNIT-DEAL-020 | `deals.service.spec.ts` | BR18 - Xóa Deal chưa phát sinh Quote, Activity hoặc Task | Gọi `deleteWithLog` với đúng dealId, userId và IP address để xóa Deal và ghi Activity Log | PASS |
-| UNIT-DEAL-021 | `deals.service.spec.ts` | Sales thay đổi Stage của Deal không thuộc quyền quản lý | Ném `NotFoundException`; không tìm Stage đích và không cập nhật Pipeline | PASS |
+| UNIT-DEAL-021 | `deals.service.spec.ts` | BR33 - Sales không được đổi Stage Deal không thuộc quyền mình | Ném `NotFoundException` với thông báo `Không tìm thấy Deal.`; không tìm Stage đích và không cập nhật Pipeline | PASS |
 | UNIT-DEAL-022 | `deals.service.spec.ts` | Chọn lại đúng Pipeline Stage hiện tại của Deal | Không cập nhật database; trả thông báo `Deal đang ở giai đoạn này.` | PASS |
 | UNIT-DEAL-023 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Won | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
 | UNIT-DEAL-024 | `deals.service.spec.ts` | BR10 - Thay đổi Stage khi Deal đang ở trạng thái Lost | Ném `UnprocessableEntityException`; không cho thay đổi Pipeline Stage | PASS |
@@ -165,6 +166,15 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-041 | `deals.service.spec.ts` | BR07 - Phân công Deal cho người dùng không có vai trò Sales | Ném lỗi `Người được phân công phải có vai trò Sales.`; không gọi `assignWithLog` | PASS |
 | UNIT-DEAL-042 | `deals.service.spec.ts` | Phân công Deal cho tài khoản Sales đã bị khóa | Ném lỗi `Không thể phân công Deal cho tài khoản Sales đã bị khóa.`; không gọi `assignWithLog` | PASS |
 | UNIT-DEAL-043 | `deals.service.spec.ts` | Phân công Deal lại cho chính Sales đang phụ trách | Ném lỗi `Deal đã được phân công cho nhân viên này.`; không gọi `assignWithLog` | PASS |
+| UNIT-DEAL-044 | `deals.service.spec.ts` | BR10 - Chuyển Deal sang Lost nhưng không nhập lý do thất bại | Ném `UnprocessableEntityException` với thông báo `Vui lòng nhập lý do thất bại khi chuyển Deal sang Lost.`; không gọi `changeStageWithLog` | PASS |
+| UNIT-DEAL-045 | `deals.service.spec.ts` | BR10 - Chuyển Deal sang Lost với lý do chỉ chứa khoảng trắng | Trim lý do thành rỗng; ném `UnprocessableEntityException`; không gọi `changeStageWithLog` | PASS |
+| UNIT-DEAL-046 | `deals.service.spec.ts` | BR10, BR18 - Chuyển Deal sang Lost khi có lý do thất bại hợp lệ | Chuyển Stage sang Lost; Probability = 0; Expected Revenue = 0; trim lý do; truyền `lostReason` xuống Repository và trả lại trong response | PASS |
+| UNIT-DEAL-047 | `deals.service.spec.ts` | BR33, BR08, BR09, BR18 - Sales Manager được đổi Stage Deal bất kỳ | Sales Manager được truy cập Deal không phụ thuộc người phụ trách; cập nhật đúng Stage, Probability và Expected Revenue; ghi Activity Log | PASS |
+| UNIT-DEAL-048 | `deals.service.spec.ts` | BR33, BR08, BR09, BR18 - Admin được đổi Stage Deal bất kỳ | Admin được truy cập Deal không phụ thuộc người phụ trách; cập nhật đúng Stage, Probability và Expected Revenue; ghi Activity Log | PASS |
+| UNIT-DEAL-049 | `deals.service.spec.ts` | BR33 - Từ chối role không có quyền thay đổi Stage Deal | Ném `ForbiddenException` với thông báo không có quyền thay đổi giai đoạn Deal; không cập nhật Pipeline Stage | PASS |
+| UNIT-DEAL-050 | `deals.service.spec.ts` | Admin xem toàn bộ danh sách Deal | Repository nhận `salesUserId = undefined`; Admin không bị giới hạn Deal theo người phụ trách; trả đúng dữ liệu và pagination | PASS |
+| UNIT-DEAL-051 | `deals.service.spec.ts` | Admin lấy Pipeline Stage và danh sách Sales đang hoạt động | Gọi `findActiveUsersByRole(Role.SALES)`; trả đúng Pipeline Stage và danh sách `salesUsers` | PASS |
+| UNIT-DEAL-052 | `deals.service.spec.ts` | Admin xem chi tiết Deal không phụ thuộc người phụ trách | Gọi `findById(dealId)` thay vì `findOwnedById`; trả đúng thông tin Deal | PASS |
 
 ## Chức năng tạo quotes
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -240,11 +250,49 @@ npm test -- leads.service.spec.ts
 | UNIT-DASHBOARD-007 | `dashboard.service.spec.ts` | Dashboard Marketing khi không có Lead | Khi `totalLeads = 0`, trả `conversionRate = 0` và `unconvertedLeads = 0`; không xảy ra chia cho `0` hoặc trả `NaN` | PASS |
 | UNIT-DASHBOARD-008 | `dashboard.service.spec.ts` | Customer Care lấy Dashboard cá nhân theo đúng `userId` | Repository lấy Customer cần chăm sóc, Task hôm nay, Task chưa hoàn thành, Task quá hạn, Activity, Task sắp tới và Activity gần nhất theo đúng `userId`; trả đúng `overview`, `upcomingTasks`, `recentActivities` và `activitiesByType` | PASS |
 
+## Forecast doanh thu
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-FORECAST-001 | `forecast.service.spec.ts` | BR34 - Tổng hợp Forecast của Deal đang mở trong kỳ | Repository nhận đúng `fromDate` và `toDateExclusive`; trả đúng `totalOpenDeals`, `pipelineValue` và `forecastRevenue` | PASS |
+| UNIT-FORECAST-002 | `forecast.service.spec.ts` | BR34 - Forecast khi kỳ không có Deal | Trả `totalOpenDeals = 0`, `pipelineValue = 0`, `forecastRevenue = 0`; không trả `null` hoặc `NaN` | PASS |
+| UNIT-FORECAST-003 | `forecast.service.spec.ts` | BR34 - Ngày bắt đầu sau ngày kết thúc | Ném `UnprocessableEntityException` với thông báo `Ngày bắt đầu không được sau ngày kết thúc.`; không gọi Repository | PASS |
+| UNIT-FORECAST-004 | `forecast.service.spec.ts` | BR34 - Forecast trong cùng một ngày | Cho phép `fromDate = toDate`; Repository nhận đầu ngày được chọn và đầu ngày kế tiếp làm mốc exclusive | PASS |
+
+## Chức năng quản lý Activities
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-ACTIVITY-001 | `activities.service.spec.ts` | Người dùng lấy danh sách Activity của chính mình | Repository được gọi với đúng `userId`; trả đúng danh sách Activity sau khi mapping dữ liệu | PASS |
+| UNIT-ACTIVITY-002 | `activities.service.spec.ts` | Người dùng có Role không hỗ trợ truy cập chức năng Activity | Ném `ForbiddenException` với thông báo `Bạn không có quyền sử dụng chức năng Activity.`; không truy vấn Repository | PASS |
+| UNIT-ACTIVITY-003 | `activities.service.spec.ts` | Sales lấy metadata Deal dùng để tạo Activity | Gọi `findSalesDealsForActivity` với đúng Sales `userId`; trả đúng Deal và Customer thuộc quyền Sales | PASS |
+| UNIT-ACTIVITY-004 | `activities.service.spec.ts` | Customer Care lấy metadata Deal dùng để tạo Activity | Gọi `findCustomerCareDealsForActivity` với đúng Customer Care `userId`; chỉ trả Deal thuộc phạm vi chăm sóc | PASS |
+| UNIT-ACTIVITY-005 | `activities.service.spec.ts` | Xem chi tiết Activity thuộc người dùng hiện tại | Repository được gọi với đúng Activity ID; trả đúng Activity, Deal, Customer và trạng thái | PASS |
+| UNIT-ACTIVITY-006 | `activities.service.spec.ts` | Người dùng xem Activity của người khác | Ném `NotFoundException` với thông báo không có quyền truy cập Activity | PASS |
+| UNIT-ACTIVITY-007 | `activities.service.spec.ts` | Xem Activity không tồn tại | Ném `NotFoundException`; không trả dữ liệu Activity | PASS |
+| UNIT-ACTIVITY-008 | `activities.service.spec.ts` | BR15, BR18 - Sales tạo Activity cho Deal mình phụ trách | Trim nội dung và mô tả; Repository nhận đúng Deal, User, loại Activity, thời gian và IP; Activity được tạo ở trạng thái `Pending`, `result = null` | PASS |
+| UNIT-ACTIVITY-009 | `activities.service.spec.ts` | Sales tạo Activity cho Deal của Sales khác | Ném `NotFoundException`; không gọi Repository tạo Activity | PASS |
+| UNIT-ACTIVITY-010 | `activities.service.spec.ts` | Tạo Activity với Deal không tồn tại | Ném `NotFoundException` với thông báo `Không tìm thấy Deal.`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-011 | `activities.service.spec.ts` | Tạo Activity với nội dung chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo nội dung hoạt động không được để trống; không tạo Activity | PASS |
+| UNIT-ACTIVITY-012 | `activities.service.spec.ts` | Tạo Activity với mô tả chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo mô tả hoạt động không được để trống; không tạo Activity | PASS |
+| UNIT-ACTIVITY-013 | `activities.service.spec.ts` | Customer Care tạo Activity khi có Task đang hoạt động được phân công | Cho phép tạo Activity và gán đúng Customer Care đang đăng nhập làm người thực hiện | PASS |
+| UNIT-ACTIVITY-014 | `activities.service.spec.ts` | Customer Care tạo Activity khi Task đã `Completed` | Ném `NotFoundException`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-015 | `activities.service.spec.ts` | Customer Care tạo Activity khi Task đã `Cancelled` | Ném `NotFoundException`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-016 | `activities.service.spec.ts` | Customer Care chăm sóc Deal có Task thuộc người khác | Ném `NotFoundException`; không tạo Activity | PASS |
+| UNIT-ACTIVITY-017 | `activities.service.spec.ts` | Cập nhật kết quả Activity thành công | Trim kết quả; gọi Repository cập nhật và ghi Activity Log; trạng thái chuyển từ `Pending` sang `Completed` | PASS |
+| UNIT-ACTIVITY-018 | `activities.service.spec.ts` | Cập nhật kết quả Activity của người khác | Ném `NotFoundException`; không gọi Repository cập nhật kết quả | PASS |
+| UNIT-ACTIVITY-019 | `activities.service.spec.ts` | Cập nhật kết quả chỉ chứa khoảng trắng | Ném `UnprocessableEntityException` với thông báo kết quả chăm sóc không được để trống | PASS |
+| UNIT-ACTIVITY-020 | `activities.service.spec.ts` | Cập nhật kết quả Activity đã `Cancelled` | Ném `UnprocessableEntityException` với thông báo Activity đã bị hủy; không cập nhật kết quả | PASS |
+| UNIT-ACTIVITY-021 | `activities.service.spec.ts` | BR18 - Hủy Activity đang `Pending` | Gọi Repository hủy và ghi Activity Log; trạng thái Activity chuyển sang `Cancelled` | PASS |
+| UNIT-ACTIVITY-022 | `activities.service.spec.ts` | Hủy Activity đã `Completed` | Ném `UnprocessableEntityException` với thông báo Activity đã hoàn thành nên không thể hủy | PASS |
+| UNIT-ACTIVITY-023 | `activities.service.spec.ts` | Hủy lại Activity đã `Cancelled` | Ném `UnprocessableEntityException` với thông báo Activity đã được hủy; không cập nhật lại | PASS |
+| UNIT-ACTIVITY-024 | `activities.service.spec.ts` | Hủy Activity của người khác | Ném `NotFoundException`; không gọi Repository hủy Activity | PASS |
+
 ## 3. Kết quả tổng hợp
 
 ```text
-Test Suites: 5 passed, 5 total
-Tests:       10 passed, 10 total
+Test Suites: 4 passed, 4 total
+Tests:       7 passed, 7 total
 Snapshots:   0 total
 Time:        2.074 s
 ```
@@ -259,9 +307,9 @@ Time:        8.654 s
 ```text
 Quản lý Users
 Test Suites: 1 passed, 1 total
-Tests:       19 passed, 19 total
+Tests:       23 passed, 23 total
 Snapshots:   0 total
-Time:        8.629 s
+Time:        17.614 s
 ```
 
 ```text
@@ -291,7 +339,7 @@ Time:        0.923 s
 ```text
 Quản lý Deals và kéo thả giai đoạn pipeline
 Test Suites: 1 passed, 1 total
-Tests:       43 passed, 43 total
+Tests: 52 passed, 52 total
 Snapshots:   0 total
 Time:        21.009 s
 ```
@@ -328,7 +376,22 @@ Snapshots:   0 total
 Time:        0.774 s
 ```
 
-**Kết luận:** 186/186 unit test PASS.
+```text
+Forecast doanh thu
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        0.897 s
+
+```text
+Quản lý Activities
+Test Suites: 1 passed, 1 total
+Tests:       24 passed, 24 total
+Snapshots:   0 total
+Time:        5.115 s
+```
+
+**Kết luận:** 224/224 unit test PASS.
 
 ---
 
@@ -338,8 +401,12 @@ Time:        0.774 s
 |---|---|---:|---|
 | 10/08/2026 | Khởi tạo và hoàn thiện unit test backend | 10 | PASS |
 | 15/08/2026 | unit test backend cho chức năng convert Lead into Customer | 11 | PASS |
-| 21/08/2026 | unit test backend cho chức năng quản lý Users, quản lý Products | 39 | PASS |
+| 21/08/2026 | Hoàn thiện unit test quản lý Users và thêm unit test quản lý Products | 36 | PASS |
 | 22/08/2026 | unit test backend cho chức năng xem Activity Logs, quản lý Customer, Quản lý Deals và kéo thả giai đoạn pipeline | 53 | PASS |
 | 23/08/2026 | unit test backend cho chức năng tạo quotes, chức năng quản lý tasks, chức năng thông báo | 49 | PASS |
 | 26/08/2026 | unit test backend cho chức năng tạo và phân công Deal cho Sales Manager| 16 | PASS |
 | 27/08/2026 | unit test backend Dashboard| 8 | PASS |
+| 01/09/2026 | Bổ sung unit test phân quyền xóa Admin và bảo vệ Super Admin | 4 | PASS |
+| 02/09/2026 | Hoàn thiện unit test backend cho chức năng quản lý Activities | 24 | PASS |
+| 04/09/2026 | Bổ sung unit test BR10 cho lý do thất bại khi chuyển Deal sang Lost, BR33 phân quyền thay đổi Pipeline Stage và quyền Admin xem Deal | 9 | PASS |
+| 04/09/2026 | Bổ sung unit test BR34 cho chức năng Forecast doanh thu theo kỳ | 4 | PASS |
