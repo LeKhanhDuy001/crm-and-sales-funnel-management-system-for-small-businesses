@@ -345,6 +345,43 @@ describe('QuotesService - Sales tạo báo giá', () => {
       expect(quotesRepository.createWithDetailsAndLog).not.toHaveBeenCalled();
     });
 
+    it('BR-11 - từ chối tạo Quote khi Deal không có Customer hợp lệ', async () => {
+      quotesRepository.findOwnedDeal.mockResolvedValue({
+        dealid: 7,
+        dealname: 'Deal không có Customer',
+        customerid: null,
+        assigneduserid: salesUser.userId,
+        customers: null,
+        pipelinestages: {
+          stageid: 4,
+          stagename: 'Proposal',
+        },
+      } as never);
+
+      await expect(
+        quotesService.create(
+          {
+            dealId: 7,
+            items: [
+              {
+                productId: 1,
+                quantity: 1,
+              },
+            ],
+          },
+          salesUser,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(
+        'Deal không tồn tại, không có Customer hợp lệ hoặc bạn không có quyền tạo báo giá cho Deal này.',
+      );
+
+      expect(quotesRepository.findProductsByIds).not.toHaveBeenCalled();
+      expect(
+        quotesRepository.createWithDetailsAndLog,
+      ).not.toHaveBeenCalled();
+    });
+
     it('BR-21 - từ chối tạo Quote khi Deal không ở Proposal hoặc Negotiation', async () => {
       quotesRepository.findOwnedDeal.mockResolvedValue({
         ...ownedDeal,
@@ -485,5 +522,165 @@ describe('QuotesService - Sales tạo báo giá', () => {
         expect(quotesRepository.createWithDetailsAndLog).not.toHaveBeenCalled();
       },
     );
+  });
+
+  describe('QuotesService - BR22, BR23, BR24', () => {
+    let service: QuotesService;
+
+    let repository: {
+      findOwnedQuoteById: jest.Mock;
+      findProductsByIds: jest.Mock;
+      updateWithDetailsAndLog: jest.Mock;
+      changeStatusWithLog: jest.Mock;
+    };
+
+    const salesUser = {
+      userId: 5,
+      fullName: 'Nguyễn Văn Sales',
+      email: 'sales@crm.test',
+      role: Role.SALES,
+    } as AuthenticatedUser;
+
+    beforeEach(() => {
+      repository = {
+        findOwnedQuoteById: jest.fn(),
+        findProductsByIds: jest.fn(),
+        updateWithDetailsAndLog: jest.fn(),
+        changeStatusWithLog: jest.fn(),
+      };
+
+      service = new QuotesService(
+        repository as unknown as QuotesRepository,
+      );
+    });
+
+    it('BR22 - từ chối chỉnh sửa Quote không ở trạng thái Draft', async () => {
+      repository.findOwnedQuoteById.mockResolvedValue({
+        quoteid: 20,
+        status: 'Confirmed',
+      });
+
+      await expect(
+        service.update(
+          20,
+          {
+            items: [
+              {
+                productId: 1,
+                quantity: 1,
+              },
+            ],
+          },
+          salesUser,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(
+        'Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.',
+      );
+
+      expect(
+        repository.findProductsByIds,
+      ).not.toHaveBeenCalled();
+
+      expect(
+        repository.updateWithDetailsAndLog,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('BR23 - từ chối hủy Quote đã Confirmed', async () => {
+      repository.findOwnedQuoteById.mockResolvedValue({
+        quoteid: 21,
+        status: 'Confirmed',
+      });
+
+      await expect(
+        service.cancel(
+          21,
+          salesUser,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(
+        'Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.',
+      );
+
+      expect(
+        repository.changeStatusWithLog,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('BR24 - hủy Quote Draft chỉ chuyển trạng thái sang Cancelled', async () => {
+      const draftQuote = {
+        quoteid: 22,
+        dealid: 7,
+        quotedate: new Date(
+          '2026-09-11T00:00:00.000Z',
+        ),
+        totalamount: 35_000_000,
+        status: 'Draft',
+        createdby: 5,
+
+        deals: {
+          dealid: 7,
+          dealname: 'Deal báo giá',
+          assigneduserid: 5,
+
+          customers: {
+            customerid: 3,
+            fullname: 'Khách hàng A',
+            company: 'Công ty A',
+          },
+
+          pipelinestages: {
+            stageid: 4,
+            stagename: 'Proposal',
+            stageorder: 4,
+          },
+        },
+
+        users: {
+          userid: 5,
+          fullname: 'Nguyễn Văn Sales',
+        },
+
+        quotedetails: [],
+      };
+
+      const cancelledQuote = {
+        ...draftQuote,
+        status: 'Cancelled',
+      };
+
+      repository.findOwnedQuoteById.mockResolvedValue(
+        draftQuote,
+      );
+
+      repository.changeStatusWithLog.mockResolvedValue(
+        cancelledQuote,
+      );
+
+      const result = await service.cancel(
+        22,
+        salesUser,
+        '127.0.0.1',
+      );
+
+      expect(
+        repository.changeStatusWithLog,
+      ).toHaveBeenCalledWith({
+        quoteId: 22,
+        userId: 5,
+        newStatus: 'Cancelled',
+        currentQuote: draftQuote,
+        ipAddress: '127.0.0.1',
+      });
+
+      expect(result.message).toBe(
+        'Hủy báo giá thành công.',
+      );
+
+      expect(result.data.status).toBe(
+        'Cancelled',
+      );
+    });
   });
 });
