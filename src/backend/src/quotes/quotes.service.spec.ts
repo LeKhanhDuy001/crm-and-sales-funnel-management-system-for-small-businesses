@@ -377,9 +377,7 @@ describe('QuotesService - Sales tạo báo giá', () => {
       );
 
       expect(quotesRepository.findProductsByIds).not.toHaveBeenCalled();
-      expect(
-        quotesRepository.createWithDetailsAndLog,
-      ).not.toHaveBeenCalled();
+      expect(quotesRepository.createWithDetailsAndLog).not.toHaveBeenCalled();
     });
 
     it('BR-21 - từ chối tạo Quote khi Deal không ở Proposal hoặc Negotiation', async () => {
@@ -549,9 +547,7 @@ describe('QuotesService - Sales tạo báo giá', () => {
         changeStatusWithLog: jest.fn(),
       };
 
-      service = new QuotesService(
-        repository as unknown as QuotesRepository,
-      );
+      service = new QuotesService(repository as unknown as QuotesRepository);
     });
 
     it('BR22 - từ chối chỉnh sửa Quote không ở trạng thái Draft', async () => {
@@ -578,13 +574,9 @@ describe('QuotesService - Sales tạo báo giá', () => {
         'Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.',
       );
 
-      expect(
-        repository.findProductsByIds,
-      ).not.toHaveBeenCalled();
+      expect(repository.findProductsByIds).not.toHaveBeenCalled();
 
-      expect(
-        repository.updateWithDetailsAndLog,
-      ).not.toHaveBeenCalled();
+      expect(repository.updateWithDetailsAndLog).not.toHaveBeenCalled();
     });
 
     it('BR23 - từ chối hủy Quote đã Confirmed', async () => {
@@ -593,28 +585,18 @@ describe('QuotesService - Sales tạo báo giá', () => {
         status: 'Confirmed',
       });
 
-      await expect(
-        service.cancel(
-          21,
-          salesUser,
-          '127.0.0.1',
-        ),
-      ).rejects.toThrow(
+      await expect(service.cancel(21, salesUser, '127.0.0.1')).rejects.toThrow(
         'Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.',
       );
 
-      expect(
-        repository.changeStatusWithLog,
-      ).not.toHaveBeenCalled();
+      expect(repository.changeStatusWithLog).not.toHaveBeenCalled();
     });
 
     it('BR24 - hủy Quote Draft chỉ chuyển trạng thái sang Cancelled', async () => {
       const draftQuote = {
         quoteid: 22,
         dealid: 7,
-        quotedate: new Date(
-          '2026-09-11T00:00:00.000Z',
-        ),
+        quotedate: new Date('2026-09-11T00:00:00.000Z'),
         totalamount: 35_000_000,
         status: 'Draft',
         createdby: 5,
@@ -650,23 +632,13 @@ describe('QuotesService - Sales tạo báo giá', () => {
         status: 'Cancelled',
       };
 
-      repository.findOwnedQuoteById.mockResolvedValue(
-        draftQuote,
-      );
+      repository.findOwnedQuoteById.mockResolvedValue(draftQuote);
 
-      repository.changeStatusWithLog.mockResolvedValue(
-        cancelledQuote,
-      );
+      repository.changeStatusWithLog.mockResolvedValue(cancelledQuote);
 
-      const result = await service.cancel(
-        22,
-        salesUser,
-        '127.0.0.1',
-      );
+      const result = await service.cancel(22, salesUser, '127.0.0.1');
 
-      expect(
-        repository.changeStatusWithLog,
-      ).toHaveBeenCalledWith({
+      expect(repository.changeStatusWithLog).toHaveBeenCalledWith({
         quoteId: 22,
         userId: 5,
         newStatus: 'Cancelled',
@@ -674,13 +646,9 @@ describe('QuotesService - Sales tạo báo giá', () => {
         ipAddress: '127.0.0.1',
       });
 
-      expect(result.message).toBe(
-        'Hủy báo giá thành công.',
-      );
+      expect(result.message).toBe('Hủy báo giá thành công.');
 
-      expect(result.data.status).toBe(
-        'Cancelled',
-      );
+      expect(result.data.status).toBe('Cancelled');
     });
   });
 });

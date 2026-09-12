@@ -962,7 +962,7 @@ describe('DealsService - quản lý Deal', () => {
         fullname: 'Trần Thị Sales',
         email: 'sales2@crm.com',
         status: true,
-        roles: {rolename: 'Sales',},
+        roles: { rolename: 'Sales' },
       });
       const reassignedDeal = {
         ...deal,
