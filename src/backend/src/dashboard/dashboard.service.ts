@@ -4,7 +4,7 @@ import { DashboardRepository } from './repositories/dashboard.repository';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly dashboardRepository: DashboardRepository) {}
+  constructor(private readonly dashboardRepository: DashboardRepository) { }
 
   /**
    * Tổng hợp dữ liệu Dashboard dành cho Admin.
@@ -38,6 +38,7 @@ export class DashboardService {
    * @returns Thống kê đội Sales, Pipeline, hiệu suất và Deal cần chú ý.
    */
   async getSalesManagerDashboard() {
+    const now = new Date();
     const salesUsers = await this.dashboardRepository.findUsersByRole(
       Role.SALES,
     );
@@ -97,19 +98,29 @@ export class DashboardService {
         };
       }),
 
-      attentionDeals: attentionDeals.map((deal) => ({
-        dealId: deal.dealid,
-        dealName: deal.dealname,
-        dealValue: Number(deal.dealvalue),
-        probability: deal.probability,
-        expectedRevenue: Number(deal.expectedrevenue ?? 0),
-        expectedCloseDate: deal.expectedclosedate,
-        status: deal.status,
-        stage: deal.pipelinestages.stagename,
-        assignedUser: deal.users.fullname,
-        customer: deal.customers.fullname,
-        company: deal.customers.company,
-      })),
+      attentionDeals: attentionDeals.map((deal) => {
+        const carePriority = this.getDealCarePriority(
+          deal.expectedclosedate,
+          now,
+        );
+
+        return {
+          dealId: deal.dealid,
+          dealName: deal.dealname,
+          dealValue: Number(deal.dealvalue),
+          probability: deal.probability,
+          expectedRevenue: Number(deal.expectedrevenue ?? 0),
+          expectedCloseDate: deal.expectedclosedate,
+          status: deal.status,
+          stage: deal.pipelinestages.stagename,
+          assignedUser: deal.users.fullname,
+          customer: deal.customers.fullname,
+          company: deal.customers.company,
+          daysToClose: carePriority.daysToClose,
+          carePriority: carePriority.carePriority,
+          priorityReason: carePriority.priorityReason,
+        };
+      }),
     };
   }
 
@@ -371,6 +382,65 @@ export class DashboardService {
       stageOrder: stage.stageorder,
       totalDeals: stage._count.deals,
     }));
+  }
+
+  private getDealCarePriority(expectedCloseDate: Date | null, now: Date) {
+    if (!expectedCloseDate) {
+      return {
+        daysToClose: null,
+        carePriority: 'Low',
+        priorityReason: 'Deal chưa có ngày dự kiến chốt.',
+      };
+    }
+
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    const today = Date.UTC(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    const closeDate = Date.UTC(
+      expectedCloseDate.getFullYear(),
+      expectedCloseDate.getMonth(),
+      expectedCloseDate.getDate(),
+    );
+
+    const daysToClose = Math.round((closeDate - today) / oneDay);
+
+    if (daysToClose < 0) {
+      return {
+        daysToClose,
+        carePriority: 'High',
+        priorityReason: `Deal đã quá hạn ${Math.abs(daysToClose)} ngày.`,
+      };
+    }
+
+    if (daysToClose <= 3) {
+      return {
+        daysToClose,
+        carePriority: 'High',
+        priorityReason:
+          daysToClose === 0
+            ? 'Deal dự kiến chốt hôm nay.'
+            : `Deal còn ${daysToClose} ngày đến ngày dự kiến chốt.`,
+      };
+    }
+
+    if (daysToClose <= 7) {
+      return {
+        daysToClose,
+        carePriority: 'Medium',
+        priorityReason: `Deal còn ${daysToClose} ngày đến ngày dự kiến chốt.`,
+      };
+    }
+
+    return {
+      daysToClose,
+      carePriority: 'Low',
+      priorityReason: `Deal còn ${daysToClose} ngày đến ngày dự kiến chốt.`,
+    };
   }
 
   private getCurrentMonthRange() {

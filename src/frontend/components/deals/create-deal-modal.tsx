@@ -154,7 +154,12 @@ export default function CreateDealModal({ token, customers, stages, salesUsers =
 
                 {salesUsers.map((sales) => (
                   <option key={sales.userId} value={sales.userId}>
-                    {sales.fullName} - {sales.email}
+                    {sales.fullName}
+                    {' - '}
+                    {sales.openDealCount} Deal đang mở
+                    {' - '}
+                    {sales.openExpectedRevenue.toLocaleString('vi-VN')} VNĐ
+                    {sales.recommended ? ' - Gợi ý' : ''}
                   </option>
                 ))}
               </select>

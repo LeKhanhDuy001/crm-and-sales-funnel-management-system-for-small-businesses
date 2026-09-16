@@ -76,6 +76,9 @@ export interface AttentionDeal {
   assignedUser: string;
   customer: string;
   company: string | null;
+  daysToClose: number | null;
+  carePriority: 'High' | 'Medium' | 'Low';
+  priorityReason: string;
 }
 
 export interface SalesManagerDashboardData {

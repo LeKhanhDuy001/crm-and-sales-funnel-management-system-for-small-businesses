@@ -85,7 +85,7 @@ export type DealWithRelations = Prisma.dealsGetPayload<{
 
 @Injectable()
 export class DealsRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findMany(filter: DealFilter, skip: number, take: number) {
     return this.prisma.deals.findMany({
@@ -156,6 +156,30 @@ export class DealsRepository {
         email: true,
       },
       orderBy: { fullname: 'asc' },
+    });
+  }
+
+  async groupOpenDealsByAssignedUsers(userIds: number[]) {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    return this.prisma.deals.groupBy({
+      by: ['assigneduserid'],
+      where: {
+        assigneduserid: {
+          in: userIds,
+        },
+        status: {
+          notIn: ['Won', 'Lost'],
+        },
+      },
+      _count: {
+        _all: true,
+      },
+      _sum: {
+        expectedrevenue: true,
+      },
     });
   }
 

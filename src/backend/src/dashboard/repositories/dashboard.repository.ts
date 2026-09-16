@@ -45,7 +45,7 @@ type AttentionDeal = Prisma.dealsGetPayload<{
 
 @Injectable()
 export class DashboardRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   //ADMIN
 
@@ -227,7 +227,10 @@ export class DashboardRepository {
         expectedclosedate: { not: null },
         status: { notIn: ['Won', 'Lost'] },
       },
-      orderBy: { expectedclosedate: 'asc' },
+      orderBy: [
+        { expectedclosedate: 'asc' },
+        { expectedrevenue: 'desc' },
+      ],
       select: attentionDealSelect,
     });
   }

@@ -29,7 +29,7 @@ type LeadWithRelations = Prisma.leadsGetPayload<{
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly leadsRepository: LeadsRepository) {}
+  constructor(private readonly leadsRepository: LeadsRepository) { }
 
   /**
    * Lấy danh sách Lead có tìm kiếm, lọc và phân trang.
@@ -60,10 +60,18 @@ export class LeadsService {
    * @param leadId Mã Lead.
    * @returns Thông tin Lead.
    */
-  async findOne(leadId: number) {
+  async findOne(leadId: number, currentUser: AuthenticatedUser) {
     const lead = await this.leadsRepository.findById(leadId);
 
     if (!lead) {
+      throw new NotFoundException('Lead không tồn tại');
+    }
+
+    // Sales chỉ được xem Lead được phân công cho chính mình.
+    if (
+      currentUser.role === Role.SALES &&
+      lead.assigneduserid !== currentUser.userId
+    ) {
       throw new NotFoundException('Lead không tồn tại');
     }
 
@@ -263,17 +271,17 @@ export class LeadsService {
 
       source: lead.leadsources
         ? {
-            sourceId: lead.leadsources.sourceid,
-            sourceName: lead.leadsources.sourcename,
-          }
+          sourceId: lead.leadsources.sourceid,
+          sourceName: lead.leadsources.sourcename,
+        }
         : null,
 
       assignedUser: lead.users
         ? {
-            userId: lead.users.userid,
-            fullName: lead.users.fullname,
-            email: lead.users.email,
-          }
+          userId: lead.users.userid,
+          fullName: lead.users.fullname,
+          email: lead.users.email,
+        }
         : null,
     };
   }

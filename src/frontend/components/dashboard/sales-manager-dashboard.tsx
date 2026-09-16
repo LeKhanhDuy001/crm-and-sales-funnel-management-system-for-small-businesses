@@ -93,9 +93,9 @@ export default function SalesManagerDashboard() {
                     <div className={styles.progressBar}
                       style={{
                         width: `${(
-                            stage.totalDeals /
-                            maxPipeline
-                          ) * 100
+                          stage.totalDeals /
+                          maxPipeline
+                        ) * 100
                           }%`,
                       }}
                     />
@@ -116,29 +116,37 @@ export default function SalesManagerDashboard() {
             <p className={styles.empty}> Không có Deal cần chú ý. </p>
           ) : (
             <ul className={styles.list}>
-              {attentionDeals.map(
-                (deal) => (
-                  <li key={deal.dealId} className={styles.listItem}>
-                    <div className={styles.itemMain}>
-                      <p className={styles.itemTitle}>
-                        {deal.dealName}
-                      </p>
+              {attentionDeals.map((deal) => (
+                <li key={deal.dealId} className={styles.listItem}>
+                  <div className={styles.itemMain}>
+                    <p className={styles.itemTitle}>
+                      {deal.dealName}
+                    </p>
 
-                      <p className={styles.itemMeta}>
-                        {deal.customer}
-                        {' • '}
-                        {deal.assignedUser}
-                        {' • '}
-                        {formatDate(deal.expectedCloseDate,)}
-                      </p>
-                    </div>
+                    <p className={styles.itemMeta}>
+                      {deal.customer}
+                      {' • '}
+                      {deal.assignedUser}
+                      {' • '}
+                      {formatDate(deal.expectedCloseDate)}
+                    </p>
 
-                    <span className={styles.badge}>
-                      {deal.stage}
-                    </span>
-                  </li>
-                ),
-              )}
+                    <p className={styles.itemMeta}>
+                      {deal.priorityReason}
+                    </p>
+                  </div>
+
+                  <span className={styles.badge}>
+                    {deal.carePriority === 'High'
+                      ? 'Ưu tiên cao'
+                      : deal.carePriority === 'Medium'
+                        ? 'Ưu tiên trung bình'
+                        : 'Ưu tiên thấp'}
+                    {' • '}
+                    {deal.stage}
+                  </span>
+                </li>
+              ))}
             </ul>
           )}
         </article>

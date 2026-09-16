@@ -24,7 +24,7 @@ import { AssignDealDto } from './dto/assign-deal.dto';
 
 @Injectable()
 export class DealsService {
-  constructor(private readonly dealsRepository: DealsRepository) {}
+  constructor(private readonly dealsRepository: DealsRepository) { }
 
   /**
    * Lấy danh sách Deal thuộc quyền quản lý của Sales hiện tại.
@@ -64,6 +64,41 @@ export class DealsService {
         : Promise.resolve([]),
     ]);
 
+    const salesUserIds = salesUsers.map((salesUser) => salesUser.userid);
+
+    const workloads =
+      salesUserIds.length > 0
+        ? await this.dealsRepository.groupOpenDealsByAssignedUsers(salesUserIds)
+        : [];
+
+    const workloadMap = new Map(
+      workloads.map((workload) => [
+        workload.assigneduserid,
+        {
+          openDealCount: workload._count._all,
+          openExpectedRevenue: Number(workload._sum.expectedrevenue ?? 0),
+        },
+      ]),
+    );
+
+    // BR-ALLOC-001: Gợi ý Sales có ít Deal đang mở nhất, sau đó ưu tiên tổng Expected Revenue thấp hơn.
+    const recommendedSales = salesUsers
+      .map((salesUser) => {
+        const workload = workloadMap.get(salesUser.userid);
+
+        return {
+          userId: salesUser.userid,
+          openDealCount: workload?.openDealCount ?? 0,
+          openExpectedRevenue: workload?.openExpectedRevenue ?? 0,
+        };
+      })
+      .sort(
+        (a, b) =>
+          a.openDealCount - b.openDealCount ||
+          a.openExpectedRevenue - b.openExpectedRevenue ||
+          a.userId - b.userId,
+      )[0];
+
     return {
       stages: stages.map((stage) => ({
         stageId: stage.stageid,
@@ -71,11 +106,18 @@ export class DealsService {
         stageOrder: stage.stageorder,
         probability: stage.probability,
       })),
-      salesUsers: salesUsers.map((salesUser) => ({
-        userId: salesUser.userid,
-        fullName: salesUser.fullname,
-        email: salesUser.email,
-      })),
+      salesUsers: salesUsers.map((salesUser) => {
+        const workload = workloadMap.get(salesUser.userid);
+
+        return {
+          userId: salesUser.userid,
+          fullName: salesUser.fullname,
+          email: salesUser.email,
+          openDealCount: workload?.openDealCount ?? 0,
+          openExpectedRevenue: workload?.openExpectedRevenue ?? 0,
+          recommended: salesUser.userid === recommendedSales?.userId,
+        };
+      }),
     };
   }
 
@@ -271,9 +313,9 @@ export class DealsService {
     const customer =
       user.role === Role.SALES
         ? await this.dealsRepository.findCustomerAccessible(
-            customerId,
-            user.userId,
-          )
+          customerId,
+          user.userId,
+        )
         : await this.dealsRepository.findCustomerById(customerId);
 
     if (customer) {

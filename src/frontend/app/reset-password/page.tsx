@@ -2,7 +2,6 @@
 
 import {
   type FormEvent,
-  useEffect,
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
@@ -11,6 +10,7 @@ import styles from './reset-password.module.css';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const [token, setToken] = useState('');
 
   const [newPassword, setNewPassword] = useState('');
 
@@ -20,14 +20,6 @@ export default function ResetPasswordPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const email = sessionStorage.getItem('resetPasswordEmail',);
-
-    if (!email) {
-      router.replace('/forgot-password');
-    }
-  }, [router]);
-
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
@@ -35,10 +27,15 @@ export default function ResetPasswordPage() {
 
     setError('');
 
-    const email = sessionStorage.getItem('resetPasswordEmail',);
+    const normalizedToken = token.trim();
 
-    if (!email) {
-      router.replace('/forgot-password');
+    if (!normalizedToken) {
+      setError('Vui lòng nhập reset token.');
+      return;
+    }
+
+    if (normalizedToken.length !== 64) {
+      setError('Reset token không hợp lệ.');
       return;
     }
 
@@ -70,14 +67,10 @@ export default function ResetPasswordPage() {
 
     try {
       const result = await resetPassword({
-        email,
+        token: normalizedToken,
         newPassword,
         confirmPassword,
       });
-
-      sessionStorage.removeItem(
-        'resetPasswordEmail',
-      );
 
       window.alert(result.message);
 
@@ -100,13 +93,36 @@ export default function ResetPasswordPage() {
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label htmlFor="newPassword">Mật khẩu mới</label>
+            <label htmlFor="token">
+              Reset token
+            </label>
 
-            <input id="newPassword" type="password" value={newPassword} disabled={isSubmitting} placeholder="Nhập mật khẩu mới"
+            <input
+              id="token"
+              type="text"
+              value={token}
+              disabled={isSubmitting}
+              placeholder="Nhập reset token"
               onChange={(event) => {
-                setNewPassword(
-                  event.target.value,
-                );
+                setToken(event.target.value);
+                setError('');
+              }}
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="newPassword">
+              Mật khẩu mới
+            </label>
+
+            <input
+              id="newPassword"
+              type="password"
+              value={newPassword}
+              disabled={isSubmitting}
+              placeholder="Nhập mật khẩu mới"
+              onChange={(event) => {
+                setNewPassword(event.target.value);
                 setError('');
               }}
             />
@@ -132,14 +148,14 @@ export default function ResetPasswordPage() {
             {isSubmitting ? 'Đang cập nhật...' : 'Đổi mật khẩu'}
           </button>
 
-          <button className={styles.backButton} type="button" disabled={isSubmitting}
+          <button
+            className={styles.backButton}
+            type="button"
+            disabled={isSubmitting}
             onClick={() => {
-              sessionStorage.removeItem(
-                'resetPasswordEmail',
-              );
-
               router.push('/login');
-            }}>
+            }}
+          >
             Hủy và quay lại đăng nhập
           </button>
         </form>

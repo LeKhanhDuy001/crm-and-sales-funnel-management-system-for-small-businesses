@@ -19,6 +19,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ActivitiesModule } from './activities/activities.module';
+import { PipelineStagesModule } from './pipeline-stages/pipeline-stages.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { ActivitiesModule } from './activities/activities.module';
     TasksModule,
     NotificationsModule,
     ActivitiesModule,
+    PipelineStagesModule,
   ],
   providers: [
     {

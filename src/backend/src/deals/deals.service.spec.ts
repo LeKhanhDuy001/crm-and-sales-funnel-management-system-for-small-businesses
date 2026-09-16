@@ -25,6 +25,9 @@ type DealsRepositoryMock = {
   findActiveUsersByRole: jest.MockedFunction<
     DealsRepository['findActiveUsersByRole']
   >;
+  groupOpenDealsByAssignedUsers: jest.MockedFunction<
+    DealsRepository['groupOpenDealsByAssignedUsers']
+  >;
   findCustomerAccessible: jest.MockedFunction<
     DealsRepository['findCustomerAccessible']
   >;
@@ -145,6 +148,9 @@ describe('DealsService - quản lý Deal', () => {
 
       findActiveUsersByRole: jest.fn() as jest.MockedFunction<
         DealsRepository['findActiveUsersByRole']
+      >,
+      groupOpenDealsByAssignedUsers: jest.fn() as jest.MockedFunction<
+        DealsRepository['groupOpenDealsByAssignedUsers']
       >,
       findCustomerAccessible: jest.fn() as jest.MockedFunction<
         DealsRepository['findCustomerAccessible']
@@ -304,6 +310,9 @@ describe('DealsService - quản lý Deal', () => {
       const result = await dealsService.getMeta(salesUser);
 
       expect(dealsRepository.findActiveUsersByRole).not.toHaveBeenCalled();
+      expect(
+        dealsRepository.groupOpenDealsByAssignedUsers,
+      ).not.toHaveBeenCalled();
 
       expect(result).toEqual({
         stages: [
@@ -324,7 +333,7 @@ describe('DealsService - quản lý Deal', () => {
       });
     });
 
-    it('Sales Manager lấy Pipeline Stage và danh sách Sales đang hoạt động', async () => {
+    it('Sales Manager nhận workload và gợi ý Sales có ít Deal đang mở nhất', async () => {
       dealsRepository.findPipelineStages.mockResolvedValue([
         proposalStage,
         negotiationStage,
@@ -343,61 +352,180 @@ describe('DealsService - quản lý Deal', () => {
         },
       ]);
 
+      dealsRepository.groupOpenDealsByAssignedUsers.mockResolvedValue([
+        {
+          assigneduserid: 5,
+          _count: { _all: 3 },
+          _sum: {
+            expectedrevenue: new Prisma.Decimal(30_000_000),
+          },
+        },
+        {
+          assigneduserid: 6,
+          _count: { _all: 1 },
+          _sum: {
+            expectedrevenue: new Prisma.Decimal(20_000_000),
+          },
+        },
+      ]);
+
       const result = await dealsService.getMeta(salesManagerUser);
 
       expect(dealsRepository.findActiveUsersByRole).toHaveBeenCalledWith(
         Role.SALES,
       );
 
+      expect(
+        dealsRepository.groupOpenDealsByAssignedUsers,
+      ).toHaveBeenCalledWith([5, 6]);
+
       expect(result.salesUsers).toEqual([
         {
           userId: 5,
           fullName: 'Nguyễn Văn Sales',
           email: 'sales@crm.com',
+          openDealCount: 3,
+          openExpectedRevenue: 30_000_000,
+          recommended: false,
         },
         {
           userId: 6,
           fullName: 'Trần Thị Sales',
           email: 'sales2@crm.com',
+          openDealCount: 1,
+          openExpectedRevenue: 20_000_000,
+          recommended: true,
         },
       ]);
     });
-  });
 
-  it('Admin lấy Pipeline Stage và danh sách Sales đang hoạt động', async () => {
-    dealsRepository.findPipelineStages.mockResolvedValue([
-      proposalStage,
-      negotiationStage,
-    ]);
-    dealsRepository.findActiveUsersByRole.mockResolvedValue([
-      {
-        userid: 5,
-        fullname: 'Nguyễn Văn Sales',
-        email: 'sales@crm.com',
-      },
-      {
-        userid: 6,
-        fullname: 'Trần Thị Sales',
-        email: 'sales2@crm.com',
-      },
-    ]);
-    const result = await dealsService.getMeta(adminUser);
-    expect(dealsRepository.findActiveUsersByRole).toHaveBeenCalledWith(
-      Role.SALES,
-    );
-    expect(result.stages).toHaveLength(2);
-    expect(result.salesUsers).toEqual([
-      {
-        userId: 5,
-        fullName: 'Nguyễn Văn Sales',
-        email: 'sales@crm.com',
-      },
-      {
-        userId: 6,
-        fullName: 'Trần Thị Sales',
-        email: 'sales2@crm.com',
-      },
-    ]);
+    it('BR-ALLOC-001 - nếu số Deal bằng nhau thì ưu tiên Expected Revenue thấp hơn', async () => {
+      dealsRepository.findPipelineStages.mockResolvedValue([]);
+
+      dealsRepository.findActiveUsersByRole.mockResolvedValue([
+        {
+          userid: 5,
+          fullname: 'Nguyễn Văn Sales',
+          email: 'sales@crm.com',
+        },
+        {
+          userid: 6,
+          fullname: 'Trần Thị Sales',
+          email: 'sales2@crm.com',
+        },
+      ]);
+
+      dealsRepository.groupOpenDealsByAssignedUsers.mockResolvedValue([
+        {
+          assigneduserid: 5,
+          _count: { _all: 2 },
+          _sum: {
+            expectedrevenue: new Prisma.Decimal(30_000_000),
+          },
+        },
+        {
+          assigneduserid: 6,
+          _count: { _all: 2 },
+          _sum: {
+            expectedrevenue: new Prisma.Decimal(10_000_000),
+          },
+        },
+      ]);
+
+      const result = await dealsService.getMeta(salesManagerUser);
+
+      expect(
+        result.salesUsers.find((sales) => sales.userId === 5)?.recommended,
+      ).toBe(false);
+
+      expect(
+        result.salesUsers.find((sales) => sales.userId === 6)?.recommended,
+      ).toBe(true);
+    });
+
+    it('BR-ALLOC-001 - nếu workload bằng nhau thì ưu tiên userId nhỏ hơn', async () => {
+      dealsRepository.findPipelineStages.mockResolvedValue([]);
+
+      dealsRepository.findActiveUsersByRole.mockResolvedValue([
+        {
+          userid: 5,
+          fullname: 'Nguyễn Văn Sales',
+          email: 'sales@crm.com',
+        },
+        {
+          userid: 6,
+          fullname: 'Trần Thị Sales',
+          email: 'sales2@crm.com',
+        },
+      ]);
+
+      dealsRepository.groupOpenDealsByAssignedUsers.mockResolvedValue([
+        {
+          assigneduserid: 5,
+          _count: { _all: 2 },
+          _sum: {
+            expectedrevenue: new Prisma.Decimal(10_000_000),
+          },
+        },
+        {
+          assigneduserid: 6,
+          _count: { _all: 2 },
+          _sum: {
+            expectedrevenue: new Prisma.Decimal(10_000_000),
+          },
+        },
+      ]);
+
+      const result = await dealsService.getMeta(salesManagerUser);
+
+      expect(
+        result.salesUsers.find((sales) => sales.userId === 5)?.recommended,
+      ).toBe(true);
+
+      expect(
+        result.salesUsers.find((sales) => sales.userId === 6)?.recommended,
+      ).toBe(false);
+    });
+
+    it('Admin lấy Pipeline Stage và workload của Sales đang hoạt động', async () => {
+      dealsRepository.findPipelineStages.mockResolvedValue([
+        proposalStage,
+        negotiationStage,
+      ]);
+
+      dealsRepository.findActiveUsersByRole.mockResolvedValue([
+        {
+          userid: 5,
+          fullname: 'Nguyễn Văn Sales',
+          email: 'sales@crm.com',
+        },
+      ]);
+
+      dealsRepository.groupOpenDealsByAssignedUsers.mockResolvedValue([]);
+
+      const result = await dealsService.getMeta(adminUser);
+
+      expect(dealsRepository.findActiveUsersByRole).toHaveBeenCalledWith(
+        Role.SALES,
+      );
+
+      expect(
+        dealsRepository.groupOpenDealsByAssignedUsers,
+      ).toHaveBeenCalledWith([5]);
+
+      expect(result.stages).toHaveLength(2);
+
+      expect(result.salesUsers).toEqual([
+        {
+          userId: 5,
+          fullName: 'Nguyễn Văn Sales',
+          email: 'sales@crm.com',
+          openDealCount: 0,
+          openExpectedRevenue: 0,
+          recommended: true,
+        },
+      ]);
+    });
   });
 
   describe('findOne', () => {

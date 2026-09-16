@@ -19,6 +19,15 @@ npm test -- leads.service.spec.ts
 | UNIT-AUTH-CTRL-001 | `auth.controller.spec.ts` | Controller xử lý đăng nhập | Gọi đúng `AuthService.login()` | PASS |
 | UNIT-AUTH-CTRL-002 | `auth.controller.spec.ts` | Controller xử lý quên mật khẩu | Gọi đúng `AuthService.forgotPassword()` | PASS |
 | UNIT-AUTH-CTRL-003 | `auth.controller.spec.ts` | Controller xử lý đặt lại mật khẩu | Gọi đúng `AuthService.resetPassword()` | PASS |
+| UNIT-AUTH-003 | `auth.service.spec.ts` | Quên mật khẩu với email không tồn tại | Trả thông báo trung lập, không tạo Password Reset Token và không làm lộ email có tồn tại trong hệ thống hay không | PASS |
+| UNIT-AUTH-004 | `auth.service.spec.ts` | Quên mật khẩu với tài khoản hợp lệ | Tạo Reset Token ngẫu nhiên, lưu token dưới dạng hash và thiết lập thời gian hết hạn | PASS |
+| UNIT-AUTH-005 | `auth.service.spec.ts` | Đặt lại mật khẩu với Reset Token đã hết hạn | Từ chối đặt lại mật khẩu, không cập nhật mật khẩu người dùng | PASS |
+| UNIT-AUTH-006 | `auth.service.spec.ts` | Đặt lại mật khẩu với Reset Token đã được sử dụng | Từ chối sử dụng lại Reset Token và không cập nhật mật khẩu lần nữa | PASS |
+| UNIT-AUTH-007 | `auth.service.spec.ts` | Đặt lại mật khẩu với Reset Token hợp lệ | Mã hóa mật khẩu mới, cập nhật mật khẩu người dùng và đánh dấu Reset Token đã được sử dụng | PASS |
+| UNIT-AUTH-GUARD-001 | `reset-password.guard.spec.ts` | Gửi yêu cầu reset password nhưng thiếu Reset Token | Guard từ chối yêu cầu vì không có Reset Token | PASS |
+| UNIT-AUTH-GUARD-002 | `reset-password.guard.spec.ts` | Gửi Reset Token có độ dài không hợp lệ | Guard từ chối yêu cầu trước khi thực hiện đặt lại mật khẩu | PASS |
+| UNIT-AUTH-GUARD-003 | `reset-password.guard.spec.ts` | Gửi Reset Token hợp lệ | Guard cho phép request tiếp tục tới controller xử lý reset password | PASS |
+| UNIT-AUTH-GUARD-004 | `reset-password.guard.spec.ts` | Gửi Reset Token đã hết hạn hoặc đã được sử dụng | Guard từ chối request, không cho phép sử dụng token không còn hiệu lực | PASS |
 | UNIT-PRISMA-001 | `prisma.service.spec.ts` | Khởi tạo khi thiếu `DATABASE_URL` | Ném lỗi cấu hình | PASS |
 | UNIT-APP-001 | `app.controller.spec.ts` | Kiểm tra `getHello()` | Trả về `Hello World!` | PASS |
 | UNIT-LEAD-001 | `leads.service.spec.ts` | Chuyển Lead thành Customer khi Lead đủ điều kiện | Chuyển đổi thành công và gọi Repository với đúng Lead ID và User ID | PASS |
@@ -30,8 +39,11 @@ npm test -- leads.service.spec.ts
 | UNIT-LEAD-007 | `leads.service.spec.ts` | Chuyển Lead có trạng thái `Contacted` | Ném `UnprocessableEntityException`, không thực hiện chuyển đổi | PASS |
 | UNIT-LEAD-008 | `leads.service.spec.ts` | Chuyển Lead có họ tên không hợp lệ | Ném `UnprocessableEntityException`, không thực hiện chuyển đổi | PASS |
 | UNIT-LEAD-009 | `leads.service.spec.ts` | Chuyển Lead thiếu cả số điện thoại và email | Ném `UnprocessableEntityException`, không thực hiện chuyển đổi | PASS |
-| UNIT-LEAD-010 | `leads.service.spec.ts` | Chuyển Lead chỉ có số điện thoại, không có email | Cho phép chuyển đổi và gọi Repository | PASS |
-| UNIT-LEAD-011 | `leads.service.spec.ts` | Chuyển Lead chỉ có email, không có số điện thoại | Cho phép chuyển đổi và gọi Repository | PASS |
+| UNIT-LEAD-010 | `leads.service.spec.ts` | BR04 - Chuyển Lead có số điện thoại nhưng thiếu email | Ném `UnprocessableEntityException` với thông báo Lead phải có đầy đủ số điện thoại và email trước khi chuyển đổi; không gọi Repository chuyển đổi Customer | PASS |
+| UNIT-LEAD-011 | `leads.service.spec.ts` | BR04 - Chuyển Lead có email nhưng thiếu số điện thoại | Ném `UnprocessableEntityException` với thông báo Lead phải có đầy đủ số điện thoại và email trước khi chuyển đổi; không gọi Repository chuyển đổi Customer | PASS |
+| UNIT-LEAD-012 | `leads.service.spec.ts` | Sales xem chi tiết Lead được phân công cho chính mình | Cho phép truy cập và trả đúng thông tin Lead cùng Sales đang phụ trách | PASS |
+| UNIT-LEAD-013 | `leads.service.spec.ts` | Sales xem chi tiết Lead được phân công cho Sales khác | Ném `NotFoundException` với thông báo `Lead không tồn tại`; không cho Sales truy cập Lead ngoài phạm vi được phân công | PASS |
+| UNIT-LEAD-014 | `leads.service.spec.ts` | Marketing xem chi tiết Lead | Cho phép Marketing xem chi tiết Lead không phụ thuộc Sales đang được phân công | PASS |
 
 ---
 
@@ -165,7 +177,7 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-026 | `deals.service.spec.ts` | BR08 - Chuyển Deal sang Stage có Probability ngoài khoảng 0-100 | Ném `UnprocessableEntityException` với thông báo `Giai đoạn "Unconfigured" có xác suất không hợp lệ.`; không cập nhật Deal | PASS |
 | UNIT-DEAL-027 | `deals.service.spec.ts` | BR08, BR09, BR18 - Chuyển Pipeline Stage thành công | Cập nhật đúng Stage, Probability và Expected Revenue; truyền Deal cũ, User và IP xuống Repository để ghi Activity Log; trả Deal sau cập nhật | PASS |
 | UNIT-DEAL-028 | `deals.service.spec.ts` | Sales Manager xem toàn bộ danh sách Deal | Repository nhận `salesUserId = undefined`; không giới hạn Deal theo người phụ trách; gọi đúng `findMany`, `count`, `skip` và `limit` | PASS |
-| UNIT-DEAL-029 | `deals.service.spec.ts` | Sales Manager lấy Pipeline Stage và danh sách Sales đang hoạt động | Gọi `findActiveUsersByRole(Role.SALES)`; trả đúng danh sách Pipeline Stage và `salesUsers` gồm `userId`, `fullName`, `email` | PASS |
+| UNIT-DEAL-029 | `deals.service.spec.ts` | BR-ALLOC-001 - Sales Manager lấy Pipeline Stage, workload và gợi ý Sales có ít Deal đang mở nhất | Trả `openDealCount`, `openExpectedRevenue` cho từng Sales đang hoạt động; Sales có số Deal đang mở thấp nhất được đánh dấu `recommended = true` | PASS |
 | UNIT-DEAL-030 | `deals.service.spec.ts` | Sales Manager xem chi tiết Deal không phụ thuộc người phụ trách | Gọi `findById(dealId)` thay vì `findOwnedById`; trả đúng thông tin Deal | PASS |
 | UNIT-DEAL-031 | `deals.service.spec.ts` | BR29 - Sales Manager tạo Deal và chọn Sales phụ trách thành công | Kiểm tra Customer và Sales được chọn; Deal được gán đúng `assignedUserId`; gọi `createWithLog` với Manager là người thực hiện và `notifyAssignee = true`; trả `Tạo Deal thành công.` | PASS |
 | UNIT-DEAL-032 | `deals.service.spec.ts` | BR29 - Sales Manager tạo Deal nhưng không chọn Sales phụ trách | Ném lỗi `Vui lòng chọn nhân viên Sales phụ trách Deal.`; không gọi Repository tạo Deal | PASS |
@@ -187,9 +199,11 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-048 | `deals.service.spec.ts` | BR33, BR08, BR09, BR18 - Admin được đổi Stage Deal bất kỳ | Admin được truy cập Deal không phụ thuộc người phụ trách; cập nhật đúng Stage, Probability và Expected Revenue; ghi Activity Log | PASS |
 | UNIT-DEAL-049 | `deals.service.spec.ts` | BR33 - Từ chối role không có quyền thay đổi Stage Deal | Ném `ForbiddenException` với thông báo không có quyền thay đổi giai đoạn Deal; không cập nhật Pipeline Stage | PASS |
 | UNIT-DEAL-050 | `deals.service.spec.ts` | Admin xem toàn bộ danh sách Deal | Repository nhận `salesUserId = undefined`; Admin không bị giới hạn Deal theo người phụ trách; trả đúng dữ liệu và pagination | PASS |
-| UNIT-DEAL-051 | `deals.service.spec.ts` | Admin lấy Pipeline Stage và danh sách Sales đang hoạt động | Gọi `findActiveUsersByRole(Role.SALES)`; trả đúng Pipeline Stage và danh sách `salesUsers` | PASS |
+| UNIT-DEAL-051 | `deals.service.spec.ts` | BR-ALLOC-001 - Admin lấy Pipeline Stage và workload của Sales đang hoạt động | Trả đúng Pipeline Stage, `openDealCount`, `openExpectedRevenue`; Sales chưa có Deal được trả workload bằng 0 và được gợi ý khi có tải thấp nhất | PASS |
 | UNIT-DEAL-052 | `deals.service.spec.ts` | Admin xem chi tiết Deal không phụ thuộc người phụ trách | Gọi `findById(dealId)` thay vì `findOwnedById`; trả đúng thông tin Deal | PASS |
-| UNIT-DEAL-053 | `deals.service.spec.ts` | BR07, BR14, BR18 - Admin phân công Deal sang Sales khác thành công | Admin được phép phân công Deal cho Sales đang hoạt động, Deal đổi đúng người phụ trách, Repository nhận đúng Admin là người thực hiện | PASS
+| UNIT-DEAL-053 | `deals.service.spec.ts` | BR07, BR14, BR18 - Admin phân công Deal sang Sales khác thành công | Admin được phép phân công Deal cho Sales đang hoạt động, Deal đổi đúng người phụ trách, Repository nhận đúng Admin là người thực hiện | PASS |
+| UNIT-DEAL-054 | `deals.service.spec.ts` | BR-ALLOC-001 - Hai Sales có cùng số Deal đang mở | Ưu tiên Sales có tổng `openExpectedRevenue` thấp hơn và đánh dấu người đó `recommended = true` | PASS |
+| UNIT-DEAL-055 | `deals.service.spec.ts` | BR-ALLOC-001 - Hai Sales có cùng số Deal đang mở và cùng Expected Revenue | Dùng `userId` làm tiêu chí cuối cùng; Sales có `userId` nhỏ hơn được đánh dấu `recommended = true` | PASS |
 
 ## Chức năng tạo quotes
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -210,6 +224,8 @@ npm test -- leads.service.spec.ts
 | UNIT-QUOTE-014 | `quotes.service.spec.ts` | BR22 - Từ chối chỉnh sửa Quote không ở trạng thái Draft | Ném lỗi `Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.`; không xử lý Product và không cập nhật Quote | PASS |
 | UNIT-QUOTE-015 | `quotes.service.spec.ts` | BR23 - Từ chối hủy Quote đã Confirmed | Ném lỗi `Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.`; không gọi `changeStatusWithLog` | PASS |
 | UNIT-QUOTE-016 | `quotes.service.spec.ts` | BR24 - Hủy Quote Draft chỉ chuyển trạng thái sang Cancelled | Gọi `changeStatusWithLog` với trạng thái `Cancelled`; Quote vẫn được giữ lại và trả thông báo hủy thành công | PASS |
+| UNIT-QUOTE-017 | `quotes.service.spec.ts` | BR23 - Xác nhận Quote đang ở trạng thái Draft | Chuyển trạng thái Quote từ `Draft` sang `Confirmed`, gọi Repository cập nhật trạng thái và trả thông báo xác nhận báo giá thành công | PASS |
+| UNIT-QUOTE-018 | `quotes.service.spec.ts` | BR23 - Xác nhận Quote không ở trạng thái Draft | Ném lỗi với thông báo chỉ báo giá ở trạng thái Draft mới được xác nhận; không gọi Repository thay đổi trạng thái | PASS |
 
 ## Chức năng quản lý Tasks
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -262,7 +278,7 @@ npm test -- leads.service.spec.ts
 |---|---|---|---|---|
 | UNIT-DASHBOARD-001 | `dashboard.service.spec.ts` | Admin lấy dữ liệu Dashboard tổng quan | Repository được gọi để lấy số lượng User, Lead, Customer, Deal, Product, Quote, Task, doanh thu Deal Won, Pipeline và Lead mới nhất; trả đúng `overview`, `pipeline` và `recentLeads` sau khi mapping dữ liệu | PASS |
 | UNIT-DASHBOARD-002 | `dashboard.service.spec.ts` | Dashboard Admin không có Deal ở trạng thái Won | Khi tổng `dealValue` của Deal Won là `null`, `overview.totalRevenue` được trả về `0`; không trả `null` hoặc `NaN` | PASS |
-| UNIT-DASHBOARD-003 | `dashboard.service.spec.ts` | Sales Manager lấy dữ liệu Dashboard và tổng hợp doanh thu, Expected Revenue, hiệu suất Sales | Trả đúng `overview`, Pipeline, `salesPerformance` và `attentionDeals`; `pipelineValue`, `expectedRevenue`, `wonRevenue` được tổng hợp đúng từ dữ liệu Repository | PASS |
+| UNIT-DASHBOARD-003 | `dashboard.service.spec.ts` | BR09, BR19 - Sales Manager xem tổng hợp đội Sales, Expected Revenue và mức ưu tiên chăm sóc Deal | Trả đúng `overview`, `salesPerformance` và `attentionDeals`; tính `daysToClose`; Deal còn tối đa 3 ngày có `carePriority = High`, còn 4-7 ngày là `Medium`, trên 7 ngày là `Low`; trả đúng `priorityReason` theo số ngày còn lại đến ngày dự kiến chốt | PASS |
 | UNIT-DASHBOARD-004 | `dashboard.service.spec.ts` | Dashboard Sales Manager khi không có Sales đang hoạt động | Trả `salesPerformance = []`; không gọi Repository nhóm Deal theo Sales; các số liệu không có dữ liệu được trả về `0` và không phát sinh lỗi | PASS |
 | UNIT-DASHBOARD-005 | `dashboard.service.spec.ts` | Sales lấy Dashboard cá nhân theo đúng `userId` | Repository lấy Lead, Deal, Quote, Task, Pipeline, Deal gần nhất và Task sắp tới theo đúng `userId`; kết quả chỉ chứa dữ liệu thuộc Sales hiện tại | PASS |
 | UNIT-DASHBOARD-006 | `dashboard.service.spec.ts` | Marketing lấy Dashboard và tính tỷ lệ chuyển đổi Lead | Trả đúng tổng Lead, Lead mới trong tháng, Lead Converted, Lead chưa Converted, nguồn Lead, trạng thái Lead và Lead mới nhất; `conversionRate` được tính đúng | PASS |
@@ -307,122 +323,71 @@ npm test -- leads.service.spec.ts
 | UNIT-ACTIVITY-023 | `activities.service.spec.ts` | Hủy lại Activity đã `Cancelled` | Ném `UnprocessableEntityException` với thông báo Activity đã được hủy; không cập nhật lại | PASS |
 | UNIT-ACTIVITY-024 | `activities.service.spec.ts` | Hủy Activity của người khác | Ném `NotFoundException`; không gọi Repository hủy Activity | PASS |
 
+## Chức năng Task Reminder
 
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-TASK-REMINDER-001 | `task-reminder.service.spec.ts` | Không có Task nào đến thời điểm cần nhắc | Repository tìm Task đến hạn theo thời gian hiện tại; không tạo Reminder mới | PASS |
+| UNIT-TASK-REMINDER-002 | `task-reminder.service.spec.ts` | Có một Task đến thời điểm cần nhắc | Tạo Reminder đúng `taskId`, `assignedUserId`, tiêu đề theo mã Task, nội dung chứa tiêu đề Task và thời hạn được định dạng theo múi giờ `Asia/Ho_Chi_Minh` | PASS |
+| UNIT-TASK-REMINDER-003 | `task-reminder.service.spec.ts` | Task có `title = null` và `dueDate = null` | Sử dụng giá trị dự phòng cho nội dung Reminder, vẫn tạo thông báo nhắc việc đúng Task và người được phân công | PASS |
+| UNIT-TASK-REMINDER-004 | `task-reminder.service.spec.ts` | Có nhiều Task cùng đến thời điểm cần nhắc | Tạo Reminder cho tất cả Task đến hạn, mỗi Task được tạo đúng một Reminder với đúng `taskId` và `assignedUserId` | PASS |
+
+## Chức năng cấu hình Pipeline
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-PIPELINE-001 | `pipeline-stages.service.spec.ts` | Lấy danh sách Pipeline Stage | Trả danh sách Stage với đúng `stageId`, `stageName`, `stageOrder` và `probability` | PASS |
+| UNIT-PIPELINE-002 | `pipeline-stages.service.spec.ts` | Tạo Pipeline Stage hợp lệ | Tạo Stage mới với đúng tên, thứ tự và Probability; trả dữ liệu Stage sau khi tạo | PASS |
+| UNIT-PIPELINE-003 | `pipeline-stages.service.spec.ts` | Tạo Pipeline Stage có tên đã tồn tại | Ném `ConflictException`; không tạo Stage mới | PASS |
+| UNIT-PIPELINE-004 | `pipeline-stages.service.spec.ts` | Tạo Pipeline Stage có thứ tự đã tồn tại | Ném `ConflictException`; không tạo Stage mới | PASS |
+| UNIT-PIPELINE-005 | `pipeline-stages.service.spec.ts` | Tạo mới Stage hệ thống có tên `Won` hoặc `Lost` | Ném `UnprocessableEntityException`; không cho tạo thêm Stage hệ thống `Won` hoặc `Lost` | PASS |
+| UNIT-PIPELINE-006 | `pipeline-stages.service.spec.ts` | Cập nhật Pipeline Stage nhưng body rỗng | Ném `BadRequestException`; không gọi Repository cập nhật Stage | PASS |
+| UNIT-PIPELINE-007 | `pipeline-stages.service.spec.ts` | Thay đổi Probability của Pipeline Stage | Cập nhật Probability của Stage và đồng bộ Probability cùng Expected Revenue của các Deal đang thuộc Stage đó | PASS |
+| UNIT-PIPELINE-008 | `pipeline-stages.service.spec.ts` | Cập nhật Stage nhưng Probability không thay đổi | Cập nhật Stage nhưng không thực hiện đồng bộ lại Deal khi Probability giữ nguyên | PASS |
+| UNIT-PIPELINE-009 | `pipeline-stages.service.spec.ts` | Thay đổi tên Stage hệ thống `Won` | Ném `UnprocessableEntityException`; không cho đổi tên Stage hệ thống `Won` | PASS |
+| UNIT-PIPELINE-010 | `pipeline-stages.service.spec.ts` | Xóa Pipeline Stage đang được Deal sử dụng | Ném `UnprocessableEntityException`; không xóa Stage đang có Deal liên kết | PASS |
+| UNIT-PIPELINE-011 | `pipeline-stages.service.spec.ts` | Xóa Pipeline Stage chưa được Deal sử dụng | Gọi Repository xóa đúng Stage và hoàn tất thao tác thành công | PASS |
+| UNIT-PIPELINE-012 | `pipeline-stages.service.spec.ts` | Xóa Stage hệ thống `Lost` | Ném `UnprocessableEntityException`; không cho xóa Stage hệ thống `Lost` | PASS |
 
 ## 3. Kết quả tổng hợp
 
-```text
-Test Suites: 4 passed, 4 total
-Tests:       7 passed, 7 total
-Snapshots:   0 total
-Time:        2.074 s
-```
-```text
-Chuyển Lead thành Customer
-Test Suites: 1 passed, 1 total
-Tests:       11 passed, 11 total
-Snapshots:   0 total
-Time:        8.654 s
-```
+| Test Suite | Số test | Kết quả |
+|---|---:|---|
+| `app.controller.spec.ts` | 1 | PASS |
+| `prisma.service.spec.ts` | 1 | PASS |
+| `auth.controller.spec.ts` | 3 | PASS |
+| `auth.service.spec.ts` | 7 | PASS |
+| `reset-password.guard.spec.ts` | 4 | PASS |
+| `leads.service.spec.ts` | 14 | PASS |
+| `lead-assignments.service.spec.ts` | 7 | PASS |
+| `users.service.spec.ts` | 23 | PASS |
+| `products.service.spec.ts` | 20 | PASS |
+| `activity-logs.service.spec.ts` | 12 | PASS |
+| `customers.service.spec.ts` | 14 | PASS |
+| `deals.service.spec.ts` | 55 | PASS |
+| `pipeline-stages.service.spec.ts` | 12 | PASS |
+| `quotes.service.spec.ts` | 18 | PASS |
+| `tasks.service.spec.ts` | 29 | PASS |
+| `task-reminder.service.spec.ts` | 4 | PASS |
+| `notifications.service.spec.ts` | 8 | PASS |
+| `dashboard.service.spec.ts` | 8 | PASS |
+| `forecast.service.spec.ts` | 4 | PASS |
+| `activities.service.spec.ts` | 24 | PASS |
+
+Kết quả chạy toàn bộ Unit Test backend ngày 15/09/2026:
 
 ```text
-Quản lý Users
-Test Suites: 1 passed, 1 total
-Tests:       23 passed, 23 total
+Test Suites: 20 passed, 20 total
+Tests:       268 passed, 268 total
 Snapshots:   0 total
-Time:        17.614 s
-```
-
-```text
-Quản lý Products
-Test Suites: 1 passed, 1 total
-Tests:       20 passed, 20 total
-Snapshots:   0 total
-Time:        25.597 s
-```
-
-```text
-Xem Activity Logs
-Test Suites: 1 passed, 1 total
-Tests:       12 passed, 12 total
-Snapshots:   0 total
-Time:        0.995 s
+Time:        18.06 s
+Ran all test suites.
 ```
 
-```text
-Quản lý Customer
-Test Suites: 1 passed, 1 total
-Tests:       14 passed, 14 total
-Snapshots:   0 total
-Time:        0.923 s
-```
-
-```text
-Quản lý Deals và kéo thả giai đoạn pipeline
-Test Suites: 1 passed, 1 total
-Tests: 52 passed, 52 total
-Snapshots:   0 total
-Time:        21.009 s
-```
-
-```text
-Tạo quotes
-Test Suites: 1 passed, 1 total
-Tests:       16 passed, 16 total
-Snapshots:   0 total
-Time:        13.98 s
-```
-
-```text
-Quản lý Tasks
-Test Suites: 1 passed, 1 total
-Tests:       29 passed, 29 total
-Snapshots:   0 total
-Time:        1.135 s
-```
-
-```text
-Thông báo
-Test Suites: 1 passed, 1 total
-Tests:       8 passed, 8 total
-Snapshots:   0 total
-Time:        23.104 s
-```
-
-```text
-Dashboard
-Test Suites: 1 passed, 1 total
-Tests:       8 passed, 8 total
-Snapshots:   0 total
-Time:        0.774 s
-```
-
-```text
-Forecast doanh thu
-Test Suites: 1 passed, 1 total
-Tests:       4 passed, 4 total
-Snapshots:   0 total
-Time:        0.897 s
-
-```text
-Quản lý Activities
-Test Suites: 1 passed, 1 total
-Tests:       24 passed, 24 total
-Snapshots:   0 total
-Time:        5.115 s
-```
-
-```text
-Phân công Lead
-Test Suites: 1 passed, 1 total
-Tests:       7 passed, 7 total
-Snapshots:   0 total
-Time:        0.851 s
-**
-
-Kết luận:** 236/236 unit test PASS.
+**Kết luận:** 268/268 unit test PASS.
 
 ---
+
 
 ## 4. Lịch sử cập nhật
 
@@ -441,3 +406,4 @@ Kết luận:** 236/236 unit test PASS.
 | 04/09/2026 | Bổ sung unit test BR34 cho chức năng Forecast doanh thu theo kỳ | 4 | PASS |
 | 11/09/2026 | Bổ sung Unit Test BR07 cho quyền Admin phân công Deal, BR11 kiểm tra Deal không có Customer hợp lệ và BR25 phân quyền phân công Lead | 7 | PASS |
 | 11/09/2026 | Bổ sung Unit Test BR22, BR23, BR24 cho quản lý Quote và BR26, BR28 cho phân công Lead | 5 | PASS |
+| 15/09/2026 | Bổ sung unit test bảo mật Reset Password, phân quyền Lead, xác nhận Quote, Task Reminder, phân bổ Deal cân đối, ưu tiên chăm sóc Deal và cấu hình Pipeline | 268 | PASS |

@@ -96,4 +96,7 @@ export interface DealSalesUserOption {
   userId: number;
   fullName: string;
   email: string;
+  openDealCount: number;
+  openExpectedRevenue: number;
+  recommended: boolean;
 }

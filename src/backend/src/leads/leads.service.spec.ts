@@ -280,3 +280,104 @@ describe('LeadsService - convertLead', () => {
     expect(leadsRepository.convertToCustomer).not.toHaveBeenCalled();
   });
 });
+
+describe('LeadsService - findOne', () => {
+  let service: LeadsService;
+
+  const leadsRepository = {
+    findById: jest.fn(),
+  };
+
+  const salesUser: AuthenticatedUser = {
+    userId: 3,
+    fullName: 'Sales A',
+    email: 'sales.a@crm.local',
+    role: Role.SALES,
+  };
+
+  const marketingUser: AuthenticatedUser = {
+    userId: 6,
+    fullName: 'Marketing',
+    email: 'marketing@crm.local',
+    role: Role.MARKETING,
+  };
+
+  const lead = {
+    leadid: 5,
+    sourceid: 1,
+    assigneduserid: 3,
+    fullname: 'Nguyễn Văn Lead',
+    company: 'Công ty ABC',
+    phone: '0909000001',
+    email: 'lead@example.com',
+    address: 'TP.HCM',
+    status: 'New',
+    createddate: new Date('2026-09-15T00:00:00.000Z'),
+    leadsources: {
+      sourceid: 1,
+      sourcename: 'Website',
+    },
+    users: {
+      userid: 3,
+      fullname: 'Sales A',
+      email: 'sales.a@crm.local',
+    },
+    customers: null,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new LeadsService(
+      leadsRepository as unknown as LeadsRepository,
+    );
+  });
+
+  it('cho phép Sales xem Lead được phân công cho chính mình', async () => {
+    leadsRepository.findById.mockResolvedValue(lead);
+
+    const result = await service.findOne(lead.leadid, salesUser);
+
+    expect(leadsRepository.findById).toHaveBeenCalledWith(lead.leadid);
+    expect(result.leadId).toBe(lead.leadid);
+    expect(result.assignedUser?.userId).toBe(salesUser.userId);
+  });
+
+  it('không cho Sales xem Lead được phân công cho Sales khác', async () => {
+    leadsRepository.findById.mockResolvedValue({
+      ...lead,
+      assigneduserid: 4,
+      users: {
+        userid: 4,
+        fullname: 'Sales B',
+        email: 'sales.b@crm.local',
+      },
+    });
+
+    await expect(
+      service.findOne(lead.leadid, salesUser),
+    ).rejects.toThrow(NotFoundException);
+
+    await expect(
+      service.findOne(lead.leadid, salesUser),
+    ).rejects.toThrow('Lead không tồn tại');
+  });
+
+  it('cho phép Marketing xem chi tiết Lead', async () => {
+    leadsRepository.findById.mockResolvedValue({
+      ...lead,
+      assigneduserid: 4,
+      users: {
+        userid: 4,
+        fullname: 'Sales B',
+        email: 'sales.b@crm.local',
+      },
+    });
+
+    const result = await service.findOne(
+      lead.leadid,
+      marketingUser,
+    );
+
+    expect(result.leadId).toBe(lead.leadid);
+  });
+});

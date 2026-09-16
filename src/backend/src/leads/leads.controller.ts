@@ -35,7 +35,7 @@ interface AuthenticatedRequest extends Request {
 @Controller('leads')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LeadsController {
-  constructor(private readonly leadsService: LeadsService) {}
+  constructor(private readonly leadsService: LeadsService) { }
 
   // BR02: Marketing được quản lý Lead; Sales chỉ được đọc Lead để phục vụ UC3.
   @Get()
@@ -52,8 +52,11 @@ export class LeadsController {
 
   @Get(':id')
   @Roles(Role.MARKETING, Role.SALES)
-  findOne(@Param('id', ParseIntPipe) leadId: number) {
-    return this.leadsService.findOne(leadId);
+  findOne(
+    @Param('id', ParseIntPipe) leadId: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.leadsService.findOne(leadId, request.user);
   }
 
   // BR02: Chỉ Marketing được tạo Lead.

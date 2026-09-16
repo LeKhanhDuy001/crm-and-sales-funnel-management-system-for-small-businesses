@@ -650,5 +650,96 @@ describe('QuotesService - Sales tạo báo giá', () => {
 
       expect(result.data.status).toBe('Cancelled');
     });
+
+    it('BR23 - xác nhận Quote Draft thành công và chuyển trạng thái sang Confirmed', async () => {
+      const draftQuote = {
+        quoteid: 23,
+        dealid: 7,
+        quotedate: new Date('2026-09-11T00:00:00.000Z'),
+        totalamount: 35_000_000,
+        status: 'Draft',
+        createdby: 5,
+
+        deals: {
+          dealid: 7,
+          dealname: 'Deal báo giá',
+          assigneduserid: 5,
+
+          customers: {
+            customerid: 3,
+            fullname: 'Khách hàng A',
+            company: 'Công ty A',
+          },
+
+          pipelinestages: {
+            stageid: 4,
+            stagename: 'Proposal',
+            stageorder: 4,
+          },
+        },
+
+        users: {
+          userid: 5,
+          fullname: 'Nguyễn Văn Sales',
+        },
+
+        quotedetails: [],
+      };
+
+      const confirmedQuote = {
+        ...draftQuote,
+        status: 'Confirmed',
+      };
+
+      repository.findOwnedQuoteById.mockResolvedValue(draftQuote);
+
+      repository.changeStatusWithLog.mockResolvedValue(confirmedQuote);
+
+      const result = await service.confirm(
+        23,
+        salesUser,
+        '127.0.0.1',
+      );
+
+      expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
+        23,
+        5,
+      );
+
+      expect(repository.changeStatusWithLog).toHaveBeenCalledWith({
+        quoteId: 23,
+        userId: 5,
+        newStatus: 'Confirmed',
+        currentQuote: draftQuote,
+        ipAddress: '127.0.0.1',
+      });
+
+      expect(result.message).toBe(
+        'Xác nhận báo giá thành công.',
+      );
+
+      expect(result.data.status).toBe('Confirmed');
+    });
+
+    it('BR23 - từ chối xác nhận Quote không ở trạng thái Draft', async () => {
+      repository.findOwnedQuoteById.mockResolvedValue({
+        quoteid: 24,
+        status: 'Confirmed',
+      });
+
+      await expect(
+        service.confirm(
+          24,
+          salesUser,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(
+        'Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.',
+      );
+
+      expect(
+        repository.changeStatusWithLog,
+      ).not.toHaveBeenCalled();
+    });
   });
 });

@@ -33,21 +33,18 @@ export default function ForgotPasswordPage() {
     setIsSubmitting(true);
 
     try {
-      await forgotPassword({
+      const result = await forgotPassword({
         email: normalizedEmail,
       });
 
-      sessionStorage.setItem(
-        'resetPasswordEmail',
-        normalizedEmail,
-      );
+      window.alert(result.message);
 
       router.push('/reset-password');
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : 'Không thể kiểm tra email.',
+          : 'Không thể gửi yêu cầu đặt lại mật khẩu.',
       );
     } finally {
       setIsSubmitting(false);
@@ -71,10 +68,10 @@ export default function ForgotPasswordPage() {
               Email
             </label>
 
-            <input id="email" type="email" value={email} disabled={isSubmitting} placeholder="Nhập email" onChange={(event) => { 
-                setEmail(event.target.value);
-                setError('');
-              }}/>
+            <input id="email" type="email" value={email} disabled={isSubmitting} placeholder="Nhập email" onChange={(event) => {
+              setEmail(event.target.value);
+              setError('');
+            }} />
           </div>
 
           {error && (
@@ -87,7 +84,7 @@ export default function ForgotPasswordPage() {
             {isSubmitting ? 'Đang kiểm tra...' : 'Tiếp tục'}
           </button>
 
-          <button className={styles.backButton} type="button"onClick={() => {router.push('/login');}}>Quay lại đăng nhập</button>
+          <button className={styles.backButton} type="button" onClick={() => { router.push('/login'); }}>Quay lại đăng nhập</button>
         </form>
       </section>
     </main>

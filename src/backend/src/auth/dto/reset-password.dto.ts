@@ -1,22 +1,20 @@
 import {
-  IsEmail,
   IsNotEmpty,
   IsString,
+  Length,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
 export class ResetPasswordDto {
-  @IsEmail(
-    {},
-    {
-      message: 'Email không đúng định dạng',
-    },
-  )
+  @IsString()
   @IsNotEmpty({
-    message: 'Email không được để trống',
+    message: 'Reset token không được để trống',
   })
-  email!: string;
+  @Length(64, 64, {
+    message: 'Reset token không hợp lệ',
+  })
+  token!: string;
 
   @IsString()
   @IsNotEmpty({

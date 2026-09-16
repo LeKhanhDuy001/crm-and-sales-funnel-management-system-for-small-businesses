@@ -2,7 +2,8 @@ import Link from 'next/link';
 import styles from './admin-dashboard-layout.module.css';
 
 interface AdminDashboardNavigationProps {
-  activePage: | 'dashboard' | 'users' | 'products' | 'deals' | 'activity-logs';
+  activePage:
+  | 'dashboard' | 'users' | 'products' | 'deals' | 'pipeline-stages' | 'activity-logs';
 }
 
 export default function AdminDashboardNavigation({ activePage, }: AdminDashboardNavigationProps) {
@@ -43,6 +44,15 @@ export default function AdminDashboardNavigation({ activePage, }: AdminDashboard
           💼
         </span>
         Quản lý Deal
+      </Link>
+      <Link
+        href="/admin/pipeline-stages"
+        className={`${styles.navigationLink} ${activePage === 'pipeline-stages' ? styles.navigationLinkActive : ''}`}
+      >
+        <span className={styles.navigationIcon} aria-hidden="true">
+          ⚙
+        </span>
+        Cấu hình Pipeline
       </Link>
       <Link href="/admin/activity-logs"
         className={`${styles.navigationLink} ${activePage === 'activity-logs'
