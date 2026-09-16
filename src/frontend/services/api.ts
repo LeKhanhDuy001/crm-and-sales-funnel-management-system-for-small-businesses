@@ -21,16 +21,17 @@ interface ApiRequestOptions
   body?: unknown;
 }
 
-const apiUrl =
-  process.env.NEXT_PUBLIC_API_URL;
+function getApiUrl(): string {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-if (!apiUrl) {
-  throw new Error(
-    'NEXT_PUBLIC_API_URL chưa được cấu hình trong file .env.local',
-  );
+  if (!apiUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL chưa được cấu hình',
+    );
+  }
+
+  return apiUrl.replace(/\/+$/, '');
 }
-
-const API_URL = apiUrl.replace(/\/+$/, '');
 
 function getDefaultErrorMessage(
   statusCode: number,
@@ -101,9 +102,9 @@ export async function apiRequest<T>(
       `Bearer ${accessToken}`,
     );
   }
-
+  const apiUrl = getApiUrl();
   const response = await fetch(
-    `${API_URL}${endpoint}`,
+  `${apiUrl}${endpoint}`,
     {
       ...requestOptions,
       headers: requestHeaders,

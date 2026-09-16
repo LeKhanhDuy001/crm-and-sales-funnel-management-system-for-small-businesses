@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -157,17 +154,12 @@ describe('AuthService', () => {
     });
 
     expect(result).toEqual({
-      message:
-        'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
+      message: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
     });
 
-    expect(
-      authRepository.deleteUnusedResetTokens,
-    ).not.toHaveBeenCalled();
+    expect(authRepository.deleteUnusedResetTokens).not.toHaveBeenCalled();
 
-    expect(
-      authRepository.createResetToken,
-    ).not.toHaveBeenCalled();
+    expect(authRepository.createResetToken).not.toHaveBeenCalled();
   });
 
   it('should create hashed reset token for valid account', async () => {
@@ -182,23 +174,15 @@ describe('AuthService', () => {
     });
 
     expect(result).toEqual({
-      message:
-        'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
+      message: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
     });
 
-    expect(
-      authRepository.deleteUnusedResetTokens,
-    ).toHaveBeenCalledWith(1);
+    expect(authRepository.deleteUnusedResetTokens).toHaveBeenCalledWith(1);
 
-    expect(
-      authRepository.createResetToken,
-    ).toHaveBeenCalledTimes(1);
+    expect(authRepository.createResetToken).toHaveBeenCalledTimes(1);
 
-    const [
-      userId,
-      tokenHash,
-      expiresAt,
-    ] = authRepository.createResetToken.mock.calls[0];
+    const [userId, tokenHash, expiresAt] = authRepository.createResetToken.mock
+      .calls[0] as [number, string, Date];
 
     expect(userId).toBe(1);
 
@@ -206,9 +190,7 @@ describe('AuthService', () => {
 
     expect(expiresAt).toBeInstanceOf(Date);
 
-    expect(expiresAt.getTime()).toBeGreaterThan(
-      Date.now() + 14 * 60 * 1000,
-    );
+    expect(expiresAt.getTime()).toBeGreaterThan(Date.now() + 14 * 60 * 1000);
 
     expect(expiresAt.getTime()).toBeLessThanOrEqual(
       Date.now() + 15 * 60 * 1000,
@@ -286,17 +268,15 @@ describe('AuthService', () => {
 
     expect(usersService.updatePassword).toHaveBeenCalledTimes(1);
 
-    const [userId, passwordHash] =
-      usersService.updatePassword.mock.calls[0];
+    const [userId, passwordHash] = usersService.updatePassword.mock
+      .calls[0] as [number, string];
 
     expect(userId).toBe(1);
 
-    await expect(
-      bcrypt.compare('NewPassword123', passwordHash),
-    ).resolves.toBe(true);
+    await expect(bcrypt.compare('NewPassword123', passwordHash)).resolves.toBe(
+      true,
+    );
 
-    expect(
-      authRepository.markResetTokenUsed,
-    ).toHaveBeenCalledWith(10);
+    expect(authRepository.markResetTokenUsed).toHaveBeenCalledWith(10);
   });
 });

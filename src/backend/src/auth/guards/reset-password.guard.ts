@@ -13,13 +13,21 @@ export class ResetPasswordGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
+    const body: unknown = request.body;
 
-    const token = request.body?.token;
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      !('token' in body) ||
+      typeof body.token !== 'string'
+    ) {
+      throw new BadRequestException('Reset token không hợp lệ hoặc đã hết hạn');
+    }
+
+    const token = body.token;
 
     if (typeof token !== 'string' || token.length !== 64) {
-      throw new BadRequestException(
-        'Reset token không hợp lệ hoặc đã hết hạn',
-      );
+      throw new BadRequestException('Reset token không hợp lệ hoặc đã hết hạn');
     }
 
     await this.authService.validateResetToken(token);
