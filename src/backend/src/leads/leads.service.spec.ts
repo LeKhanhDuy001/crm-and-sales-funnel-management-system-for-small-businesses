@@ -15,6 +15,8 @@ describe('LeadsService - convertLead', () => {
   const leadsRepository = {
     findByIdForConversion: jest.fn(),
     convertToCustomer: jest.fn(),
+    findDuplicate: jest.fn(),
+    createWithLog: jest.fn(),
   };
 
   const currentUser: AuthenticatedUser = {
@@ -279,6 +281,78 @@ describe('LeadsService - convertLead', () => {
 
     expect(leadsRepository.convertToCustomer).not.toHaveBeenCalled();
   });
+
+  // BR03: Email của Lead mới không được trùng với Lead hiện có.
+  it('không cho tạo Lead khi email đã tồn tại', async () => {
+    leadsRepository.findDuplicate.mockResolvedValue({
+      email: 'duplicate@crm.local',
+      phone: '0900000000',
+    });
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng email',
+          email: 'DUPLICATE@CRM.LOCAL',
+          phone: '0911111111',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow(ConflictException);
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng email',
+          email: 'DUPLICATE@CRM.LOCAL',
+          phone: '0911111111',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow('Email của Lead đã tồn tại');
+
+    expect(leadsRepository.findDuplicate).toHaveBeenCalledWith(
+      'duplicate@crm.local',
+      '0911111111',
+      undefined,
+    );
+    expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
+  });
+
+  // BR03: Số điện thoại của Lead mới không được trùng với Lead hiện có.
+  it('không cho tạo Lead khi số điện thoại đã tồn tại', async () => {
+    leadsRepository.findDuplicate.mockResolvedValue({
+      email: null,
+      phone: '0901234567',
+    });
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng số điện thoại',
+          phone: '0901234567',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow(ConflictException);
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng số điện thoại',
+          phone: '0901234567',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow('Số điện thoại của Lead đã tồn tại');
+
+    expect(leadsRepository.findDuplicate).toHaveBeenCalledWith(
+      undefined,
+      '0901234567',
+      undefined,
+    );
+    expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
+  });
 });
 
 describe('LeadsService - findOne', () => {
@@ -327,9 +401,7 @@ describe('LeadsService - findOne', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new LeadsService(
-      leadsRepository as unknown as LeadsRepository,
-    );
+    service = new LeadsService(leadsRepository as unknown as LeadsRepository);
   });
 
   it('cho phép Sales xem Lead được phân công cho chính mình', async () => {
@@ -353,13 +425,13 @@ describe('LeadsService - findOne', () => {
       },
     });
 
-    await expect(
-      service.findOne(lead.leadid, salesUser),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.findOne(lead.leadid, salesUser)).rejects.toThrow(
+      NotFoundException,
+    );
 
-    await expect(
-      service.findOne(lead.leadid, salesUser),
-    ).rejects.toThrow('Lead không tồn tại');
+    await expect(service.findOne(lead.leadid, salesUser)).rejects.toThrow(
+      'Lead không tồn tại',
+    );
   });
 
   it('cho phép Marketing xem chi tiết Lead', async () => {
@@ -373,10 +445,7 @@ describe('LeadsService - findOne', () => {
       },
     });
 
-    const result = await service.findOne(
-      lead.leadid,
-      marketingUser,
-    );
+    const result = await service.findOne(lead.leadid, marketingUser);
 
     expect(result.leadId).toBe(lead.leadid);
   });

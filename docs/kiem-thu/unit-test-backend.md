@@ -44,6 +44,8 @@ npm test -- leads.service.spec.ts
 | UNIT-LEAD-012 | `leads.service.spec.ts` | Sales xem chi tiết Lead được phân công cho chính mình | Cho phép truy cập và trả đúng thông tin Lead cùng Sales đang phụ trách | PASS |
 | UNIT-LEAD-013 | `leads.service.spec.ts` | Sales xem chi tiết Lead được phân công cho Sales khác | Ném `NotFoundException` với thông báo `Lead không tồn tại`; không cho Sales truy cập Lead ngoài phạm vi được phân công | PASS |
 | UNIT-LEAD-014 | `leads.service.spec.ts` | Marketing xem chi tiết Lead | Cho phép Marketing xem chi tiết Lead không phụ thuộc Sales đang được phân công | PASS |
+| UNIT-LEAD-015 | `leads.service.spec.ts` | BR03 - Tạo Lead có email đã tồn tại | Ném `ConflictException` với thông báo `Email của Lead đã tồn tại`; không tạo Lead mới | PASS |
+| UNIT-LEAD-016 | `leads.service.spec.ts` | BR03 - Tạo Lead có số điện thoại đã tồn tại | Ném `ConflictException` với thông báo `Số điện thoại của Lead đã tồn tại`; không tạo Lead mới | PASS |
 
 ---
 
@@ -358,7 +360,7 @@ npm test -- leads.service.spec.ts
 | `auth.controller.spec.ts` | 3 | PASS |
 | `auth.service.spec.ts` | 7 | PASS |
 | `reset-password.guard.spec.ts` | 4 | PASS |
-| `leads.service.spec.ts` | 14 | PASS |
+| `leads.service.spec.ts` | 16 | PASS |
 | `lead-assignments.service.spec.ts` | 7 | PASS |
 | `users.service.spec.ts` | 23 | PASS |
 | `products.service.spec.ts` | 20 | PASS |
@@ -374,17 +376,17 @@ npm test -- leads.service.spec.ts
 | `forecast.service.spec.ts` | 4 | PASS |
 | `activities.service.spec.ts` | 24 | PASS |
 
-Kết quả chạy toàn bộ Unit Test backend ngày 15/09/2026:
+Kết quả chạy toàn bộ Unit Test backend ngày 16/09/2026:
 
 ```text
 Test Suites: 20 passed, 20 total
-Tests:       268 passed, 268 total
+Tests:       270 passed, 270 total
 Snapshots:   0 total
-Time:        18.06 s
+Time:        23.728 s
 Ran all test suites.
 ```
 
-**Kết luận:** 268/268 unit test PASS.
+**Kết luận:** 270/270 unit test PASS.
 
 ---
 
@@ -407,3 +409,4 @@ Ran all test suites.
 | 11/09/2026 | Bổ sung Unit Test BR07 cho quyền Admin phân công Deal, BR11 kiểm tra Deal không có Customer hợp lệ và BR25 phân quyền phân công Lead | 7 | PASS |
 | 11/09/2026 | Bổ sung Unit Test BR22, BR23, BR24 cho quản lý Quote và BR26, BR28 cho phân công Lead | 5 | PASS |
 | 15/09/2026 | Bổ sung unit test bảo mật Reset Password, phân quyền Lead, xác nhận Quote, Task Reminder, phân bổ Deal cân đối, ưu tiên chăm sóc Deal và cấu hình Pipeline | 268 | PASS |
+| 16/09/2026 | Bổ sung Unit Test BR03 kiểm tra không cho tạo Lead khi trùng email hoặc số điện thoại | 2 | PASS |

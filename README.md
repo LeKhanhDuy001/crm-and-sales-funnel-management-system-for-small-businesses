@@ -4,7 +4,7 @@
 
 ## Thông tin đồ án
 
-- Ngày bảo vệ dự kiến: 20/09/2026
+- Ngày bảo vệ dự kiến: 01/10/2026
 - Phiên bản bàn giao: v1.0
 
 ---
