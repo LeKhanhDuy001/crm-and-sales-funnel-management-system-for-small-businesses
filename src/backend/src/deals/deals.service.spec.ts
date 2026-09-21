@@ -954,6 +954,50 @@ describe('DealsService - quản lý Deal', () => {
       expect(result.data.assignedUser.userId).toBe(6);
     });
 
+    it('BR-07, BR-14, BR-18 - Admin phân công Deal thành công', async () => {
+      dealsRepository.findById.mockResolvedValue(deal);
+
+      dealsRepository.findUserById.mockResolvedValue({
+        userid: 6,
+        fullname: 'Trần Thị Sales',
+        email: 'sales2@crm.com',
+        status: true,
+        roles: { rolename: 'Sales' },
+      });
+      const reassignedDeal = {
+        ...deal,
+        assigneduserid: 6,
+        users: {
+          userid: 6,
+          fullname: 'Trần Thị Sales',
+        },
+      };
+
+      dealsRepository.assignWithLog.mockResolvedValue(reassignedDeal);
+
+      const result = await dealsService.assign(
+        7,
+        {
+          assignedUserId: 6,
+        },
+        adminUser,
+        '127.0.0.1',
+      );
+
+      expect(dealsRepository.findById).toHaveBeenCalledWith(7);
+      expect(dealsRepository.findUserById).toHaveBeenCalledWith(6);
+
+      expect(dealsRepository.assignWithLog).toHaveBeenCalledWith(
+        7,
+        6,
+        1,
+        deal,
+        '127.0.0.1',
+      );
+      expect(result.message).toBe('Phân công Deal thành công.');
+      expect(result.data.assignedUser.userId).toBe(6);
+    });
+
     it('BR-07 - Sales không có quyền phân công Deal', async () => {
       await expect(
         dealsService.assign(

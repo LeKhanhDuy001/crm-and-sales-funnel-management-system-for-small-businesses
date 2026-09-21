@@ -39,3 +39,7 @@ Thumbs.db
 src/backend/.agents/
 src/backend/.claude/
 src/backend/.windsurf/
+.vercel
+.env*
+
+!.env.example

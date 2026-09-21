@@ -131,6 +131,9 @@
 | TC-LEADS-029 | UC15 - Validate assignedUserId | Kiểm tra `assignedUserId` không hợp lệ tại giá trị biên | Sales Manager đã đăng nhập; Lead hợp lệ | `assignedUserId = 0` | 1. Mở Swagger; 2. Gọi API phân công Lead; 3. Gửi `assignedUserId = 0`; 4. Execute | HTTP 400; hệ thống báo dữ liệu không hợp lệ; Lead không bị thay đổi | Đã kiểm thử | PASS |
 | TC-LEADS-030 | UC15 - Notification | Kiểm tra Sales nhận Notification khi được phân công Lead | Sales Manager đã đăng nhập; Lead hợp lệ; Sales A active | Phân công Lead cho Sales A | 1. Thực hiện phân công Lead thành công; 2. Mở Notification của Sales A hoặc kiểm tra bảng `notifications` | Tạo Notification cho đúng Sales A; nội dung liên quan đến Lead được giao; `isRead = false` | Đã kiểm thử | PASS |
 | TC-LEADS-031 | UC15 - Activity Log | Kiểm tra thao tác phân công Lead được ghi Activity Log | Sales Manager đã đăng nhập; phân công Lead thành công | Lead được giao cho Sales A | 1. Thực hiện phân công Lead; 2. Mở Prisma Studio hoặc Activity Log; 3. Kiểm tra log vừa tạo | Có Activity Log cho thao tác phân công Lead | Đã kiểm thử | PASS |
+| TC-LEADS-032 | UC15 / BR25 - Phân quyền phân công Lead | Kiểm tra Admin không được phép phân công Sales phụ trách Lead | Admin đã đăng nhập và có access token hợp lệ, Lead tồn tại và chưa Converted, Sales nhận phân công tồn tại và đang hoạt động | leadId = <ID Lead hợp lệ> assignedUserId = ID Sales active | 1. Đăng nhập bằng tài khoản Admin. 2. Mở Swagger. 3. Nhấn Authorize và nhập token Admin. 4. Mở PATCH /api/v1/lead-assignments/{leadId}. 5. Nhập leadId hợp lệ. 6. Nhập assignedUserId của Sales đang hoạt động. 7. Nhấn Execute. 8. Kiểm tra lại người phụ trách của Lead. | HTTP 403 Forbidden, hiển thị Bạn không có quyền truy cập chức năng này, Lead không bị thay đổi người phụ trách | Đã kiểm thử | PASS |
+| TC-LEADS-033 | UC15 / BR25 - Phân quyền phân công Lead | Kiểm tra Marketing không được phép phân công Sales phụ trách Lead | Marketing đã đăng nhập và có access token hợp lệ, Lead tồn tại và chưa Converted, Sales nhận phân công tồn tại và đang hoạt động | leadId = <ID Lead hợp lệ> assignedUserId = ID Sales active | 1. Đăng nhập bằng tài khoản Marketing. 2. Mở Swagger. 3. Nhấn Authorize và nhập token Marketing. 4. Mở PATCH /api/v1/lead-assignments/{leadId}. 5. Nhập leadId hợp lệ. 6. Nhập assignedUserId của Sales đang hoạt động. 7. Nhấn Execute. 8. Kiểm tra lại người phụ trách của Lead. | HTTP 403 Forbidden, hiển thị Bạn không có quyền truy cập chức năng này, Lead không bị thay đổi người phụ trách | Đã kiểm thử | PASS |
+| TC-LEADS-034 | UC15 / BR25 - Phân quyền phân công Lead | Kiểm tra Customer Care không được phép phân công Sales phụ trách Lead | Customer Care đã đăng nhập và có access token hợp lệ, Lead tồn tại và chưa Converted, Sales nhận phân công tồn tại và đang hoạt động | leadId = <ID Lead hợp lệ> assignedUserId = ID Sales active | 1. Đăng nhập bằng tài khoản Customer Care. 2. Mở Swagger. 3. Nhấn Authorize và nhập token Customer Care. 4. Mở PATCH /api/v1/lead-assignments/{leadId}. 5. Nhập leadId hợp lệ. 6. Nhập assignedUserId của Sales đang hoạt động. 7. Nhấn Execute. 8. Kiểm tra lại người phụ trách của Lead. | HTTP 403 Forbidden, hiển thị Bạn không có quyền truy cập chức năng này, Lead không bị thay đổi người phụ trách | Đã kiểm thử | PASS |
 
 ### Minh chứng TC-LEADS-022
 ![TC-LEADS-022 - Sales Manager phân công Lead cho Sales đang hoạt động thành công](./assets/leads/TC-LEADS-022.png)
@@ -162,3 +165,12 @@
 
 ### Minh chứng TC-LEADS-031
 ![TC-LEADS-031 - assignedUserId không hợp lệ tại giá trị biên](./assets/leads/TC-LEADS-031.png)
+
+### Minh chứng TC-LEADS-032
+![TC-LEADS-032 - Admin không được phép phân công Sales phụ trách Lead](./assets/leads/TC-LEADS-032.png)
+
+### Minh chứng TC-LEADS-033
+![TC-LEADS-033 - Marketing không được phép phân công Sales phụ trách Lead](./assets/leads/TC-LEADS-033.png)
+
+### Minh chứng TC-LEADS-034
+![TC-LEADS-034 - Customer Care không được phép phân công Sales phụ trách Lead](./assets/leads/TC-LEADS-034.png)

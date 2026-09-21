@@ -10,25 +10,17 @@ async function bootstrap(): Promise<void> {
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
-  const frontendUrl = configService.get<string>('FRONTEND_URL');
+  const frontendUrl =
+    configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
 
-  const portValue = configService.get<string>('PORT');
-
-  if (!frontendUrl) {
-    throw new Error('FRONTEND_URL chưa được cấu hình trong file .env');
-  }
-
-  if (!portValue) {
-    throw new Error('PORT chưa được cấu hình trong file .env');
-  }
-
-  const port = Number(portValue);
+  const port = Number(configService.get<string>('PORT') ?? 3001);
 
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error('PORT phải là một số nguyên dương hợp lệ');
   }
 
   app.setGlobalPrefix('api/v1');
+
   setupSwagger(app);
 
   app.enableCors({
@@ -44,7 +36,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   logger.log(`Backend đang chạy trên cổng ${port}`);
 }

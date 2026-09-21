@@ -124,6 +124,8 @@
 | TC-DEALS-033 | UC6 / BR33 - Phân quyền | Kiểm tra Customer Care không được thay đổi Stage Deal | Customer Care đã đăng nhập; Deal tồn tại và chưa Won/Lost | `PATCH /api/v1/deals/{dealId}/stage`; Stage ID hợp lệ | 1. Đăng nhập Customer Care; 2. Gửi trực tiếp API đổi Stage Deal | API trả `403`; hiển thị `Bạn không có quyền truy cập chức năng này`; Deal không bị cập nhật; không tạo Activity Log thay đổi Stage | Đã kiểm thử | PASS |
 | TC-DEALS-034 | UC4 - Admin xem Deal | Kiểm tra Admin xem được toàn bộ danh sách Deal | Admin đã đăng nhập; tồn tại Deal của nhiều Sales | Không có | 1. Đăng nhập Admin; 2. Mở **Quản lý Deal**; 3. Kiểm tra danh sách | Trang `/admin/deals` tải thành công; Admin thấy Deal của nhiều Sales; hiển thị người phụ trách; không bị giới hạn theo một Sales | Đã kiểm thử | PASS |
 | TC-DEALS-035 | UC4 - Giao diện Admin Deal | Kiểm tra Admin chỉ có các thao tác Deal được phép | Admin đã đăng nhập | Không có | 1. Mở `/admin/deals`; 2. Kiểm tra danh sách và chi tiết; 3. Mở Pipeline; 4. Kiểm tra các nút thao tác | Admin xem được danh sách, chi tiết và Pipeline; không có `+ Thêm Deal`, `Sửa`, `Xóa`; chức năng đổi Pipeline Stage vẫn sử dụng được | Đã kiểm thử | PASS |
+| TC-DEALS-036 | UC5 / BR07 - Phân công Deal | Kiểm tra Admin được phép phân công Deal cho Sales | Admin đã đăng nhập, Deal tồn tại, Sales được chọn có role Sales và đang hoạt động | Deal hợp lệ, assignedUserId của Sales khác người đang phụ trách |1. Đăng nhập Admin, 2. Gọi API phân công Deal, 3. Chọn Sales mới, 4. Gửi request, 5. Kiểm tra kết quả | Hiển thị Phân công Deal thành công., Deal được chuyển sang Sales mới, tạo Notification và ghi Activity Log | Đã kiểm thử | PASS
+
 
 ### Minh chứng TC-DEALS-022
 ![TC-DEALS-022 - Sales chuyển Stage Deal hợp lệ](./assets/deals/TC-DEALS-022.1.png)
@@ -167,3 +169,6 @@
 
 ### Minh chứng TC-DEALS-035
 ![TC-DEALS-035 - Admin chỉ có các thao tác Deal được phép](./assets/deals/TC-DEALS-035.png)
+
+### Minh chứng TC-DEALS-036
+![TC-DEALS-036 - Admin được phép phân công Deal cho Sales](./assets/deals/TC-DEALS-036.png)

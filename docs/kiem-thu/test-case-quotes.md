@@ -25,7 +25,7 @@
 | TC-QUOTE-012 | UC7 - Validate form | Kiểm tra Deal ID không hợp lệ | Sales đã đăng nhập | `dealId = 0`; có ít nhất một item hợp lệ | 1. Mở Swagger POST /api/v1/quotes với dealId = 0; 2. Quan sát phản hồi | Không tạo Quote; thông báo `Deal không hợp lệ.` | Đã kiểm thử | PASS |
 | TC-QUOTE-013 | UC7 - Validate form | Kiểm tra Product ID không hợp lệ | Sales đã đăng nhập; Deal hợp lệ | `productId = 0`, quantity = 1 | 1. Mở Swagger POST /api/v1/quotes; 2. nhập `productId = 0`, quantity = 1 3. Quan sát phản hồi | Không tạo Quote; thông báo `Sản phẩm không hợp lệ.` | Đã kiểm thử | PASS |
 | TC-QUOTE-014 | UC7 - Validate / Duplicate | Kiểm tra không cho thêm cùng một Product hai lần vào Quote | Sales đã đăng nhập; Deal và Product hợp lệ | Hai item có cùng `productId` | 1. Thêm hai dòng sản phẩm; 2. Chọn cùng một Product ở cả hai dòng; 3. Nhấn `Tạo báo giá` | Không tạo Quote; hiển thị `Mỗi sản phẩm chỉ được thêm một lần trong báo giá.` | Đã kiểm thử | PASS |
-| TC-QUOTE-015 | UC7 - Tạo Quote | Kiểm tra tính thành tiền và tổng giá trị Quote | Sales đã đăng nhập; Deal hợp lệ; Product A giá 5.000.000; Product B giá 25.000.000 | Product A × 2; Product B × 1 | 1. Tạo Quote; 2. Chọn A SL 2; 3. Thêm B SL 3; 4. Kiểm tra Tổng dự kiến; 5. Lưu; 6. Mở Chi tiết | A = 10.000.000; B = 25.000.000; tổng Quote = 35.000.000; giá lưu khớp giá Product trong DB | Đã kiểm thử | PASS |
+| TC-QUOTE-015 | UC7 - Tạo Quote | Kiểm tra tính thành tiền và tổng giá trị Quote | Sales đã đăng nhập; Deal hợp lệ; Product A giá 5.000.000; Product B giá 25.000.000 | Product A × 2; Product B × 1 | 1. Tạo Quote; 2. Chọn A SL 2; 3. Thêm B SL 1; 4. Kiểm tra Tổng dự kiến; 5. Lưu; 6. Mở Chi tiết | A = 10.000.000; B = 25.000.000; tổng Quote = 35.000.000; giá lưu khớp giá Product trong DB | Đã kiểm thử | PASS |
 | TC-QUOTE-016 | UC7 - Tạo Quote | Kiểm tra Product ngừng hoạt động không được dùng trong Quote | Có Product `status = false` trong DB | "productId": 22, "quantity": 1 | 1. Mở Swagger POST /api/v1/quotes; 2. Nhập "productId": 22, "quantity": 1; 3. Kiểm tra thông báo | Hiển thị `{Sản phẩn} đã ngừng hoạt động hoặc có giá không hợp lệ.` | Đã kiểm thử | PASS |
 | TC-QUOTE-017 | UC7 - Tạo Quote | Kiểm tra Product có giá không hợp lệ không được dùng trong Quote | Có Product giá <= 0 trong dữ liệu kiểm thử | Product giá 0 hoặc âm | 1. Mở form tạo Quote; 2. Kiểm tra danh sách Product | Product có giá <= 0 không xuất hiện trong danh sách lựa chọn | Đã kiểm thử | PASS |
 | TC-QUOTE-018 | UC7 - Record Permission | Kiểm tra Deal của Sales khác không xuất hiện trong form Quote | Sales A đăng nhập; tồn tại Deal Proposal thuộc Sales B | Deal thuộc Sales B | 1. Sales A mở `+ Tạo báo giá`; 2. Kiểm tra danh sách Deal | Deal của Sales B không xuất hiện | Đã kiểm thử | PASS |
@@ -43,6 +43,7 @@
 | TC-QUOTE-030 | Phân quyền Quote | Kiểm tra Marketing không được truy cập API Quote | Marketing đã đăng nhập | GET `/quotes` bằng token Admin | 1. Gửi request bằng token Marketing; 2. Quan sát response | HTTP 403; hiển thỉ `Bạn không có quyền truy cập chức năng này.` | Đã kiểm thử | PASS |
 | TC-QUOTE-031 | Phân quyền Quote | Kiểm tra Customer Care không được truy cập API Quote | Customer Care đã đăng nhập | GET `/quotes` bằng token Admin | 1. Gửi request bằng token Customer Care; 2. Quan sát response | HTTP 403; hiển thỉ `Bạn không có quyền truy cập chức năng này.` | Đã kiểm thử | PASS |
 | TC-QUOTE-032 | Xác thực Quote | Kiểm tra không có access token | Người dùng chưa đăng nhập | GET `/quotes`, không có Authorization header | 1. Gửi request không có token; 2. Quan sát response | HTTP 401; hiển thỉ `Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn.` | Đã kiểm thử | PASS |
+| TC-QUOTE-033 | UC7 / BR11 - Tạo Quote | Kiểm tra không thể tạo Quote cho Deal không tồn tại | Sales đã đăng nhập, có Product hợp lệ | dealId = 999, Product hợp lệ, quantity = 1 | 1. Mở Swagger, 2. Gọi POST /api/v1/quotes, 3. Nhập Deal ID không tồn tại, 4. Execute | HTTP 422, không tạo Quote, thông báo Deal không tồn tại, không có Customer hợp lệ hoặc không có quyền | Đã kiểm thử | PASS |
 
 ### Minh chứng TC-QUOTE-001
 ![TC-QUOTE-001 - Xem danh sách Quote](./assets/quotes/TC-QUOTE-001.png)
@@ -140,3 +141,6 @@
 
 ### Minh chứng TC-QUOTE-032
 ![TC-QUOTE-032 - Sales chưa đăng nhập](./assets/quotes/TC-QUOTE-032.png)
+
+### Minh chứng TC-QUOTE-033
+![TC-QUOTE-033 - Không thể tạo Quote cho Deal không tồn tại](./assets/quotes/TC-QUOTE-033.png)

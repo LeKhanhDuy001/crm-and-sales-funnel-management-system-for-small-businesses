@@ -35,6 +35,20 @@ npm test -- leads.service.spec.ts
 
 ---
 
+## Chức năng phân công Lead
+
+| ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
+|---|---|---|---|---|
+| UNIT-LEAD-ASSIGN-001 | `lead-assignments.service.spec.ts` | BR25 - Sales Manager phân công Lead cho Sales hợp lệ | Phân công Lead thành công, gọi Repository với đúng `leadId`, `assignedUserId`, `actorUserId` và trả thông báo `Phân công Lead thành công.` | PASS |
+| UNIT-LEAD-ASSIGN-002 | `lead-assignments.service.spec.ts` | BR25 - Admin không được phép phân công Lead | Ném `ForbiddenException` với thông báo `Bạn không có quyền phân công Lead.`, không truy vấn Lead và không thực hiện phân công | PASS |
+| UNIT-LEAD-ASSIGN-003 | `lead-assignments.service.spec.ts` | BR25 - Sales không được phép phân công Lead | Ném `ForbiddenException` với thông báo `Bạn không có quyền phân công Lead.`, không truy vấn Lead và không thực hiện phân công | PASS |
+| UNIT-LEAD-ASSIGN-004 | `lead-assignments.service.spec.ts` | BR25 - Marketing không được phép phân công Lead | Ném `ForbiddenException` với thông báo `Bạn không có quyền phân công Lead.`, không truy vấn Lead và không thực hiện phân công | PASS |
+| UNIT-LEAD-ASSIGN-005 | `lead-assignments.service.spec.ts` | BR25 - Customer Care không được phép phân công Lead | Ném `ForbiddenException` với thông báo `Bạn không có quyền phân công Lead.`, không truy vấn Lead và không thực hiện phân công | PASS |
+| UNIT-LEAD-ASSIGN-006 | `lead-assignments.service.spec.ts` | BR26 - Từ chối phân công Lead cho người không phải Sales đang hoạt động | Ném lỗi `Chỉ được phân công Lead cho nhân viên Sales đang hoạt động.`; không gọi `assignLead` | PASS |
+| UNIT-LEAD-ASSIGN-007 | `lead-assignments.service.spec.ts` | BR28 - Từ chối phân công lại Lead đã chuyển đổi thành Customer | Ném lỗi `Lead đã chuyển đổi thành Customer nên không thể phân công.`; không tìm Sales đích và không gọi `assignLead` | PASS |
+
+---
+
 ## CHỨC NĂNG QUẢN LÝ USERS CHO ADMIN
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
 |---|---|---|---|---|
@@ -175,6 +189,7 @@ npm test -- leads.service.spec.ts
 | UNIT-DEAL-050 | `deals.service.spec.ts` | Admin xem toàn bộ danh sách Deal | Repository nhận `salesUserId = undefined`; Admin không bị giới hạn Deal theo người phụ trách; trả đúng dữ liệu và pagination | PASS |
 | UNIT-DEAL-051 | `deals.service.spec.ts` | Admin lấy Pipeline Stage và danh sách Sales đang hoạt động | Gọi `findActiveUsersByRole(Role.SALES)`; trả đúng Pipeline Stage và danh sách `salesUsers` | PASS |
 | UNIT-DEAL-052 | `deals.service.spec.ts` | Admin xem chi tiết Deal không phụ thuộc người phụ trách | Gọi `findById(dealId)` thay vì `findOwnedById`; trả đúng thông tin Deal | PASS |
+| UNIT-DEAL-053 | `deals.service.spec.ts` | BR07, BR14, BR18 - Admin phân công Deal sang Sales khác thành công | Admin được phép phân công Deal cho Sales đang hoạt động, Deal đổi đúng người phụ trách, Repository nhận đúng Admin là người thực hiện | PASS
 
 ## Chức năng tạo quotes
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -191,6 +206,10 @@ npm test -- leads.service.spec.ts
 | UNIT-QUOTE-010 | `quotes.service.spec.ts` | Product có `price < 0` | Trả lỗi 422 do giá Product không hợp lệ | PASS |
 | UNIT-QUOTE-011 | `quotes.service.spec.ts` | Product có `quantity = 0` | Trả lỗi 422, số lượng sản phẩm phải lớn hơn 0 | PASS |
 | UNIT-QUOTE-012 | `quotes.service.spec.ts` | Product có `quantity = -1` | Trả lỗi 422, số lượng sản phẩm phải lớn hơn 0 | PASS |
+| UNIT-QUOTE-013 | `quotes.service.spec.ts` | BR11 - Deal tồn tại nhưng không có Customer hợp lệ | Ném lỗi 422, không lấy Product và không tạo Quote | PASS |
+| UNIT-QUOTE-014 | `quotes.service.spec.ts` | BR22 - Từ chối chỉnh sửa Quote không ở trạng thái Draft | Ném lỗi `Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.`; không xử lý Product và không cập nhật Quote | PASS |
+| UNIT-QUOTE-015 | `quotes.service.spec.ts` | BR23 - Từ chối hủy Quote đã Confirmed | Ném lỗi `Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.`; không gọi `changeStatusWithLog` | PASS |
+| UNIT-QUOTE-016 | `quotes.service.spec.ts` | BR24 - Hủy Quote Draft chỉ chuyển trạng thái sang Cancelled | Gọi `changeStatusWithLog` với trạng thái `Cancelled`; Quote vẫn được giữ lại và trả thông báo hủy thành công | PASS |
 
 ## Chức năng quản lý Tasks
 | ID | Test Suite | Nội dung kiểm thử | Kết quả mong đợi | Trạng thái |
@@ -288,6 +307,8 @@ npm test -- leads.service.spec.ts
 | UNIT-ACTIVITY-023 | `activities.service.spec.ts` | Hủy lại Activity đã `Cancelled` | Ném `UnprocessableEntityException` với thông báo Activity đã được hủy; không cập nhật lại | PASS |
 | UNIT-ACTIVITY-024 | `activities.service.spec.ts` | Hủy Activity của người khác | Ném `NotFoundException`; không gọi Repository hủy Activity | PASS |
 
+
+
 ## 3. Kết quả tổng hợp
 
 ```text
@@ -347,7 +368,7 @@ Time:        21.009 s
 ```text
 Tạo quotes
 Test Suites: 1 passed, 1 total
-Tests:       12 passed, 12 total
+Tests:       16 passed, 16 total
 Snapshots:   0 total
 Time:        13.98 s
 ```
@@ -391,7 +412,15 @@ Snapshots:   0 total
 Time:        5.115 s
 ```
 
-**Kết luận:** 224/224 unit test PASS.
+```text
+Phân công Lead
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        0.851 s
+**
+
+Kết luận:** 236/236 unit test PASS.
 
 ---
 
@@ -410,3 +439,5 @@ Time:        5.115 s
 | 02/09/2026 | Hoàn thiện unit test backend cho chức năng quản lý Activities | 24 | PASS |
 | 04/09/2026 | Bổ sung unit test BR10 cho lý do thất bại khi chuyển Deal sang Lost, BR33 phân quyền thay đổi Pipeline Stage và quyền Admin xem Deal | 9 | PASS |
 | 04/09/2026 | Bổ sung unit test BR34 cho chức năng Forecast doanh thu theo kỳ | 4 | PASS |
+| 11/09/2026 | Bổ sung Unit Test BR07 cho quyền Admin phân công Deal, BR11 kiểm tra Deal không có Customer hợp lệ và BR25 phân quyền phân công Lead | 7 | PASS |
+| 11/09/2026 | Bổ sung Unit Test BR22, BR23, BR24 cho quản lý Quote và BR26, BR28 cho phân công Lead | 5 | PASS |

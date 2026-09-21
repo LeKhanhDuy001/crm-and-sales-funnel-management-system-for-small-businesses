@@ -177,7 +177,7 @@ export default function DealsPageContent({ state, actions }: DealsPageContentPro
               onEdit={isAdmin ? undefined : actions.onEdit}
               onDelete={isAdmin ? undefined : actions.onDelete}
               showAssignedUser={isManager || isAdmin}
-              onAssign={isManager ? actions.onAssignOpen : undefined}
+              onAssign={isManager || isAdmin ? actions.onAssignOpen : undefined}
             />
 
             <div className={styles.pagination}>
@@ -276,7 +276,7 @@ export default function DealsPageContent({ state, actions }: DealsPageContentPro
         />
       )}
 
-      {isManager && assigningDeal && (
+      {(isManager || isAdmin) && assigningDeal && (
         <AssignDealModal
           deal={assigningDeal}
           salesUsers={salesUsers}
