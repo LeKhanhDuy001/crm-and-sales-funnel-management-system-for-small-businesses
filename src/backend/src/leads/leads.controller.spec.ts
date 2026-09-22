@@ -44,49 +44,49 @@ describe('LeadsController', () => {
     controller = new LeadsController(leadsService as unknown as LeadsService);
   });
 
-  it('truyền current user vào findAll để áp dụng record-level permission', () => {
+  it('truyền current user vào findAll để áp dụng record-level permission', async () => {
     const query = { page: 1, limit: 20 };
 
-    controller.findAll(query, salesRequest);
+    await controller.findAll(query, salesRequest);
 
     expect(leadsService.findAll).toHaveBeenCalledWith(query, salesUser);
   });
 
-  it('lấy danh sách nguồn Lead', () => {
-    controller.findSources();
+  it('lấy danh sách nguồn Lead', async () => {
+    await controller.findSources();
 
     expect(leadsService.findSources).toHaveBeenCalledTimes(1);
   });
 
-  it('SE-06 - GET /leads/:id truyền current user để chống IDOR', () => {
-    controller.findOne(7, salesRequest);
+  it('SE-06 - GET /leads/:id truyền current user để chống IDOR', async () => {
+    await controller.findOne(7, salesRequest);
 
     expect(leadsService.findOne).toHaveBeenCalledWith(7, salesUser);
   });
 
-  it('Marketing tạo Lead với userId của người hiện tại', () => {
+  it('Marketing tạo Lead với userId của người hiện tại', async () => {
     const dto = {
       fullName: 'Lead mới',
       email: 'lead@crm.local',
     };
 
-    controller.create(dto, marketingRequest);
+    await controller.create(dto, marketingRequest);
 
     expect(leadsService.create).toHaveBeenCalledWith(dto, marketingUser.userId);
   });
 
-  it('Sales chuyển Lead thành Customer với current user', () => {
-    controller.convertLead({ leadId: 7 }, salesRequest);
+  it('Sales chuyển Lead thành Customer với current user', async () => {
+    await controller.convertLead({ leadId: 7 }, salesRequest);
 
     expect(leadsService.convertLead).toHaveBeenCalledWith(7, salesUser);
   });
 
-  it('Marketing cập nhật Lead với userId hiện tại', () => {
+  it('Marketing cập nhật Lead với userId hiện tại', async () => {
     const dto = {
       fullName: 'Lead cập nhật',
     };
 
-    controller.update(7, dto, marketingRequest);
+    await controller.update(7, dto, marketingRequest);
 
     expect(leadsService.update).toHaveBeenCalledWith(
       7,
@@ -100,9 +100,6 @@ describe('LeadsController', () => {
 
     await controller.remove(7, marketingRequest);
 
-    expect(leadsService.remove).toHaveBeenCalledWith(
-      7,
-      marketingUser.userId,
-    );
+    expect(leadsService.remove).toHaveBeenCalledWith(7, marketingUser.userId);
   });
 });

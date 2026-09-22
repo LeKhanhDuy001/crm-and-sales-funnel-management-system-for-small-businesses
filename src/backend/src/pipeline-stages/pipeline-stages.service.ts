@@ -142,7 +142,10 @@ export class PipelineStagesService {
     return stage;
   }
 
-  private async ensureNameAvailable(stageName: string, excludeStageId?: number) {
+  private async ensureNameAvailable(
+    stageName: string,
+    excludeStageId?: number,
+  ) {
     const existing = await this.pipelineStagesRepository.findByName(
       stageName,
       excludeStageId,

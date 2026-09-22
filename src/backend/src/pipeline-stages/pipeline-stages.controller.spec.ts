@@ -18,31 +18,31 @@ describe('PipelineStagesController', () => {
     );
   });
 
-  it('BR-05 - lấy danh sách Pipeline Stage', () => {
-    controller.findAll();
+  it('BR-05 - lấy danh sách Pipeline Stage', async () => {
+    await controller.findAll();
 
     expect(pipelineStagesService.findAll).toHaveBeenCalledTimes(1);
   });
 
-  it('BR-05 - tạo Pipeline Stage', () => {
+  it('BR-05 - tạo Pipeline Stage', async () => {
     const dto = {
       stageName: 'Negotiation',
       stageOrder: 3,
       probability: 70,
     };
 
-    controller.create(dto);
+    await controller.create(dto);
 
     expect(pipelineStagesService.create).toHaveBeenCalledWith(dto);
   });
 
-  it('BR-05 - cập nhật Pipeline Stage theo ID', () => {
+  it('BR-05 - cập nhật Pipeline Stage theo ID', async () => {
     const dto = {
       stageName: 'Negotiation Updated',
       probability: 75,
     };
 
-    controller.update(3, dto);
+    await controller.update(3, dto);
 
     expect(pipelineStagesService.update).toHaveBeenCalledWith(3, dto);
   });

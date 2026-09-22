@@ -24,7 +24,7 @@ import { AssignDealDto } from './dto/assign-deal.dto';
 
 @Injectable()
 export class DealsService {
-  constructor(private readonly dealsRepository: DealsRepository) { }
+  constructor(private readonly dealsRepository: DealsRepository) {}
 
   /**
    * Lấy danh sách Deal thuộc quyền quản lý của Sales hiện tại.
@@ -327,9 +327,9 @@ export class DealsService {
     const customer =
       user.role === Role.SALES
         ? await this.dealsRepository.findCustomerAccessible(
-          customerId,
-          user.userId,
-        )
+            customerId,
+            user.userId,
+          )
         : await this.dealsRepository.findCustomerById(customerId);
 
     if (customer) {

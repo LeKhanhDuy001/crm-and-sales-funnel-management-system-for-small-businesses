@@ -48,18 +48,13 @@ describe('ProductsController', () => {
   });
 
   it('chỉ cho phép Admin truy cập Products', () => {
-    const metadataValues = Reflect.getMetadataKeys(
+    const metadataValues: unknown[] = Reflect.getMetadataKeys(
       ProductsController,
-    ).map((key) =>
-      Reflect.getMetadata(
-        key,
-        ProductsController,
-      ),
+    ).map(
+      (key): unknown => Reflect.getMetadata(key, ProductsController) as unknown,
     );
 
-    expect(metadataValues).toContainEqual([
-      Role.ADMIN,
-    ]);
+    expect(metadataValues).toContainEqual([Role.ADMIN]);
   });
 
   describe('findAll', () => {
@@ -79,19 +74,13 @@ describe('ProductsController', () => {
         },
       };
 
-      productsServiceMock.findAll.mockResolvedValue(
-        expectedResult,
-      );
+      productsServiceMock.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAll(query);
 
-      expect(
-        productsServiceMock.findAll,
-      ).toHaveBeenCalledTimes(1);
+      expect(productsServiceMock.findAll).toHaveBeenCalledTimes(1);
 
-      expect(
-        productsServiceMock.findAll,
-      ).toHaveBeenCalledWith(query);
+      expect(productsServiceMock.findAll).toHaveBeenCalledWith(query);
 
       expect(result).toEqual(expectedResult);
     });
@@ -99,20 +88,13 @@ describe('ProductsController', () => {
 
   describe('findCategories', () => {
     it('gọi service findCategories', async () => {
-      const expectedResult = [
-        'Software',
-        'Service',
-      ];
+      const expectedResult = ['Software', 'Service'];
 
-      productsServiceMock.findCategories.mockResolvedValue(
-        expectedResult,
-      );
+      productsServiceMock.findCategories.mockResolvedValue(expectedResult);
 
       const result = await controller.findCategories();
 
-      expect(
-        productsServiceMock.findCategories,
-      ).toHaveBeenCalledTimes(1);
+      expect(productsServiceMock.findCategories).toHaveBeenCalledTimes(1);
 
       expect(result).toEqual(expectedResult);
     });
@@ -125,19 +107,13 @@ describe('ProductsController', () => {
         productName: 'CRM Package',
       };
 
-      productsServiceMock.findOne.mockResolvedValue(
-        expectedResult,
-      );
+      productsServiceMock.findOne.mockResolvedValue(expectedResult);
 
       const result = await controller.findOne(10);
 
-      expect(
-        productsServiceMock.findOne,
-      ).toHaveBeenCalledTimes(1);
+      expect(productsServiceMock.findOne).toHaveBeenCalledTimes(1);
 
-      expect(
-        productsServiceMock.findOne,
-      ).toHaveBeenCalledWith(10);
+      expect(productsServiceMock.findOne).toHaveBeenCalledWith(10);
 
       expect(result).toEqual(expectedResult);
     });
@@ -153,22 +129,13 @@ describe('ProductsController', () => {
         productId: 10,
       };
 
-      productsServiceMock.create.mockResolvedValue(
-        expectedResult,
-      );
+      productsServiceMock.create.mockResolvedValue(expectedResult);
 
-      const result = await controller.create(
-        dto,
-        request,
-      );
+      const result = await controller.create(dto, request);
 
-      expect(
-        productsServiceMock.create,
-      ).toHaveBeenCalledTimes(1);
+      expect(productsServiceMock.create).toHaveBeenCalledTimes(1);
 
-      expect(
-        productsServiceMock.create,
-      ).toHaveBeenCalledWith(
+      expect(productsServiceMock.create).toHaveBeenCalledWith(
         dto,
         request.user,
       );
@@ -187,23 +154,13 @@ describe('ProductsController', () => {
         productId: 10,
       };
 
-      productsServiceMock.update.mockResolvedValue(
-        expectedResult,
-      );
+      productsServiceMock.update.mockResolvedValue(expectedResult);
 
-      const result = await controller.update(
-        10,
-        dto,
-        request,
-      );
+      const result = await controller.update(10, dto, request);
 
-      expect(
-        productsServiceMock.update,
-      ).toHaveBeenCalledTimes(1);
+      expect(productsServiceMock.update).toHaveBeenCalledTimes(1);
 
-      expect(
-        productsServiceMock.update,
-      ).toHaveBeenCalledWith(
+      expect(productsServiceMock.update).toHaveBeenCalledWith(
         10,
         dto,
         request.user,
@@ -220,25 +177,13 @@ describe('ProductsController', () => {
         active: false,
       };
 
-      productsServiceMock.remove.mockResolvedValue(
-        expectedResult,
-      );
+      productsServiceMock.remove.mockResolvedValue(expectedResult);
 
-      const result = await controller.remove(
-        10,
-        request,
-      );
+      const result = await controller.remove(10, request);
 
-      expect(
-        productsServiceMock.remove,
-      ).toHaveBeenCalledTimes(1);
+      expect(productsServiceMock.remove).toHaveBeenCalledTimes(1);
 
-      expect(
-        productsServiceMock.remove,
-      ).toHaveBeenCalledWith(
-        10,
-        request.user,
-      );
+      expect(productsServiceMock.remove).toHaveBeenCalledWith(10, request.user);
 
       expect(result).toEqual(expectedResult);
     });

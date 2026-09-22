@@ -595,11 +595,7 @@ describe('QuotesService - Sales tạo báo giá', () => {
       repository.findOwnedQuoteById.mockResolvedValue(null);
 
       await expect(
-        service.confirm(
-          999,
-          salesUser,
-          '127.0.0.1',
-        ),
+        service.confirm(999, salesUser, '127.0.0.1'),
       ).rejects.toThrow('Không tìm thấy báo giá.');
 
       expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
@@ -613,13 +609,9 @@ describe('QuotesService - Sales tạo báo giá', () => {
     it('không cho Sales hủy Quote không thuộc quyền của mình', async () => {
       repository.findOwnedQuoteById.mockResolvedValue(null);
 
-      await expect(
-        service.cancel(
-          999,
-          salesUser,
-          '127.0.0.1',
-        ),
-      ).rejects.toThrow('Không tìm thấy báo giá.');
+      await expect(service.cancel(999, salesUser, '127.0.0.1')).rejects.toThrow(
+        'Không tìm thấy báo giá.',
+      );
 
       expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
         999,
@@ -774,16 +766,9 @@ describe('QuotesService - Sales tạo báo giá', () => {
 
       repository.changeStatusWithLog.mockResolvedValue(confirmedQuote);
 
-      const result = await service.confirm(
-        23,
-        salesUser,
-        '127.0.0.1',
-      );
+      const result = await service.confirm(23, salesUser, '127.0.0.1');
 
-      expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
-        23,
-        5,
-      );
+      expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(23, 5);
 
       expect(repository.changeStatusWithLog).toHaveBeenCalledWith({
         quoteId: 23,
@@ -793,9 +778,7 @@ describe('QuotesService - Sales tạo báo giá', () => {
         ipAddress: '127.0.0.1',
       });
 
-      expect(result.message).toBe(
-        'Xác nhận báo giá thành công.',
-      );
+      expect(result.message).toBe('Xác nhận báo giá thành công.');
 
       expect(result.data.status).toBe('Confirmed');
     });
@@ -806,19 +789,11 @@ describe('QuotesService - Sales tạo báo giá', () => {
         status: 'Confirmed',
       });
 
-      await expect(
-        service.confirm(
-          24,
-          salesUser,
-          '127.0.0.1',
-        ),
-      ).rejects.toThrow(
+      await expect(service.confirm(24, salesUser, '127.0.0.1')).rejects.toThrow(
         'Chỉ báo giá ở trạng thái Bản nháp mới được thực hiện thao tác này.',
       );
 
-      expect(
-        repository.changeStatusWithLog,
-      ).not.toHaveBeenCalled();
+      expect(repository.changeStatusWithLog).not.toHaveBeenCalled();
     });
   });
 });

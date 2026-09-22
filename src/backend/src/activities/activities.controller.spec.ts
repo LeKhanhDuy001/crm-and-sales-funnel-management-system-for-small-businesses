@@ -5,7 +5,6 @@ import { Role } from '../common/enums/role.enum';
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
-import { UpdateActivityResultDto } from './dto/update-activity-result.dto';
 
 describe('ActivitiesController', () => {
   let controller: ActivitiesController;
@@ -48,13 +47,14 @@ describe('ActivitiesController', () => {
   });
 
   it('chỉ cho phép Sales và Customer Care truy cập Activities', () => {
-    const metadataValues = Reflect.getMetadataKeys(ActivitiesController)
-      .map((key) => Reflect.getMetadata(key, ActivitiesController));
+    const metadataValues: unknown[] = Reflect.getMetadataKeys(
+      ActivitiesController,
+    ).map(
+      (key): unknown =>
+        Reflect.getMetadata(key, ActivitiesController) as unknown,
+    );
 
-    expect(metadataValues).toContainEqual([
-      Role.SALES,
-      Role.CUSTOMER_CARE,
-    ]);
+    expect(metadataValues).toContainEqual([Role.SALES, Role.CUSTOMER_CARE]);
   });
 
   describe('findAll', () => {
@@ -68,9 +68,7 @@ describe('ActivitiesController', () => {
       const result = await controller.findAll(request);
 
       expect(activitiesServiceMock.findAll).toHaveBeenCalledTimes(1);
-      expect(activitiesServiceMock.findAll).toHaveBeenCalledWith(
-        request.user,
-      );
+      expect(activitiesServiceMock.findAll).toHaveBeenCalledWith(request.user);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -86,9 +84,7 @@ describe('ActivitiesController', () => {
       const result = await controller.getMeta(request);
 
       expect(activitiesServiceMock.getMeta).toHaveBeenCalledTimes(1);
-      expect(activitiesServiceMock.getMeta).toHaveBeenCalledWith(
-        request.user,
-      );
+      expect(activitiesServiceMock.getMeta).toHaveBeenCalledWith(request.user);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -144,7 +140,7 @@ describe('ActivitiesController', () => {
     it('gọi service updateResult với id, dto, người dùng và IP', async () => {
       const dto = {
         result: 'Khách hàng đồng ý liên hệ lại.',
-      } as UpdateActivityResultDto;
+      };
 
       const expectedResult = {
         activityId: 10,
@@ -153,19 +149,11 @@ describe('ActivitiesController', () => {
 
       activitiesServiceMock.updateResult.mockResolvedValue(expectedResult);
 
-      const result = await controller.updateResult(
-        10,
-        dto,
-        request,
-      );
+      const result = await controller.updateResult(10, dto, request);
 
-      expect(
-        activitiesServiceMock.updateResult,
-      ).toHaveBeenCalledTimes(1);
+      expect(activitiesServiceMock.updateResult).toHaveBeenCalledTimes(1);
 
-      expect(
-        activitiesServiceMock.updateResult,
-      ).toHaveBeenCalledWith(
+      expect(activitiesServiceMock.updateResult).toHaveBeenCalledWith(
         10,
         dto,
         request.user,

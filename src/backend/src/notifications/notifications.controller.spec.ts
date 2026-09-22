@@ -35,9 +35,7 @@ describe('NotificationsController', () => {
       ],
     }).compile();
 
-    controller = module.get<NotificationsController>(
-      NotificationsController,
-    );
+    controller = module.get<NotificationsController>(NotificationsController);
   });
 
   it('should be defined', () => {
@@ -45,19 +43,14 @@ describe('NotificationsController', () => {
   });
 
   it('chỉ cho phép Sales và Customer Care truy cập Notifications', () => {
-    const metadataValues = Reflect.getMetadataKeys(
+    const metadataValues: unknown[] = Reflect.getMetadataKeys(
       NotificationsController,
-    ).map((key) =>
-      Reflect.getMetadata(
-        key,
-        NotificationsController,
-      ),
+    ).map(
+      (key): unknown =>
+        Reflect.getMetadata(key, NotificationsController) as unknown,
     );
 
-    expect(metadataValues).toContainEqual([
-      Role.SALES,
-      Role.CUSTOMER_CARE,
-    ]);
+    expect(metadataValues).toContainEqual([Role.SALES, Role.CUSTOMER_CARE]);
   });
 
   describe('findMyNotifications', () => {
@@ -76,9 +69,9 @@ describe('NotificationsController', () => {
         notificationsServiceMock.findMyNotifications,
       ).toHaveBeenCalledTimes(1);
 
-      expect(
-        notificationsServiceMock.findMyNotifications,
-      ).toHaveBeenCalledWith(request.user);
+      expect(notificationsServiceMock.findMyNotifications).toHaveBeenCalledWith(
+        request.user,
+      );
 
       expect(result).toEqual(expectedResult);
     });
@@ -90,19 +83,15 @@ describe('NotificationsController', () => {
         unreadCount: 3,
       };
 
-      notificationsServiceMock.countUnread.mockResolvedValue(
-        expectedResult,
-      );
+      notificationsServiceMock.countUnread.mockResolvedValue(expectedResult);
 
       const result = await controller.countUnread(request);
 
-      expect(
-        notificationsServiceMock.countUnread,
-      ).toHaveBeenCalledTimes(1);
+      expect(notificationsServiceMock.countUnread).toHaveBeenCalledTimes(1);
 
-      expect(
-        notificationsServiceMock.countUnread,
-      ).toHaveBeenCalledWith(request.user);
+      expect(notificationsServiceMock.countUnread).toHaveBeenCalledWith(
+        request.user,
+      );
 
       expect(result).toEqual(expectedResult);
     });
@@ -114,19 +103,15 @@ describe('NotificationsController', () => {
         updatedCount: 3,
       };
 
-      notificationsServiceMock.markAllAsRead.mockResolvedValue(
-        expectedResult,
-      );
+      notificationsServiceMock.markAllAsRead.mockResolvedValue(expectedResult);
 
       const result = await controller.markAllAsRead(request);
 
-      expect(
-        notificationsServiceMock.markAllAsRead,
-      ).toHaveBeenCalledTimes(1);
+      expect(notificationsServiceMock.markAllAsRead).toHaveBeenCalledTimes(1);
 
-      expect(
-        notificationsServiceMock.markAllAsRead,
-      ).toHaveBeenCalledWith(request.user);
+      expect(notificationsServiceMock.markAllAsRead).toHaveBeenCalledWith(
+        request.user,
+      );
 
       expect(result).toEqual(expectedResult);
     });
@@ -139,22 +124,13 @@ describe('NotificationsController', () => {
         isRead: true,
       };
 
-      notificationsServiceMock.markAsRead.mockResolvedValue(
-        expectedResult,
-      );
+      notificationsServiceMock.markAsRead.mockResolvedValue(expectedResult);
 
-      const result = await controller.markAsRead(
-        10,
-        request,
-      );
+      const result = await controller.markAsRead(10, request);
 
-      expect(
-        notificationsServiceMock.markAsRead,
-      ).toHaveBeenCalledTimes(1);
+      expect(notificationsServiceMock.markAsRead).toHaveBeenCalledTimes(1);
 
-      expect(
-        notificationsServiceMock.markAsRead,
-      ).toHaveBeenCalledWith(
+      expect(notificationsServiceMock.markAsRead).toHaveBeenCalledWith(
         10,
         request.user,
       );

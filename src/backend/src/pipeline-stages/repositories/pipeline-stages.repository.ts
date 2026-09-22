@@ -16,7 +16,7 @@ export interface UpdatePipelineStageData {
 
 @Injectable()
 export class PipelineStagesRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
     return this.prisma.pipelinestages.findMany({
@@ -43,10 +43,10 @@ export class PipelineStagesRepository {
         },
         ...(excludeStageId !== undefined
           ? {
-            stageid: {
-              not: excludeStageId,
-            },
-          }
+              stageid: {
+                not: excludeStageId,
+              },
+            }
           : {}),
       },
     });
@@ -58,10 +58,10 @@ export class PipelineStagesRepository {
         stageorder: stageOrder,
         ...(excludeStageId !== undefined
           ? {
-            stageid: {
-              not: excludeStageId,
-            },
-          }
+              stageid: {
+                not: excludeStageId,
+              },
+            }
           : {}),
       },
     });

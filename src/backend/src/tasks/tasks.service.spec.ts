@@ -581,11 +581,7 @@ describe('TasksService', () => {
       tasksRepository.findVisibleById.mockResolvedValue(null);
 
       await expect(
-        tasksService.cancel(
-          99,
-          customerCare,
-          IP_ADDRESS,
-        ),
+        tasksService.cancel(99, customerCare, IP_ADDRESS),
       ).rejects.toThrow(NotFoundException);
 
       expect(tasksRepository.findVisibleById).toHaveBeenCalledWith(99, 3);

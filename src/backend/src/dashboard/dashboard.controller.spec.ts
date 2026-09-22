@@ -66,46 +66,54 @@ describe('DashboardController', () => {
 
   describe('roles', () => {
     it('admin dashboard chỉ cho phép Admin', () => {
-      expect(getRoleMetadata(controller.getAdminDashboard)).toContainEqual([
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(
+          DashboardController.prototype,
+          'getAdminDashboard',
+        ),
+      ).toContainEqual([Role.ADMIN]);
     });
 
     it('sales manager dashboard chỉ cho phép Sales Manager', () => {
       expect(
-        getRoleMetadata(controller.getSalesManagerDashboard),
-      ).toContainEqual([
-        Role.SALES_MANAGER,
-      ]);
+        getMethodMetadataValues(
+          DashboardController.prototype,
+          'getSalesManagerDashboard',
+        ),
+      ).toContainEqual([Role.SALES_MANAGER]);
     });
 
     it('forecast cho phép Sales Manager và Admin', () => {
-      expect(getRoleMetadata(controller.getForecast)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(DashboardController.prototype, 'getForecast'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.ADMIN]);
     });
 
     it('sales dashboard chỉ cho phép Sales', () => {
-      expect(getRoleMetadata(controller.getSalesDashboard)).toContainEqual([
-        Role.SALES,
-      ]);
+      expect(
+        getMethodMetadataValues(
+          DashboardController.prototype,
+          'getSalesDashboard',
+        ),
+      ).toContainEqual([Role.SALES]);
     });
 
     it('marketing dashboard chỉ cho phép Marketing', () => {
       expect(
-        getRoleMetadata(controller.getMarketingDashboard),
-      ).toContainEqual([
-        Role.MARKETING,
-      ]);
+        getMethodMetadataValues(
+          DashboardController.prototype,
+          'getMarketingDashboard',
+        ),
+      ).toContainEqual([Role.MARKETING]);
     });
 
     it('customer care dashboard chỉ cho phép Customer Care', () => {
       expect(
-        getRoleMetadata(controller.getCustomerCareDashboard),
-      ).toContainEqual([
-        Role.CUSTOMER_CARE,
-      ]);
+        getMethodMetadataValues(
+          DashboardController.prototype,
+          'getCustomerCareDashboard',
+        ),
+      ).toContainEqual([Role.CUSTOMER_CARE]);
     });
   });
 
@@ -115,15 +123,11 @@ describe('DashboardController', () => {
         totalUsers: 10,
       };
 
-      dashboardServiceMock.getAdminDashboard.mockResolvedValue(
-        expectedResult,
-      );
+      dashboardServiceMock.getAdminDashboard.mockResolvedValue(expectedResult);
 
       const result = await controller.getAdminDashboard();
 
-      expect(
-        dashboardServiceMock.getAdminDashboard,
-      ).toHaveBeenCalledTimes(1);
+      expect(dashboardServiceMock.getAdminDashboard).toHaveBeenCalledTimes(1);
 
       expect(result).toEqual(expectedResult);
     });
@@ -174,21 +178,13 @@ describe('DashboardController', () => {
         upcomingTasks: [],
       };
 
-      dashboardServiceMock.getSalesDashboard.mockResolvedValue(
-        expectedResult,
-      );
+      dashboardServiceMock.getSalesDashboard.mockResolvedValue(expectedResult);
 
-      const result = await controller.getSalesDashboard(
-        salesRequest as never,
-      );
+      const result = await controller.getSalesDashboard(salesRequest as never);
 
-      expect(
-        dashboardServiceMock.getSalesDashboard,
-      ).toHaveBeenCalledTimes(1);
+      expect(dashboardServiceMock.getSalesDashboard).toHaveBeenCalledTimes(1);
 
-      expect(
-        dashboardServiceMock.getSalesDashboard,
-      ).toHaveBeenCalledWith(
+      expect(dashboardServiceMock.getSalesDashboard).toHaveBeenCalledWith(
         salesRequest.user.userId,
       );
 
@@ -209,9 +205,9 @@ describe('DashboardController', () => {
 
       const result = await controller.getMarketingDashboard();
 
-      expect(
-        dashboardServiceMock.getMarketingDashboard,
-      ).toHaveBeenCalledTimes(1);
+      expect(dashboardServiceMock.getMarketingDashboard).toHaveBeenCalledTimes(
+        1,
+      );
 
       expect(result).toEqual(expectedResult);
     });
@@ -238,19 +234,27 @@ describe('DashboardController', () => {
 
       expect(
         dashboardServiceMock.getCustomerCareDashboard,
-      ).toHaveBeenCalledWith(
-        customerCareRequest.user.userId,
-      );
+      ).toHaveBeenCalledWith(customerCareRequest.user.userId);
 
       expect(result).toEqual(expectedResult);
     });
   });
 });
 
-function getRoleMetadata(
-  handler: (...args: never[]) => unknown,
+function getMethodMetadataValues(
+  prototype: object,
+  methodName: string,
 ): unknown[] {
-  return Reflect.getMetadataKeys(handler).map((key) =>
-    Reflect.getMetadata(key, handler),
+  const method = Object.getOwnPropertyDescriptor(prototype, methodName)
+    ?.value as unknown;
+
+  if (typeof method !== 'function') {
+    throw new Error(`Không tìm thấy method ${methodName}.`);
+  }
+
+  const metadataKeys = Reflect.getMetadataKeys(method) as unknown[];
+
+  return metadataKeys.map(
+    (key): unknown => Reflect.getMetadata(key, method) as unknown,
   );
 }

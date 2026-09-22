@@ -33,15 +33,11 @@ describe('TaskReminderService', () => {
 
     await service.processReminders();
 
-    expect(
-      reminderRepository.findDueReminders,
-    ).toHaveBeenCalledWith(
+    expect(reminderRepository.findDueReminders).toHaveBeenCalledWith(
       new Date('2026-09-14T10:00:00.000Z'),
     );
 
-    expect(
-      reminderRepository.createReminder,
-    ).not.toHaveBeenCalled();
+    expect(reminderRepository.createReminder).not.toHaveBeenCalled();
   });
 
   it('should create reminder for a due task', async () => {
@@ -69,9 +65,7 @@ describe('TaskReminderService', () => {
       minute: '2-digit',
     }).format(dueDate);
 
-    expect(
-      reminderRepository.createReminder,
-    ).toHaveBeenCalledWith(
+    expect(reminderRepository.createReminder).toHaveBeenCalledWith(
       1,
       5,
       'Nhắc việc TK001',
@@ -94,9 +88,7 @@ describe('TaskReminderService', () => {
 
     await service.processReminders();
 
-    expect(
-      reminderRepository.createReminder,
-    ).toHaveBeenCalledWith(
+    expect(reminderRepository.createReminder).toHaveBeenCalledWith(
       12,
       3,
       'Nhắc việc TK012',
@@ -125,13 +117,9 @@ describe('TaskReminderService', () => {
 
     await service.processReminders();
 
-    expect(
-      reminderRepository.createReminder,
-    ).toHaveBeenCalledTimes(2);
+    expect(reminderRepository.createReminder).toHaveBeenCalledTimes(2);
 
-    expect(
-      reminderRepository.createReminder,
-    ).toHaveBeenNthCalledWith(
+    expect(reminderRepository.createReminder).toHaveBeenNthCalledWith(
       1,
       2,
       4,
@@ -140,9 +128,7 @@ describe('TaskReminderService', () => {
       new Date('2026-09-14T10:00:00.000Z'),
     );
 
-    expect(
-      reminderRepository.createReminder,
-    ).toHaveBeenNthCalledWith(
+    expect(reminderRepository.createReminder).toHaveBeenNthCalledWith(
       2,
       15,
       7,

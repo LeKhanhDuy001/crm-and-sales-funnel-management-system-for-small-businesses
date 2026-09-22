@@ -49,39 +49,39 @@ describe('UsersController', () => {
 
   describe('roles', () => {
     it('findAll chỉ cho phép Admin', () => {
-      expect(getRoleMetadata(controller.findAll)).toContainEqual([
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(UsersController.prototype, 'findAll'),
+      ).toContainEqual([Role.ADMIN]);
     });
 
     it('findRoles chỉ cho phép Admin', () => {
-      expect(getRoleMetadata(controller.findRoles)).toContainEqual([
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(UsersController.prototype, 'findRoles'),
+      ).toContainEqual([Role.ADMIN]);
     });
 
     it('findOne chỉ cho phép Admin', () => {
-      expect(getRoleMetadata(controller.findOne)).toContainEqual([
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(UsersController.prototype, 'findOne'),
+      ).toContainEqual([Role.ADMIN]);
     });
 
     it('create chỉ cho phép Admin', () => {
-      expect(getRoleMetadata(controller.create)).toContainEqual([
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(UsersController.prototype, 'create'),
+      ).toContainEqual([Role.ADMIN]);
     });
 
     it('update chỉ cho phép Admin', () => {
-      expect(getRoleMetadata(controller.update)).toContainEqual([
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(UsersController.prototype, 'update'),
+      ).toContainEqual([Role.ADMIN]);
     });
 
     it('remove chỉ cho phép Admin', () => {
-      expect(getRoleMetadata(controller.remove)).toContainEqual([
-        Role.ADMIN,
-      ]);
+      expect(
+        getMethodMetadataValues(UsersController.prototype, 'remove'),
+      ).toContainEqual([Role.ADMIN]);
     });
   });
 
@@ -159,10 +159,7 @@ describe('UsersController', () => {
       const result = await controller.create(dto, request);
 
       expect(usersServiceMock.create).toHaveBeenCalledTimes(1);
-      expect(usersServiceMock.create).toHaveBeenCalledWith(
-        dto,
-        request.user,
-      );
+      expect(usersServiceMock.create).toHaveBeenCalledWith(dto, request.user);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -177,11 +174,7 @@ describe('UsersController', () => {
 
       usersServiceMock.update.mockResolvedValue(expectedResult);
 
-      const result = await controller.update(
-        10,
-        dto,
-        request,
-      );
+      const result = await controller.update(10, dto, request);
 
       expect(usersServiceMock.update).toHaveBeenCalledTimes(1);
       expect(usersServiceMock.update).toHaveBeenCalledWith(
@@ -201,25 +194,29 @@ describe('UsersController', () => {
 
       usersServiceMock.remove.mockResolvedValue(expectedResult);
 
-      const result = await controller.remove(
-        10,
-        request,
-      );
+      const result = await controller.remove(10, request);
 
       expect(usersServiceMock.remove).toHaveBeenCalledTimes(1);
-      expect(usersServiceMock.remove).toHaveBeenCalledWith(
-        10,
-        request.user,
-      );
+      expect(usersServiceMock.remove).toHaveBeenCalledWith(10, request.user);
       expect(result).toEqual(expectedResult);
     });
   });
 });
 
-function getRoleMetadata(
-  handler: (...args: never[]) => unknown,
+function getMethodMetadataValues(
+  prototype: object,
+  methodName: string,
 ): unknown[] {
-  return Reflect.getMetadataKeys(handler).map((key) =>
-    Reflect.getMetadata(key, handler),
+  const method = Object.getOwnPropertyDescriptor(prototype, methodName)
+    ?.value as unknown;
+
+  if (typeof method !== 'function') {
+    throw new Error(`Không tìm thấy method ${methodName}.`);
+  }
+
+  const metadataKeys = Reflect.getMetadataKeys(method) as unknown[];
+
+  return metadataKeys.map(
+    (key): unknown => Reflect.getMetadata(key, method) as unknown,
   );
 }

@@ -1,7 +1,4 @@
-import {
-  ExecutionContext,
-  ForbiddenException,
-} from '@nestjs/common';
+import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
 import { Role } from '../enums/role.enum';
@@ -17,9 +14,7 @@ describe('RolesGuard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    guard = new RolesGuard(
-      reflectorMock as unknown as Reflector,
-    );
+    guard = new RolesGuard(reflectorMock as unknown as Reflector);
   });
 
   it('cho phép truy cập khi API không khai báo @Roles()', () => {
@@ -31,21 +26,15 @@ describe('RolesGuard', () => {
   });
 
   it('từ chối khi API yêu cầu role nhưng request không có user', () => {
-    reflectorMock.getAllAndOverride.mockReturnValue([
-      Role.ADMIN,
-    ]);
+    reflectorMock.getAllAndOverride.mockReturnValue([Role.ADMIN]);
 
     const context = createContext();
 
-    expect(() => guard.canActivate(context)).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 
   it('cho phép khi user có role phù hợp', () => {
-    reflectorMock.getAllAndOverride.mockReturnValue([
-      Role.ADMIN,
-    ]);
+    reflectorMock.getAllAndOverride.mockReturnValue([Role.ADMIN]);
 
     const user = createUser(Role.ADMIN);
     const context = createContext(user);
@@ -54,16 +43,12 @@ describe('RolesGuard', () => {
   });
 
   it('từ chối khi user không có role được phép', () => {
-    reflectorMock.getAllAndOverride.mockReturnValue([
-      Role.ADMIN,
-    ]);
+    reflectorMock.getAllAndOverride.mockReturnValue([Role.ADMIN]);
 
     const user = createUser(Role.SALES);
     const context = createContext(user);
 
-    expect(() => guard.canActivate(context)).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 
   it('cho phép khi user thuộc một trong nhiều role được phép', () => {
@@ -88,9 +73,7 @@ function createUser(role: Role): AuthenticatedUser {
   };
 }
 
-function createContext(
-  user?: AuthenticatedUser,
-): ExecutionContext {
+function createContext(user?: AuthenticatedUser): ExecutionContext {
   return {
     getHandler: jest.fn(),
     getClass: jest.fn(),

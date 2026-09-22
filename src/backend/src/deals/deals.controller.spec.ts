@@ -47,27 +47,27 @@ describe('DealsController', () => {
     controller = new DealsController(dealsService as unknown as DealsService);
   });
 
-  it('truyền current user vào findAll để áp dụng record-level permission', () => {
+  it('truyền current user vào findAll để áp dụng record-level permission', async () => {
     const query = { page: 1, limit: 20 };
 
-    controller.findAll(query, salesRequest);
+    await controller.findAll(query, salesRequest);
 
     expect(dealsService.findAll).toHaveBeenCalledWith(query, salesUser);
   });
 
-  it('lấy metadata Deal theo current user', () => {
-    controller.getMeta(managerRequest);
+  it('lấy metadata Deal theo current user', async () => {
+    await controller.getMeta(managerRequest);
 
     expect(dealsService.getMeta).toHaveBeenCalledWith(managerUser);
   });
 
-  it('GET /deals/:id truyền current user để kiểm tra quyền bản ghi', () => {
-    controller.findOne(7, salesRequest);
+  it('GET /deals/:id truyền current user để kiểm tra quyền bản ghi', async () => {
+    await controller.findOne(7, salesRequest);
 
     expect(dealsService.findOne).toHaveBeenCalledWith(7, salesUser);
   });
 
-  it('tạo Deal với current user và IP', () => {
+  it('tạo Deal với current user và IP', async () => {
     const dto = {
       customerId: 4,
       assignedUserId: 5,
@@ -77,7 +77,7 @@ describe('DealsController', () => {
       expectedCloseDate: '2026-10-15',
     };
 
-    controller.create(dto, salesRequest);
+    await controller.create(dto, salesRequest);
 
     expect(dealsService.create).toHaveBeenCalledWith(
       dto,
@@ -86,13 +86,13 @@ describe('DealsController', () => {
     );
   });
 
-  it('BR-08 - endpoint update truyền Deal, user và IP xuống Service', () => {
+  it('BR-08 - endpoint update truyền Deal, user và IP xuống Service', async () => {
     const dto = {
       dealName: 'Deal cập nhật',
       dealValue: 50_000_000,
     };
 
-    controller.update(7, dto, salesRequest);
+    await controller.update(7, dto, salesRequest);
 
     expect(dealsService.update).toHaveBeenCalledWith(
       7,
@@ -107,19 +107,15 @@ describe('DealsController', () => {
 
     await controller.remove(7, salesRequest);
 
-    expect(dealsService.remove).toHaveBeenCalledWith(
-      7,
-      salesUser,
-      '127.0.0.1',
-    );
+    expect(dealsService.remove).toHaveBeenCalledWith(7, salesUser, '127.0.0.1');
   });
 
-  it('BR-08 - endpoint assign truyền Deal, assignee, user và IP xuống Service', () => {
+  it('BR-08 - endpoint assign truyền Deal, assignee, user và IP xuống Service', async () => {
     const dto = {
       assignedUserId: 6,
     };
 
-    controller.assign(7, dto, managerRequest);
+    await controller.assign(7, dto, managerRequest);
 
     expect(dealsService.assign).toHaveBeenCalledWith(
       7,

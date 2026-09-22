@@ -11,6 +11,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import request from 'supertest';
+import type { Server } from 'node:http';
 
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { Roles } from '../src/common/decorators/roles.decorator';
@@ -18,6 +19,15 @@ import { Role } from '../src/common/enums/role.enum';
 import { RolesGuard } from '../src/common/guards/roles.guard';
 
 const JWT_SECRET = 'e2e-security-test-secret';
+
+type MessageResponse = {
+  message: string;
+};
+
+function getHttpServer(app: INestApplication): Server {
+  const httpServer: unknown = app.getHttpServer();
+  return httpServer as Server;
+}
 
 @Injectable()
 class TestJwtStrategy extends PassportStrategy(Strategy) {
@@ -69,11 +79,7 @@ describe('Security (e2e)', () => {
         }),
       ],
       controllers: [SecurityTestController],
-      providers: [
-        JwtAuthGuard,
-        RolesGuard,
-        TestJwtStrategy,
-      ],
+      providers: [JwtAuthGuard, RolesGuard, TestJwtStrategy],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -89,13 +95,13 @@ describe('Security (e2e)', () => {
   });
 
   it('không có JWT thì trả về 401', async () => {
-    await request(app.getHttpServer())
+    await request(getHttpServer(app))
       .get('/api/v1/security-test/admin')
       .expect(401);
   });
 
   it('JWT không hợp lệ thì trả về 401', async () => {
-    await request(app.getHttpServer())
+    await request(getHttpServer(app))
       .get('/api/v1/security-test/admin')
       .set('Authorization', 'Bearer token-khong-hop-le')
       .expect(401);
@@ -107,14 +113,14 @@ describe('Security (e2e)', () => {
       role: Role.SALES,
     });
 
-    const response = await request(app.getHttpServer())
+    const response = await request(getHttpServer(app))
       .get('/api/v1/security-test/admin')
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
 
-    expect(response.body.message).toBe(
-      'Bạn không có quyền truy cập chức năng này.',
-    );
+    const body = response.body as unknown as MessageResponse;
+
+    expect(body.message).toBe('Bạn không có quyền truy cập chức năng này.');
   });
 
   it('JWT hợp lệ và đúng role thì trả về 200', async () => {
@@ -123,12 +129,14 @@ describe('Security (e2e)', () => {
       role: Role.ADMIN,
     });
 
-    const response = await request(app.getHttpServer())
+    const response = await request(getHttpServer(app))
       .get('/api/v1/security-test/admin')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(response.body).toEqual({
+    const body = response.body as unknown as MessageResponse;
+
+    expect(body).toEqual({
       message: 'Admin được phép truy cập.',
     });
   });
@@ -144,7 +152,7 @@ describe('Security (e2e)', () => {
       },
     );
 
-    await request(app.getHttpServer())
+    await request(getHttpServer(app))
       .get('/api/v1/security-test/admin')
       .set('Authorization', `Bearer ${token}`)
       .expect(401);

@@ -4,7 +4,7 @@ import { DashboardRepository } from './repositories/dashboard.repository';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly dashboardRepository: DashboardRepository) { }
+  constructor(private readonly dashboardRepository: DashboardRepository) {}
 
   /**
    * Tổng hợp dữ liệu Dashboard dành cho Admin.
@@ -395,11 +395,7 @@ export class DashboardService {
 
     const oneDay = 24 * 60 * 60 * 1000;
 
-    const today = Date.UTC(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
 
     const closeDate = Date.UTC(
       expectedCloseDate.getFullYear(),

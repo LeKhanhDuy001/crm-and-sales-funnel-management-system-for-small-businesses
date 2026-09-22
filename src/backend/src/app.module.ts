@@ -93,4 +93,4 @@ import { PipelineStagesModule } from './pipeline-stages/pipeline-stages.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

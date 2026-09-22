@@ -85,7 +85,7 @@ export type DealWithRelations = Prisma.dealsGetPayload<{
 
 @Injectable()
 export class DealsRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findMany(filter: DealFilter, skip: number, take: number) {
     return this.prisma.deals.findMany({

@@ -46,7 +46,9 @@ export class MailService {
     });
 
     if (error) {
-      this.logger.error(`Gửi email đặt lại mật khẩu thất bại: ${error.message}`);
+      this.logger.error(
+        `Gửi email đặt lại mật khẩu thất bại: ${error.message}`,
+      );
       throw new Error('Không thể gửi email đặt lại mật khẩu.');
     }
   }

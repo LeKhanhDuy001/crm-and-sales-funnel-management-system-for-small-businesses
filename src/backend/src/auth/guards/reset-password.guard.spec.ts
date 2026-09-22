@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  ExecutionContext,
-} from '@nestjs/common';
+import { BadRequestException, ExecutionContext } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { ResetPasswordGuard } from './reset-password.guard';
 
@@ -28,21 +25,17 @@ describe('ResetPasswordGuard', () => {
       validateResetToken: jest.fn(),
     };
 
-    guard = new ResetPasswordGuard(
-      authService as unknown as AuthService,
-    );
+    guard = new ResetPasswordGuard(authService as unknown as AuthService);
   });
 
   it('should reject when reset token is missing', async () => {
     const context = createExecutionContext({});
 
-    await expect(
-      guard.canActivate(context),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
 
-    expect(
-      authService.validateResetToken,
-    ).not.toHaveBeenCalled();
+    expect(authService.validateResetToken).not.toHaveBeenCalled();
   });
 
   it('should reject when reset token has invalid length', async () => {
@@ -50,13 +43,11 @@ describe('ResetPasswordGuard', () => {
       token: 'invalid-token',
     });
 
-    await expect(
-      guard.canActivate(context),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
 
-    expect(
-      authService.validateResetToken,
-    ).not.toHaveBeenCalled();
+    expect(authService.validateResetToken).not.toHaveBeenCalled();
   });
 
   it('should allow request when reset token is valid', async () => {
@@ -74,34 +65,26 @@ describe('ResetPasswordGuard', () => {
       token,
     });
 
-    await expect(
-      guard.canActivate(context),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
 
-    expect(
-      authService.validateResetToken,
-    ).toHaveBeenCalledWith(token);
+    expect(authService.validateResetToken).toHaveBeenCalledWith(token);
   });
 
   it('should reject when reset token is expired or already used', async () => {
     const token = 'b'.repeat(64);
 
     authService.validateResetToken.mockRejectedValue(
-      new BadRequestException(
-        'Reset token không hợp lệ hoặc đã hết hạn',
-      ),
+      new BadRequestException('Reset token không hợp lệ hoặc đã hết hạn'),
     );
 
     const context = createExecutionContext({
       token,
     });
 
-    await expect(
-      guard.canActivate(context),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
 
-    expect(
-      authService.validateResetToken,
-    ).toHaveBeenCalledWith(token);
+    expect(authService.validateResetToken).toHaveBeenCalledWith(token);
   });
 });

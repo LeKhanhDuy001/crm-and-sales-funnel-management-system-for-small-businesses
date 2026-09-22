@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { Role } from '../common/enums/role.enum';
-import { AssignTaskDto } from './dto/assign-task.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { TaskQueryDto } from './dto/task-query.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
@@ -54,60 +53,51 @@ describe('TasksController', () => {
 
   describe('roles', () => {
     it('findAll cho phép Sales Manager, Sales và Customer Care', () => {
-      expect(getRoleMetadata(controller.findAll)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.SALES,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'findAll'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.SALES, Role.CUSTOMER_CARE]);
     });
 
     it('getMeta chỉ cho phép Sales Manager và Customer Care', () => {
-      expect(getRoleMetadata(controller.getMeta)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'getMeta'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.CUSTOMER_CARE]);
     });
 
     it('findOne cho phép Sales Manager, Sales và Customer Care', () => {
-      expect(getRoleMetadata(controller.findOne)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.SALES,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'findOne'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.SALES, Role.CUSTOMER_CARE]);
     });
 
     it('create chỉ cho phép Sales Manager và Customer Care', () => {
-      expect(getRoleMetadata(controller.create)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'create'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.CUSTOMER_CARE]);
     });
 
     it('updateStatus chỉ cho phép Sales Manager và Customer Care', () => {
-      expect(getRoleMetadata(controller.updateStatus)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'updateStatus'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.CUSTOMER_CARE]);
     });
 
     it('cancel chỉ cho phép Sales Manager và Customer Care', () => {
-      expect(getRoleMetadata(controller.cancel)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'cancel'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.CUSTOMER_CARE]);
     });
 
     it('assign chỉ cho phép Sales Manager', () => {
-      expect(getRoleMetadata(controller.assign)).toContainEqual([
-        Role.SALES_MANAGER,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'assign'),
+      ).toContainEqual([Role.SALES_MANAGER]);
     });
 
     it('update chỉ cho phép Sales Manager và Customer Care', () => {
-      expect(getRoleMetadata(controller.update)).toContainEqual([
-        Role.SALES_MANAGER,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(
+        getMethodMetadataValues(TasksController.prototype, 'update'),
+      ).toContainEqual([Role.SALES_MANAGER, Role.CUSTOMER_CARE]);
     });
   });
 
@@ -143,9 +133,7 @@ describe('TasksController', () => {
       const result = await controller.getMeta(request);
 
       expect(tasksServiceMock.getMeta).toHaveBeenCalledTimes(1);
-      expect(tasksServiceMock.getMeta).toHaveBeenCalledWith(
-        request.user,
-      );
+      expect(tasksServiceMock.getMeta).toHaveBeenCalledWith(request.user);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -161,10 +149,7 @@ describe('TasksController', () => {
       const result = await controller.findOne(10, request);
 
       expect(tasksServiceMock.findOne).toHaveBeenCalledTimes(1);
-      expect(tasksServiceMock.findOne).toHaveBeenCalledWith(
-        10,
-        request.user,
-      );
+      expect(tasksServiceMock.findOne).toHaveBeenCalledWith(10, request.user);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -201,19 +186,11 @@ describe('TasksController', () => {
 
       tasksServiceMock.updateStatus.mockResolvedValue(expectedResult);
 
-      const result = await controller.updateStatus(
-        10,
-        dto,
-        request,
-      );
+      const result = await controller.updateStatus(10, dto, request);
 
-      expect(
-        tasksServiceMock.updateStatus,
-      ).toHaveBeenCalledTimes(1);
+      expect(tasksServiceMock.updateStatus).toHaveBeenCalledTimes(1);
 
-      expect(
-        tasksServiceMock.updateStatus,
-      ).toHaveBeenCalledWith(
+      expect(tasksServiceMock.updateStatus).toHaveBeenCalledWith(
         10,
         dto,
         request.user,
@@ -249,7 +226,7 @@ describe('TasksController', () => {
     it('gọi service assign với taskId, dto, người dùng và IP', async () => {
       const dto = {
         assignedUserId: 8,
-      } as AssignTaskDto;
+      };
 
       const expectedResult = {
         taskId: 10,
@@ -258,11 +235,7 @@ describe('TasksController', () => {
 
       tasksServiceMock.assign.mockResolvedValue(expectedResult);
 
-      const result = await controller.assign(
-        10,
-        dto,
-        request,
-      );
+      const result = await controller.assign(10, dto, request);
 
       expect(tasksServiceMock.assign).toHaveBeenCalledTimes(1);
       expect(tasksServiceMock.assign).toHaveBeenCalledWith(
@@ -285,11 +258,7 @@ describe('TasksController', () => {
 
       tasksServiceMock.update.mockResolvedValue(expectedResult);
 
-      const result = await controller.update(
-        10,
-        dto,
-        request,
-      );
+      const result = await controller.update(10, dto, request);
 
       expect(tasksServiceMock.update).toHaveBeenCalledTimes(1);
       expect(tasksServiceMock.update).toHaveBeenCalledWith(
@@ -303,10 +272,20 @@ describe('TasksController', () => {
   });
 });
 
-function getRoleMetadata(
-  handler: (...args: never[]) => unknown,
+function getMethodMetadataValues(
+  prototype: object,
+  methodName: string,
 ): unknown[] {
-  return Reflect.getMetadataKeys(handler).map((key) =>
-    Reflect.getMetadata(key, handler),
+  const method = Object.getOwnPropertyDescriptor(prototype, methodName)
+    ?.value as unknown;
+
+  if (typeof method !== 'function') {
+    throw new Error(`Không tìm thấy method ${methodName}.`);
+  }
+
+  const metadataKeys = Reflect.getMetadataKeys(method) as unknown[];
+
+  return metadataKeys.map(
+    (key): unknown => Reflect.getMetadata(key, method) as unknown,
   );
 }

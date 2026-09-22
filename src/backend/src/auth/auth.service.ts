@@ -30,7 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly authRepository: AuthRepository,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   /**
    * Xác thực email và mật khẩu, sau đó trả JWT cùng thông tin người dùng.
@@ -114,17 +114,16 @@ export class AuthService {
   }
 
   /**
- * Đặt lại mật khẩu bằng reset token hợp lệ.
- * Luôn trả cùng một thông báo để tránh làm lộ email có tồn tại hay không.
- */
+   * Đặt lại mật khẩu bằng reset token hợp lệ.
+   * Luôn trả cùng một thông báo để tránh làm lộ email có tồn tại hay không.
+   */
   async forgotPassword(
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<{ message: string }> {
     const normalizedEmail = forgotPasswordDto.email.trim().toLowerCase();
 
     const response = {
-      message:
-        'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
+      message: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
     };
 
     const user = await this.usersService.findByEmail(normalizedEmail);
@@ -135,9 +134,7 @@ export class AuthService {
 
     const resetToken = randomBytes(32).toString('hex');
 
-    const tokenHash = createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+    const tokenHash = createHash('sha256').update(resetToken).digest('hex');
 
     const expiresAt = new Date(
       Date.now() + RESET_TOKEN_EXPIRY_MINUTES * 60 * 1000,
@@ -177,9 +174,7 @@ export class AuthService {
   }
 
   async validateResetToken(token: string) {
-    const tokenHash = createHash('sha256')
-      .update(token)
-      .digest('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
 
     const resetToken =
       await this.authRepository.findResetTokenByHash(tokenHash);
@@ -189,17 +184,15 @@ export class AuthService {
       resetToken.usedat !== null ||
       resetToken.expiresat <= new Date()
     ) {
-      throw new BadRequestException(
-        'Reset token không hợp lệ hoặc đã hết hạn',
-      );
+      throw new BadRequestException('Reset token không hợp lệ hoặc đã hết hạn');
     }
 
     return resetToken;
   }
 
   /**
- * Đặt lại mật khẩu bằng reset token hợp lệ.
- */
+   * Đặt lại mật khẩu bằng reset token hợp lệ.
+   */
   async resetPassword(
     resetPasswordDto: ResetPasswordDto,
   ): Promise<{ message: string }> {
@@ -207,31 +200,19 @@ export class AuthService {
       throw new BadRequestException('Mật khẩu xác nhận không khớp');
     }
 
-    const resetToken = await this.validateResetToken(
-      resetPasswordDto.token,
-    );
+    const resetToken = await this.validateResetToken(resetPasswordDto.token);
 
     const user = await this.usersService.findById(resetToken.userid);
 
     if (!user || user.status === false) {
-      throw new BadRequestException(
-        'Reset token không hợp lệ hoặc đã hết hạn',
-      );
+      throw new BadRequestException('Reset token không hợp lệ hoặc đã hết hạn');
     }
 
-    const passwordHash = await bcrypt.hash(
-      resetPasswordDto.newPassword,
-      12,
-    );
+    const passwordHash = await bcrypt.hash(resetPasswordDto.newPassword, 12);
 
-    await this.usersService.updatePassword(
-      user.userid,
-      passwordHash,
-    );
+    await this.usersService.updatePassword(user.userid, passwordHash);
 
-    await this.authRepository.markResetTokenUsed(
-      resetToken.resetid,
-    );
+    await this.authRepository.markResetTokenUsed(resetToken.resetid);
 
     return { message: 'Đổi mật khẩu thành công' };
   }

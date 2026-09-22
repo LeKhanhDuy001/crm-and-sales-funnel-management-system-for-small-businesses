@@ -29,7 +29,7 @@ type LeadWithRelations = Prisma.leadsGetPayload<{
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly leadsRepository: LeadsRepository) { }
+  constructor(private readonly leadsRepository: LeadsRepository) {}
 
   /**
    * Lấy danh sách Lead có tìm kiếm, lọc và phân trang.
@@ -122,7 +122,8 @@ export class LeadsService {
         duplicate.leadid,
         {
           sourceid: duplicate.sourceid ?? dto.sourceId ?? null,
-          assigneduserid: duplicate.assigneduserid ?? dto.assignedUserId ?? null,
+          assigneduserid:
+            duplicate.assigneduserid ?? dto.assignedUserId ?? null,
           fullname: duplicate.fullname,
           company: duplicate.company ?? this.normalizeOptional(dto.company),
           phone: duplicate.phone ?? phone ?? null,
@@ -300,17 +301,17 @@ export class LeadsService {
 
       source: lead.leadsources
         ? {
-          sourceId: lead.leadsources.sourceid,
-          sourceName: lead.leadsources.sourcename,
-        }
+            sourceId: lead.leadsources.sourceid,
+            sourceName: lead.leadsources.sourcename,
+          }
         : null,
 
       assignedUser: lead.users
         ? {
-          userId: lead.users.userid,
-          fullName: lead.users.fullname,
-          email: lead.users.email,
-        }
+            userId: lead.users.userid,
+            fullName: lead.users.fullname,
+            email: lead.users.email,
+          }
         : null,
     };
   }

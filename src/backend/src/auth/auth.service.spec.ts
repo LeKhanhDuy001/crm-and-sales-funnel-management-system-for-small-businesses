@@ -200,9 +200,7 @@ describe('AuthService', () => {
     expect(tokenHash).toMatch(/^[a-f0-9]{64}$/);
     expect(expiresAt).toBeInstanceOf(Date);
 
-    expect(expiresAt.getTime()).toBeGreaterThan(
-      Date.now() + 14 * 60 * 1000,
-    );
+    expect(expiresAt.getTime()).toBeGreaterThan(Date.now() + 14 * 60 * 1000);
 
     expect(expiresAt.getTime()).toBeLessThanOrEqual(
       Date.now() + 15 * 60 * 1000,
@@ -210,22 +208,18 @@ describe('AuthService', () => {
 
     expect(mailService.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
 
-    const [email, resetUrl] =
-      mailService.sendPasswordResetEmail.mock.calls[0] as [string, string];
+    const [email, resetUrl] = mailService.sendPasswordResetEmail.mock
+      .calls[0] as [string, string];
 
     expect(email).toBe('admin.demo@crm.local');
 
-    expect(resetUrl).toContain(
-      'http://localhost:3000/reset-password?token=',
-    );
+    expect(resetUrl).toContain('http://localhost:3000/reset-password?token=');
 
     const token = new URL(resetUrl).searchParams.get('token');
 
     expect(token).not.toBeNull();
 
-    const sentTokenHash = createHash('sha256')
-      .update(token!)
-      .digest('hex');
+    const sentTokenHash = createHash('sha256').update(token!).digest('hex');
 
     expect(sentTokenHash).toBe(tokenHash);
   });
@@ -340,9 +334,9 @@ describe('AuthService', () => {
 
     expect(userId).toBe(1);
 
-    await expect(
-      bcrypt.compare('NewPassword123', passwordHash),
-    ).resolves.toBe(true);
+    await expect(bcrypt.compare('NewPassword123', passwordHash)).resolves.toBe(
+      true,
+    );
 
     expect(authRepository.markResetTokenUsed).toHaveBeenCalledWith(10);
   });

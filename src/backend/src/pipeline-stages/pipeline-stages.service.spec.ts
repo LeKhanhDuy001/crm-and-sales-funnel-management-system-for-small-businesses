@@ -118,9 +118,7 @@ describe('PipelineStagesService', () => {
   });
 
   it('không cập nhật khi body rỗng', async () => {
-    await expect(service.update(2, {})).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(service.update(2, {})).rejects.toThrow(BadRequestException);
 
     expect(repository.findById).not.toHaveBeenCalled();
     expect(repository.update).not.toHaveBeenCalled();

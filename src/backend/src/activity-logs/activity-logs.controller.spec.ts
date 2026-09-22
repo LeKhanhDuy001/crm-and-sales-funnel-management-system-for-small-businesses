@@ -34,8 +34,12 @@ describe('ActivityLogsController', () => {
   });
 
   it('chỉ cho phép role Admin truy cập Activity Log', () => {
-    const metadataValues = Reflect.getMetadataKeys(ActivityLogsController)
-      .map((key) => Reflect.getMetadata(key, ActivityLogsController));
+    const metadataValues: unknown[] = Reflect.getMetadataKeys(
+      ActivityLogsController,
+    ).map(
+      (key): unknown =>
+        Reflect.getMetadata(key, ActivityLogsController) as unknown,
+    );
 
     expect(metadataValues).toContainEqual([Role.ADMIN]);
   });

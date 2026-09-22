@@ -2,8 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { Role } from '../common/enums/role.enum';
-import { AssignLeadDto } from './dto/assign-lead.dto';
-import { LeadAssignmentQueryDto } from './dto/lead-assignment-query.dto';
+import type { LeadAssignmentQueryDto } from './dto/lead-assignment-query.dto';
 import { LeadAssignmentsController } from './lead-assignments.controller';
 import { LeadAssignmentsService } from './lead-assignments.service';
 
@@ -46,18 +45,14 @@ describe('LeadAssignmentsController', () => {
   });
 
   it('chỉ cho phép Sales Manager truy cập Lead Assignments', () => {
-    const metadataValues = Reflect.getMetadataKeys(
+    const metadataValues: unknown[] = Reflect.getMetadataKeys(
       LeadAssignmentsController,
-    ).map((key) =>
-      Reflect.getMetadata(
-        key,
-        LeadAssignmentsController,
-      ),
+    ).map(
+      (key): unknown =>
+        Reflect.getMetadata(key, LeadAssignmentsController) as unknown,
     );
 
-    expect(metadataValues).toContainEqual([
-      Role.SALES_MANAGER,
-    ]);
+    expect(metadataValues).toContainEqual([Role.SALES_MANAGER]);
   });
 
   describe('findAll', () => {
@@ -77,19 +72,13 @@ describe('LeadAssignmentsController', () => {
         },
       };
 
-      leadAssignmentsServiceMock.findAll.mockResolvedValue(
-        expectedResult,
-      );
+      leadAssignmentsServiceMock.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAll(query);
 
-      expect(
-        leadAssignmentsServiceMock.findAll,
-      ).toHaveBeenCalledTimes(1);
+      expect(leadAssignmentsServiceMock.findAll).toHaveBeenCalledTimes(1);
 
-      expect(
-        leadAssignmentsServiceMock.findAll,
-      ).toHaveBeenCalledWith(query);
+      expect(leadAssignmentsServiceMock.findAll).toHaveBeenCalledWith(query);
 
       expect(result).toEqual(expectedResult);
     });
@@ -119,30 +108,20 @@ describe('LeadAssignmentsController', () => {
     it('gọi service assign với leadId, assignedUserId và người dùng hiện tại', async () => {
       const dto = {
         assignedUserId: 7,
-      } as AssignLeadDto;
+      };
 
       const expectedResult = {
         leadId: 10,
         assignedUserId: 7,
       };
 
-      leadAssignmentsServiceMock.assign.mockResolvedValue(
-        expectedResult,
-      );
+      leadAssignmentsServiceMock.assign.mockResolvedValue(expectedResult);
 
-      const result = await controller.assign(
-        10,
-        dto,
-        request,
-      );
+      const result = await controller.assign(10, dto, request);
 
-      expect(
-        leadAssignmentsServiceMock.assign,
-      ).toHaveBeenCalledTimes(1);
+      expect(leadAssignmentsServiceMock.assign).toHaveBeenCalledTimes(1);
 
-      expect(
-        leadAssignmentsServiceMock.assign,
-      ).toHaveBeenCalledWith(
+      expect(leadAssignmentsServiceMock.assign).toHaveBeenCalledWith(
         10,
         7,
         request.user,

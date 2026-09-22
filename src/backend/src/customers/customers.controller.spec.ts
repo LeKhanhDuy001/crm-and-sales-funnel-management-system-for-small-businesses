@@ -7,6 +7,24 @@ import { CustomersService } from './customers.service';
 import { CustomerQueryDto } from './dto/customer-query.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
+function getMethodMetadataValues(
+  prototype: object,
+  methodName: string,
+): unknown[] {
+  const method = Object.getOwnPropertyDescriptor(prototype, methodName)
+    ?.value as unknown;
+
+  if (typeof method !== 'function') {
+    throw new Error(`Không tìm thấy method ${methodName}.`);
+  }
+
+  const metadataKeys = Reflect.getMetadataKeys(method) as unknown[];
+
+  return metadataKeys.map(
+    (key): unknown => Reflect.getMetadata(key, method) as unknown,
+  );
+}
+
 describe('CustomersController', () => {
   let controller: CustomersController;
 
@@ -46,13 +64,9 @@ describe('CustomersController', () => {
 
   describe('roles', () => {
     it('findAll cho phép Sales, Customer Care và Sales Manager', () => {
-      const metadataValues = Reflect.getMetadataKeys(
-        CustomersController.prototype.findAll,
-      ).map((key) =>
-        Reflect.getMetadata(
-          key,
-          CustomersController.prototype.findAll,
-        ),
+      const metadataValues = getMethodMetadataValues(
+        CustomersController.prototype,
+        'findAll',
       );
 
       expect(metadataValues).toContainEqual([
@@ -63,35 +77,21 @@ describe('CustomersController', () => {
     });
 
     it('findOne chỉ cho phép Sales và Customer Care', () => {
-      const metadataValues = Reflect.getMetadataKeys(
-        CustomersController.prototype.findOne,
-      ).map((key) =>
-        Reflect.getMetadata(
-          key,
-          CustomersController.prototype.findOne,
-        ),
+      const metadataValues = getMethodMetadataValues(
+        CustomersController.prototype,
+        'findOne',
       );
 
-      expect(metadataValues).toContainEqual([
-        Role.SALES,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(metadataValues).toContainEqual([Role.SALES, Role.CUSTOMER_CARE]);
     });
 
     it('update chỉ cho phép Sales và Customer Care', () => {
-      const metadataValues = Reflect.getMetadataKeys(
-        CustomersController.prototype.update,
-      ).map((key) =>
-        Reflect.getMetadata(
-          key,
-          CustomersController.prototype.update,
-        ),
+      const metadataValues = getMethodMetadataValues(
+        CustomersController.prototype,
+        'update',
       );
 
-      expect(metadataValues).toContainEqual([
-        Role.SALES,
-        Role.CUSTOMER_CARE,
-      ]);
+      expect(metadataValues).toContainEqual([Role.SALES, Role.CUSTOMER_CARE]);
     });
   });
 

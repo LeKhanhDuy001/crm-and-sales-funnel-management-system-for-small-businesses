@@ -893,12 +893,7 @@ describe('DealsService - quản lý Deal', () => {
         });
 
         await expect(
-          dealsService.update(
-            7,
-            { dealValue: 999_000_000 },
-            salesUser,
-            null,
-          ),
+          dealsService.update(7, { dealValue: 999_000_000 }, salesUser, null),
         ).rejects.toThrow(
           'Deal đã ở giai đoạn Won hoặc Lost nên không thể chỉnh sửa.',
         );
@@ -1007,19 +1002,13 @@ describe('DealsService - quản lý Deal', () => {
           },
         });
 
-        await expect(
-          dealsService.remove(7, salesUser, null),
-        ).rejects.toThrow(
+        await expect(dealsService.remove(7, salesUser, null)).rejects.toThrow(
           'Deal đã ở giai đoạn Won hoặc Lost nên không thể xóa.',
         );
 
-        expect(
-          dealsRepository.getLinkedRecordCount,
-        ).not.toHaveBeenCalled();
+        expect(dealsRepository.getLinkedRecordCount).not.toHaveBeenCalled();
 
-        expect(
-          dealsRepository.deleteWithLog,
-        ).not.toHaveBeenCalled();
+        expect(dealsRepository.deleteWithLog).not.toHaveBeenCalled();
       },
     );
 
@@ -1148,22 +1137,14 @@ describe('DealsService - quản lý Deal', () => {
         });
 
         await expect(
-          dealsService.assign(
-            7,
-            { assignedUserId: 6 },
-            salesManagerUser,
-          ),
+          dealsService.assign(7, { assignedUserId: 6 }, salesManagerUser),
         ).rejects.toThrow(
           'Deal đã ở giai đoạn Won hoặc Lost nên không thể phân công lại.',
         );
 
-        expect(
-          dealsRepository.findUserById,
-        ).not.toHaveBeenCalled();
+        expect(dealsRepository.findUserById).not.toHaveBeenCalled();
 
-        expect(
-          dealsRepository.assignWithLog,
-        ).not.toHaveBeenCalled();
+        expect(dealsRepository.assignWithLog).not.toHaveBeenCalled();
       },
     );
 

@@ -2,6 +2,14 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from './mail.service';
 
+type SentEmailPayload = {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+};
+
 describe('MailService', () => {
   let mailService: MailService;
   let sendEmail: jest.Mock;
@@ -77,20 +85,18 @@ describe('MailService', () => {
     const resetUrl =
       'http://localhost:3000/reset-password?token=test-reset-token';
 
-    await mailService.sendPasswordResetEmail(
-      'admin.demo@crm.local',
-      resetUrl,
-    );
+    await mailService.sendPasswordResetEmail('admin.demo@crm.local', resetUrl);
 
     expect(sendEmail).toHaveBeenCalledTimes(1);
 
-    expect(sendEmail).toHaveBeenCalledWith({
-      from: 'CRM System <onboarding@resend.dev>',
-      to: 'admin.demo@crm.local',
-      subject: 'Đặt lại mật khẩu CRM System',
-      text: expect.stringContaining(resetUrl),
-      html: expect.stringContaining(resetUrl),
-    });
+    const calls = sendEmail.mock.calls as unknown as Array<[SentEmailPayload]>;
+    const payload = calls[0][0];
+
+    expect(payload.from).toBe('CRM System <onboarding@resend.dev>');
+    expect(payload.to).toBe('admin.demo@crm.local');
+    expect(payload.subject).toBe('Đặt lại mật khẩu CRM System');
+    expect(payload.text).toContain(resetUrl);
+    expect(payload.html).toContain(resetUrl);
   });
 
   it('ném lỗi khi Resend không gửi được email', async () => {
