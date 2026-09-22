@@ -16,6 +16,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { action_type } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { AuthRepository } from './repositories/auth.repository';
+import { MailService } from '../common/mail/mail.service';
 
 const NORMAL_SESSION_SECONDS = 60 * 60;
 const REMEMBERED_SESSION_SECONDS = 60 * 60 * 24 * 7;
@@ -28,6 +29,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly authRepository: AuthRepository,
+    private readonly mailService: MailService,
   ) { }
 
   /**
@@ -115,7 +117,9 @@ export class AuthService {
  * Đặt lại mật khẩu bằng reset token hợp lệ.
  * Luôn trả cùng một thông báo để tránh làm lộ email có tồn tại hay không.
  */
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto,): Promise<{ message: string }> {
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
     const normalizedEmail = forgotPasswordDto.email.trim().toLowerCase();
 
     const response = {
@@ -147,9 +151,25 @@ export class AuthService {
       expiresAt,
     );
 
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.debug(
-        `[DEV] Password reset token for ${user.email}: ${resetToken}`,
+    const frontendUrl = process.env.FRONTEND_URL?.trim().replace(/\/+$/, '');
+
+    if (!frontendUrl) {
+      await this.authRepository.deleteUnusedResetTokens(user.userid);
+
+      this.logger.error('FRONTEND_URL chưa được cấu hình.');
+
+      return response;
+    }
+
+    const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+    try {
+      await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
+    } catch {
+      await this.authRepository.deleteUnusedResetTokens(user.userid);
+
+      this.logger.error(
+        `Không thể gửi email đặt lại mật khẩu cho userId=${user.userid}.`,
       );
     }
 

@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
   MinLength,
@@ -37,6 +38,7 @@ export class CreateUserDto {
   @ApiProperty({ example: 3 })
   @IsInt({ message: 'Role ID phải là số nguyên' })
   @Min(1, { message: 'Role ID không hợp lệ' })
+  @Max(2_147_483_647, { message: 'Role ID không hợp lệ' })
   roleId!: number;
 
   @ApiPropertyOptional({ default: true })

@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Query,
   Req,
@@ -18,6 +17,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { CustomerQueryDto } from './dto/customer-query.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CustomersService } from './customers.service';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Customers')
 @ApiBearerAuth('access-token')
@@ -43,7 +43,7 @@ export class CustomersController {
   @Roles(Role.SALES, Role.CUSTOMER_CARE)
   @ApiOperation({ summary: 'Xem chi tiết Customer' })
   findOne(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     customerId: number,
     @Req()
     request: AuthenticatedRequest,
@@ -55,7 +55,7 @@ export class CustomersController {
   @Roles(Role.SALES, Role.CUSTOMER_CARE)
   @ApiOperation({ summary: 'Cập nhật thông tin Customer' })
   update(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     customerId: number,
     @Body()
     dto: UpdateCustomerDto,

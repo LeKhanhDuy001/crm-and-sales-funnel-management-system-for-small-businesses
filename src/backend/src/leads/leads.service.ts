@@ -104,8 +104,37 @@ export class LeadsService {
 
     const phone = dto.phone?.trim();
 
-    // BR03: Email hoặc số điện thoại của Lead mới không được trùng với Lead hiện có.
-    await this.ensureContactIsUnique(email, phone);
+    const duplicate = await this.leadsRepository.findDuplicate(email, phone);
+
+    if (duplicate) {
+      if (!dto.mergeDuplicate) {
+        if (email && duplicate.email?.toLowerCase() === email) {
+          throw new ConflictException('Email của Lead đã tồn tại');
+        }
+
+        throw new ConflictException('Số điện thoại của Lead đã tồn tại');
+      }
+
+      await this.ensureReferencesExist(dto.sourceId, dto.assignedUserId);
+
+      // BR03: Gộp vào Lead hiện có, bổ sung dữ liệu còn thiếu và giữ nguyên vòng đời Lead.
+      const mergedLead = await this.leadsRepository.updateWithLog(
+        duplicate.leadid,
+        {
+          sourceid: duplicate.sourceid ?? dto.sourceId ?? null,
+          assigneduserid: duplicate.assigneduserid ?? dto.assignedUserId ?? null,
+          fullname: duplicate.fullname,
+          company: duplicate.company ?? this.normalizeOptional(dto.company),
+          phone: duplicate.phone ?? phone ?? null,
+          email: duplicate.email ?? email ?? null,
+          address: duplicate.address ?? this.normalizeOptional(dto.address),
+          status: duplicate.status ?? this.normalizeOptional(dto.status),
+        },
+        currentUserId,
+      );
+
+      return this.mapLead(mergedLead);
+    }
 
     await this.ensureReferencesExist(dto.sourceId, dto.assignedUserId);
 

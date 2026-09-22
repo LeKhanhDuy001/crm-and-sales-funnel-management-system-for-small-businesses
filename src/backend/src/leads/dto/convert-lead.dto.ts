@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, Min } from 'class-validator';
+import { IsInt, Max, Min } from 'class-validator';
 
 export class ConvertLeadDto {
   @ApiProperty({
@@ -10,6 +10,9 @@ export class ConvertLeadDto {
     message: 'Lead ID phải là số nguyên',
   })
   @Min(1, {
+    message: 'Lead ID không hợp lệ',
+  })
+  @Max(2_147_483_647, {
     message: 'Lead ID không hợp lệ',
   })
   leadId!: number;

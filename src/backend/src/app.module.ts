@@ -47,6 +47,9 @@ import { PipelineStagesModule } from './pipeline-stages/pipeline-stages.module';
             scheme: ['http', 'https'],
           })
           .required(),
+        RESEND_API_KEY: Joi.string().trim().min(1).required(),
+
+        MAIL_FROM: Joi.string().trim().min(1).required(),
       }),
       validationOptions: {
         abortEarly: false,
@@ -90,4 +93,4 @@ import { PipelineStagesModule } from './pipeline-stages/pipeline-stages.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -550,6 +550,85 @@ describe('QuotesService - Sales tạo báo giá', () => {
       service = new QuotesService(repository as unknown as QuotesRepository);
     });
 
+    it('không cho Sales xem Quote không thuộc quyền của mình', async () => {
+      repository.findOwnedQuoteById.mockResolvedValue(null);
+
+      await expect(service.findOne(999, salesUser)).rejects.toThrow(
+        'Không tìm thấy báo giá.',
+      );
+
+      expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
+        999,
+        salesUser.userId,
+      );
+    });
+
+    it('không cho Sales cập nhật Quote không thuộc quyền của mình', async () => {
+      repository.findOwnedQuoteById.mockResolvedValue(null);
+
+      await expect(
+        service.update(
+          999,
+          {
+            items: [
+              {
+                productId: 1,
+                quantity: 1,
+              },
+            ],
+          },
+          salesUser,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow('Không tìm thấy báo giá.');
+
+      expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
+        999,
+        salesUser.userId,
+      );
+
+      expect(repository.findProductsByIds).not.toHaveBeenCalled();
+      expect(repository.updateWithDetailsAndLog).not.toHaveBeenCalled();
+    });
+
+    it('không cho Sales xác nhận Quote không thuộc quyền của mình', async () => {
+      repository.findOwnedQuoteById.mockResolvedValue(null);
+
+      await expect(
+        service.confirm(
+          999,
+          salesUser,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow('Không tìm thấy báo giá.');
+
+      expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
+        999,
+        salesUser.userId,
+      );
+
+      expect(repository.changeStatusWithLog).not.toHaveBeenCalled();
+    });
+
+    it('không cho Sales hủy Quote không thuộc quyền của mình', async () => {
+      repository.findOwnedQuoteById.mockResolvedValue(null);
+
+      await expect(
+        service.cancel(
+          999,
+          salesUser,
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow('Không tìm thấy báo giá.');
+
+      expect(repository.findOwnedQuoteById).toHaveBeenCalledWith(
+        999,
+        salesUser.userId,
+      );
+
+      expect(repository.changeStatusWithLog).not.toHaveBeenCalled();
+    });
+
     it('BR22 - từ chối chỉnh sửa Quote không ở trạng thái Draft', async () => {
       repository.findOwnedQuoteById.mockResolvedValue({
         quoteid: 20,

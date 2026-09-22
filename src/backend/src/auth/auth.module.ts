@@ -9,10 +9,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import type { SignOptions } from 'jsonwebtoken';
 import { AuthRepository } from './repositories/auth.repository';
 import { ResetPasswordGuard } from './guards/reset-password.guard';
+import { MailModule } from '../common/mail/mail.module';
 
 @Module({
   imports: [
     UsersModule,
+    MailModule,
 
     PassportModule.register({
       defaultStrategy: 'jwt',

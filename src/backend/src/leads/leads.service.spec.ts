@@ -17,6 +17,7 @@ describe('LeadsService - convertLead', () => {
     convertToCustomer: jest.fn(),
     findDuplicate: jest.fn(),
     createWithLog: jest.fn(),
+    updateWithLog: jest.fn(),
   };
 
   const currentUser: AuthenticatedUser = {
@@ -314,7 +315,6 @@ describe('LeadsService - convertLead', () => {
     expect(leadsRepository.findDuplicate).toHaveBeenCalledWith(
       'duplicate@crm.local',
       '0911111111',
-      undefined,
     );
     expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
   });
@@ -349,9 +349,61 @@ describe('LeadsService - convertLead', () => {
     expect(leadsRepository.findDuplicate).toHaveBeenCalledWith(
       undefined,
       '0901234567',
-      undefined,
     );
     expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
+  });
+
+  it('BR03 - gộp Lead trùng khi người dùng xác nhận mergeDuplicate', async () => {
+    const duplicateLead = {
+      leadid: 20,
+      sourceid: 1,
+      assigneduserid: 3,
+      fullname: 'Lead cũ',
+      company: null,
+      phone: null,
+      email: 'duplicate@crm.local',
+      address: 'TP.HCM',
+      status: 'Qualified',
+      createddate: new Date('2026-09-01T00:00:00.000Z'),
+    };
+
+    const mergedLead = {
+      ...duplicateLead,
+      fullname: 'Lead cập nhật',
+      company: 'Công ty mới',
+      leadsources: null,
+      users: null,
+      customers: null,
+    };
+
+    leadsRepository.findDuplicate.mockResolvedValue(duplicateLead);
+    leadsRepository.updateWithLog.mockResolvedValue(mergedLead);
+
+    const result = await service.create(
+      {
+        fullName: 'Lead cập nhật',
+        company: 'Công ty mới',
+        email: 'DUPLICATE@CRM.LOCAL',
+        phone: '0901234567',
+        mergeDuplicate: true,
+      },
+      currentUser.userId,
+    );
+
+    expect(leadsRepository.updateWithLog).toHaveBeenCalledWith(
+      20,
+      expect.objectContaining({
+        fullname: 'Lead cũ',
+        company: 'Công ty mới',
+        phone: '0901234567',
+        email: 'duplicate@crm.local',
+        status: 'Qualified',
+      }),
+      currentUser.userId,
+    );
+
+    expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
+    expect(result.leadId).toBe(20);
   });
 });
 

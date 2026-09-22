@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
@@ -19,6 +18,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { CreatePipelineStageDto } from './dto/create-pipeline-stage.dto';
 import { UpdatePipelineStageDto } from './dto/update-pipeline-stage.dto';
 import { PipelineStagesService } from './pipeline-stages.service';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Pipeline Stages')
 @ApiBearerAuth('access-token')
@@ -26,9 +26,7 @@ import { PipelineStagesService } from './pipeline-stages.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class PipelineStagesController {
-  constructor(
-    private readonly pipelineStagesService: PipelineStagesService,
-  ) {}
+  constructor(private readonly pipelineStagesService: PipelineStagesService) {}
 
   @Get()
   findAll() {
@@ -42,7 +40,7 @@ export class PipelineStagesController {
 
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe) stageId: number,
+    @Param('id', Int32IdPipe) stageId: number,
     @Body() dto: UpdatePipelineStageDto,
   ) {
     return this.pipelineStagesService.update(stageId, dto);
@@ -50,9 +48,7 @@ export class PipelineStagesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(
-    @Param('id', ParseIntPipe) stageId: number,
-  ): Promise<void> {
+  async remove(@Param('id', Int32IdPipe) stageId: number): Promise<void> {
     await this.pipelineStagesService.remove(stageId);
   }
 }

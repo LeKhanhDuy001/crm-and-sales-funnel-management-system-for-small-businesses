@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -22,6 +21,7 @@ import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TasksService } from './tasks.service';
 import { AssignTaskDto } from './dto/assign-task.dto';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Tasks')
 @ApiBearerAuth('access-token')
@@ -53,7 +53,7 @@ export class TasksController {
   @Get(':id')
   @Roles(Role.SALES_MANAGER, Role.SALES, Role.CUSTOMER_CARE)
   findOne(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     taskId: number,
 
     @Req()
@@ -76,7 +76,7 @@ export class TasksController {
   @Patch(':id/status')
   @Roles(Role.SALES_MANAGER, Role.CUSTOMER_CARE)
   updateStatus(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     taskId: number,
     @Body()
     dto: UpdateTaskStatusDto,
@@ -94,7 +94,7 @@ export class TasksController {
   @Patch(':id/cancel')
   @Roles(Role.SALES_MANAGER, Role.CUSTOMER_CARE)
   cancel(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     taskId: number,
     @Req()
     request: AuthenticatedRequest,
@@ -105,7 +105,7 @@ export class TasksController {
   @Patch(':id/assignment')
   @Roles(Role.SALES_MANAGER)
   assign(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     taskId: number,
     @Body()
     dto: AssignTaskDto,
@@ -118,7 +118,7 @@ export class TasksController {
   @Patch(':id')
   @Roles(Role.SALES_MANAGER, Role.CUSTOMER_CARE)
   update(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     taskId: number,
     @Body()
     dto: UpdateTaskDto,

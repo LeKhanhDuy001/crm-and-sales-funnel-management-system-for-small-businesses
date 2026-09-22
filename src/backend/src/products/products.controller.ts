@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -21,6 +20,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsService } from './products.service';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Products')
 @ApiBearerAuth('access-token')
@@ -45,7 +45,7 @@ export class ProductsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Xem chi tiết sản phẩm' })
-  findOne(@Param('id', ParseIntPipe) productId: number) {
+  findOne(@Param('id', Int32IdPipe) productId: number) {
     return this.productsService.findOne(productId);
   }
 
@@ -58,7 +58,7 @@ export class ProductsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Cập nhật sản phẩm' })
   update(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     productId: number,
     @Body() dto: UpdateProductDto,
     @Req()
@@ -70,7 +70,7 @@ export class ProductsController {
   @Delete(':id')
   @ApiOperation({ summary: 'Xóa hoặc ngừng hoạt động sản phẩm' })
   remove(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     productId: number,
     @Req()
     request: AuthenticatedRequest,

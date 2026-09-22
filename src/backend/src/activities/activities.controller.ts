@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Post,
   Req,
   UseGuards,
@@ -18,6 +17,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { ActivitiesService } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityResultDto } from './dto/update-activity-result.dto';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Activities')
 @ApiBearerAuth('access-token')
@@ -45,7 +45,7 @@ export class ActivitiesController {
 
   @Get(':id')
   findOne(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     activityId: number,
     @Req()
     request: AuthenticatedRequest,
@@ -65,7 +65,7 @@ export class ActivitiesController {
 
   @Patch(':id/result')
   updateResult(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     activityId: number,
     @Body()
     dto: UpdateActivityResultDto,
@@ -82,7 +82,7 @@ export class ActivitiesController {
 
   @Patch(':id/cancel')
   cancel(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     activityId: number,
     @Req()
     request: AuthenticatedRequest,

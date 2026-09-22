@@ -1,10 +1,12 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
+import { MailService } from '../common/mail/mail.service';
 import { UsersService } from '../users/users.service';
+import { action_type } from '../../generated/prisma/client';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './repositories/auth.repository';
-import { action_type } from '../../generated/prisma/client';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -27,6 +29,10 @@ describe('AuthService', () => {
     markResetTokenUsed: jest.Mock;
   };
 
+  let mailService: {
+    sendPasswordResetEmail: jest.Mock;
+  };
+
   beforeEach(() => {
     usersService = {
       findByEmail: jest.fn(),
@@ -46,10 +52,17 @@ describe('AuthService', () => {
       markResetTokenUsed: jest.fn(),
     };
 
+    mailService = {
+      sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+    };
+
+    process.env.FRONTEND_URL = 'http://localhost:3000';
+
     authService = new AuthService(
       usersService as unknown as UsersService,
       jwtService as unknown as JwtService,
       authRepository as unknown as AuthRepository,
+      mailService as unknown as MailService,
     );
   });
 
@@ -158,11 +171,11 @@ describe('AuthService', () => {
     });
 
     expect(authRepository.deleteUnusedResetTokens).not.toHaveBeenCalled();
-
     expect(authRepository.createResetToken).not.toHaveBeenCalled();
+    expect(mailService.sendPasswordResetEmail).not.toHaveBeenCalled();
   });
 
-  it('should create hashed reset token for valid account', async () => {
+  it('should create hashed reset token and send reset email for valid account', async () => {
     usersService.findByEmail.mockResolvedValue({
       userid: 1,
       email: 'admin.demo@crm.local',
@@ -178,22 +191,77 @@ describe('AuthService', () => {
     });
 
     expect(authRepository.deleteUnusedResetTokens).toHaveBeenCalledWith(1);
-
     expect(authRepository.createResetToken).toHaveBeenCalledTimes(1);
 
     const [userId, tokenHash, expiresAt] = authRepository.createResetToken.mock
       .calls[0] as [number, string, Date];
 
     expect(userId).toBe(1);
-
     expect(tokenHash).toMatch(/^[a-f0-9]{64}$/);
-
     expect(expiresAt).toBeInstanceOf(Date);
 
-    expect(expiresAt.getTime()).toBeGreaterThan(Date.now() + 14 * 60 * 1000);
+    expect(expiresAt.getTime()).toBeGreaterThan(
+      Date.now() + 14 * 60 * 1000,
+    );
 
     expect(expiresAt.getTime()).toBeLessThanOrEqual(
       Date.now() + 15 * 60 * 1000,
+    );
+
+    expect(mailService.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+
+    const [email, resetUrl] =
+      mailService.sendPasswordResetEmail.mock.calls[0] as [string, string];
+
+    expect(email).toBe('admin.demo@crm.local');
+
+    expect(resetUrl).toContain(
+      'http://localhost:3000/reset-password?token=',
+    );
+
+    const token = new URL(resetUrl).searchParams.get('token');
+
+    expect(token).not.toBeNull();
+
+    const sentTokenHash = createHash('sha256')
+      .update(token!)
+      .digest('hex');
+
+    expect(sentTokenHash).toBe(tokenHash);
+  });
+
+  it('should remove reset token when password reset email cannot be sent', async () => {
+    usersService.findByEmail.mockResolvedValue({
+      userid: 1,
+      email: 'admin.demo@crm.local',
+      status: true,
+    });
+
+    mailService.sendPasswordResetEmail.mockRejectedValue(
+      new Error('Resend unavailable'),
+    );
+
+    const result = await authService.forgotPassword({
+      email: 'admin.demo@crm.local',
+    });
+
+    expect(result).toEqual({
+      message: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
+    });
+
+    expect(authRepository.createResetToken).toHaveBeenCalledTimes(1);
+    expect(mailService.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+
+    expect(authRepository.deleteUnusedResetTokens).toHaveBeenCalledTimes(2);
+
+    expect(authRepository.deleteUnusedResetTokens).toHaveBeenNthCalledWith(
+      1,
+      1,
+    );
+
+    expect(authRepository.deleteUnusedResetTokens).toHaveBeenNthCalledWith(
+      2,
+      1,
     );
   });
 
@@ -265,7 +333,6 @@ describe('AuthService', () => {
     });
 
     expect(usersService.findById).toHaveBeenCalledWith(1);
-
     expect(usersService.updatePassword).toHaveBeenCalledTimes(1);
 
     const [userId, passwordHash] = usersService.updatePassword.mock
@@ -273,9 +340,9 @@ describe('AuthService', () => {
 
     expect(userId).toBe(1);
 
-    await expect(bcrypt.compare('NewPassword123', passwordHash)).resolves.toBe(
-      true,
-    );
+    await expect(
+      bcrypt.compare('NewPassword123', passwordHash),
+    ).resolves.toBe(true);
 
     expect(authRepository.markResetTokenUsed).toHaveBeenCalledWith(10);
   });

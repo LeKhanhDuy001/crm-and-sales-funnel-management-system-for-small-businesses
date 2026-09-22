@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Req,
@@ -18,6 +17,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { QuotesService } from './quotes.service';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Quotes')
 @ApiBearerAuth('access-token')
@@ -45,7 +45,7 @@ export class QuotesController {
 
   @Get(':id')
   findOne(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     quoteId: number,
     @Req()
     request: AuthenticatedRequest,
@@ -65,7 +65,7 @@ export class QuotesController {
 
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     quoteId: number,
     @Body()
     dto: UpdateQuoteDto,
@@ -77,7 +77,7 @@ export class QuotesController {
 
   @Patch(':id/confirm')
   confirm(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     quoteId: number,
     @Req()
     request: AuthenticatedRequest,
@@ -87,7 +87,7 @@ export class QuotesController {
 
   @Patch(':id/cancel')
   cancel(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     quoteId: number,
     @Req()
     request: AuthenticatedRequest,

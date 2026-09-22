@@ -557,8 +557,41 @@ describe('TasksService', () => {
       expect(result.message).toBe('Cập nhật trạng thái Task thành công.');
       expect(result.data.status).toBe(TASK_STATUS.Completed);
     });
+
+    it('không cho Customer Care cập nhật trạng thái Task không thuộc quyền', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(null);
+
+      await expect(
+        tasksService.updateStatus(
+          99,
+          {
+            status: TASK_STATUS.Completed,
+          },
+          customerCare,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(tasksRepository.findVisibleById).toHaveBeenCalledWith(99, 3);
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
   });
   describe('cancel', () => {
+    it('không cho Customer Care hủy Task không thuộc quyền', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(null);
+
+      await expect(
+        tasksService.cancel(
+          99,
+          customerCare,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(tasksRepository.findVisibleById).toHaveBeenCalledWith(99, 3);
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
     it('không cho hủy lại Task đã Cancelled', async () => {
       tasksRepository.findVisibleById.mockResolvedValue(
         makeTask({ status: TASK_STATUS.Cancelled }),

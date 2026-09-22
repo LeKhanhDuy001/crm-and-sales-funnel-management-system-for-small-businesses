@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -21,6 +20,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 import { UsersService } from './users.service';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Users')
 @ApiBearerAuth('access-token')
@@ -46,7 +46,7 @@ export class UsersController {
   @Get(':id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Admin xem chi tiết người dùng' })
-  findOne(@Param('id', ParseIntPipe) userId: number) {
+  findOne(@Param('id', Int32IdPipe) userId: number) {
     return this.usersService.findOne(userId);
   }
 
@@ -61,7 +61,7 @@ export class UsersController {
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Admin cập nhật người dùng' })
   update(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     userId: number,
     @Body() dto: UpdateUserDto,
     @Req() request: AuthenticatedRequest,
@@ -73,7 +73,7 @@ export class UsersController {
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Admin xóa hoặc khóa người dùng' })
   remove(
-    @Param('id', ParseIntPipe) userId: number,
+    @Param('id', Int32IdPipe) userId: number,
     @Req() request: AuthenticatedRequest,
   ) {
     return this.usersService.remove(userId, request.user);

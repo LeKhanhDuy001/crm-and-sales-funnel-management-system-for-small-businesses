@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -34,6 +35,7 @@ export class UpdateUserDto {
   @IsOptional()
   @IsInt({ message: 'Role ID phải là số nguyên' })
   @Min(1, { message: 'Role ID không hợp lệ' })
+  @Max(2_147_483_647, { message: 'Role ID không hợp lệ' })
   roleId?: number;
 
   @ApiPropertyOptional()

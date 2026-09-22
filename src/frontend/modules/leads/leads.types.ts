@@ -46,10 +46,11 @@ export interface CreateLeadInput {
   email?: string;
   address?: string;
   status?: string;
+  mergeDuplicate?: boolean;
 }
 
 export type UpdateLeadInput =
-  Partial<CreateLeadInput>;
+  Partial<Omit<CreateLeadInput, 'mergeDuplicate'>>;
 
 export interface ConvertLeadResponse {
   message: string;

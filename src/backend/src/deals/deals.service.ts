@@ -201,6 +201,13 @@ export class DealsService {
 
     const currentDeal = await this.findVisibleDeal(dealId, user);
 
+    // BR-10: Deal đã đóng ở Won/Lost không được phép chỉnh sửa.
+    if (this.isTerminalStage(currentDeal.pipelinestages.stagename)) {
+      throw new UnprocessableEntityException(
+        'Deal đã ở giai đoạn Won hoặc Lost nên không thể chỉnh sửa.',
+      );
+    }
+
     if (dto.customerId !== undefined) {
       await this.ensureCustomerAccessible(dto.customerId, user);
     }
@@ -233,7 +240,14 @@ export class DealsService {
     user: AuthenticatedUser,
     ipAddress: string | null,
   ): Promise<void> {
-    await this.findVisibleDeal(dealId, user);
+    const currentDeal = await this.findVisibleDeal(dealId, user);
+
+    // BR-10: Deal đã đóng ở Won/Lost không được phép xóa.
+    if (this.isTerminalStage(currentDeal.pipelinestages.stagename)) {
+      throw new UnprocessableEntityException(
+        'Deal đã ở giai đoạn Won hoặc Lost nên không thể xóa.',
+      );
+    }
     const linked = await this.dealsRepository.getLinkedRecordCount(dealId);
     if (!linked) {
       throw new NotFoundException('Không tìm thấy Deal.');
@@ -525,6 +539,13 @@ export class DealsService {
 
     if (!currentDeal) {
       throw new NotFoundException('Không tìm thấy Deal.');
+    }
+
+    // BR-10: Deal đã đóng ở Won/Lost không được phép phân công lại.
+    if (this.isTerminalStage(currentDeal.pipelinestages.stagename)) {
+      throw new UnprocessableEntityException(
+        'Deal đã ở giai đoạn Won hoặc Lost nên không thể phân công lại.',
+      );
     }
 
     const assignee = await this.dealsRepository.findUserById(

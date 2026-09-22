@@ -881,6 +881,32 @@ describe('DealsService - quản lý Deal', () => {
       expect(dealsRepository.updateWithLog).not.toHaveBeenCalled();
     });
 
+    it.each(['Won', 'Lost'])(
+      'BR-10 - không cho cập nhật Deal khi đang ở %s',
+      async (stageName) => {
+        dealsRepository.findOwnedById.mockResolvedValue({
+          ...deal,
+          pipelinestages: {
+            ...deal.pipelinestages,
+            stagename: stageName,
+          },
+        });
+
+        await expect(
+          dealsService.update(
+            7,
+            { dealValue: 999_000_000 },
+            salesUser,
+            null,
+          ),
+        ).rejects.toThrow(
+          'Deal đã ở giai đoạn Won hoặc Lost nên không thể chỉnh sửa.',
+        );
+
+        expect(dealsRepository.updateWithLog).not.toHaveBeenCalled();
+      },
+    );
+
     it('từ chối cập nhật Deal không thuộc quyền Sales', async () => {
       dealsRepository.findOwnedById.mockResolvedValue(null);
       await expect(
@@ -969,6 +995,34 @@ describe('DealsService - quản lý Deal', () => {
       expect(dealsRepository.getLinkedRecordCount).not.toHaveBeenCalled();
       expect(dealsRepository.deleteWithLog).not.toHaveBeenCalled();
     });
+
+    it.each(['Won', 'Lost'])(
+      'BR-10 - không cho xóa Deal khi đang ở %s',
+      async (stageName) => {
+        dealsRepository.findOwnedById.mockResolvedValue({
+          ...deal,
+          pipelinestages: {
+            ...deal.pipelinestages,
+            stagename: stageName,
+          },
+        });
+
+        await expect(
+          dealsService.remove(7, salesUser, null),
+        ).rejects.toThrow(
+          'Deal đã ở giai đoạn Won hoặc Lost nên không thể xóa.',
+        );
+
+        expect(
+          dealsRepository.getLinkedRecordCount,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          dealsRepository.deleteWithLog,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
     it('ném NotFoundException khi không tìm thấy dữ liệu Deal lúc kiểm tra liên kết', async () => {
       dealsRepository.findOwnedById.mockResolvedValue(deal);
       dealsRepository.getLinkedRecordCount.mockResolvedValue(null);
@@ -1081,6 +1135,37 @@ describe('DealsService - quản lý Deal', () => {
       expect(result.message).toBe('Phân công Deal thành công.');
       expect(result.data.assignedUser.userId).toBe(6);
     });
+
+    it.each(['Won', 'Lost'])(
+      'BR-10 - không cho phân công lại Deal khi đang ở %s',
+      async (stageName) => {
+        dealsRepository.findById.mockResolvedValue({
+          ...deal,
+          pipelinestages: {
+            ...deal.pipelinestages,
+            stagename: stageName,
+          },
+        });
+
+        await expect(
+          dealsService.assign(
+            7,
+            { assignedUserId: 6 },
+            salesManagerUser,
+          ),
+        ).rejects.toThrow(
+          'Deal đã ở giai đoạn Won hoặc Lost nên không thể phân công lại.',
+        );
+
+        expect(
+          dealsRepository.findUserById,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          dealsRepository.assignWithLog,
+        ).not.toHaveBeenCalled();
+      },
+    );
 
     it('BR-07, BR-14, BR-18 - Admin phân công Deal thành công', async () => {
       dealsRepository.findById.mockResolvedValue(deal);
