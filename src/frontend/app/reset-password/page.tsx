@@ -14,14 +14,18 @@ export default function ResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tokenFromUrl = params.get('token')?.trim() ?? '';
+    const timeoutId = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromUrl = params.get('token')?.trim() ?? '';
 
-    setToken(tokenFromUrl);
+      setToken(tokenFromUrl);
 
-    if (!tokenFromUrl) {
-      setError('Liên kết đặt lại mật khẩu không hợp lệ hoặc thiếu token.');
-    }
+      if (!tokenFromUrl) {
+        setError('Liên kết đặt lại mật khẩu không hợp lệ hoặc thiếu token.');
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuth, getAccessToken } from '../../modules/auth/auth.storage';
@@ -45,11 +45,27 @@ export default function PipelineStagesPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    void loadStages();
-  }, []);
+  const handleApiError = useCallback((caughtError: unknown): void => {
+    if (caughtError instanceof ApiError) {
+      if (caughtError.statusCode === 401) {
+        clearAuth();
+        router.replace('/login');
+        return;
+      }
 
-  async function loadStages(): Promise<void> {
+      if (caughtError.statusCode === 403) {
+        router.replace('/unauthorized');
+        return;
+      }
+
+      setError(caughtError.message);
+      return;
+    }
+
+    setError('Không thể xử lý cấu hình Pipeline.');
+  }, [router]);
+
+  const loadStages = useCallback(async (): Promise<void> => {
     const accessToken = getAccessToken();
 
     if (!accessToken) {
@@ -69,7 +85,16 @@ export default function PipelineStagesPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [handleApiError, router]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadStages();
+    }, 0);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [loadStages]);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -218,26 +243,6 @@ export default function PipelineStagesPage() {
       stageOrder,
       probability,
     };
-  }
-
-  function handleApiError(caughtError: unknown): void {
-    if (caughtError instanceof ApiError) {
-      if (caughtError.statusCode === 401) {
-        clearAuth();
-        router.replace('/login');
-        return;
-      }
-
-      if (caughtError.statusCode === 403) {
-        router.replace('/unauthorized');
-        return;
-      }
-
-      setError(caughtError.message);
-      return;
-    }
-
-    setError('Không thể xử lý cấu hình Pipeline.');
   }
 
   return (

@@ -15,6 +15,18 @@ import {
 } from './repositories/deals.repository';
 import { DealsService } from './deals.service';
 
+function getRelativeLocalDateString(daysFromToday: number): string {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + daysFromToday);
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 type DealsRepositoryMock = {
   findMany: jest.MockedFunction<DealsRepository['findMany']>;
   count: jest.MockedFunction<DealsRepository['count']>;
@@ -109,7 +121,7 @@ describe('DealsService - quản lý Deal', () => {
     dealvalue: new Prisma.Decimal(10_000_000),
     probability: 50,
     expectedrevenue: new Prisma.Decimal(5_000_000),
-    expectedclosedate: new Date('2026-09-30'),
+    expectedclosedate: new Date(getRelativeLocalDateString(7)),
     status: 'Open',
     lostreason: null,
     createddate: new Date('2026-08-20T08:00:00.000Z'),
@@ -568,6 +580,7 @@ describe('DealsService - quản lý Deal', () => {
 
   describe('create', () => {
     it('tạo Deal hợp lệ, tự gán Sales và tính Expected Revenue', async () => {
+      const expectedCloseDate = getRelativeLocalDateString(7);
       dealsRepository.findCustomerAccessible.mockResolvedValue({
         customerid: 3,
       });
@@ -588,7 +601,7 @@ describe('DealsService - quản lý Deal', () => {
         stageId: 1,
         dealName: '  Triển khai CRM  ',
         dealValue: 10_000_000,
-        expectedCloseDate: '2026-09-30',
+        expectedCloseDate,
       } as CreateDealDto;
 
       const result = await dealsService.create(dto, salesUser, '127.0.0.1');
@@ -603,9 +616,95 @@ describe('DealsService - quản lý Deal', () => {
       expect(data.dealvalue.toNumber()).toBe(10_000_000);
       expect(data.probability).toBe(10);
       expect(data.expectedrevenue.toNumber()).toBe(1_000_000);
-      expect(data.expectedclosedate).toEqual(new Date('2026-09-30'));
+      expect(data.expectedclosedate).toEqual(new Date(expectedCloseDate));
       expect(actorUserId).toBe(5);
       expect(ipAddress).toBe('127.0.0.1');
+      expect(result.message).toBe('Tạo Deal thành công.');
+    });
+
+    it.each([0, -1])(
+      'BR-43 - từ chối tạo Deal khi giá trị Deal là %s',
+      async (dealValue) => {
+        await expect(
+          dealsService.create(
+            {
+              customerId: 3,
+              stageId: 1,
+              dealName: 'Deal không hợp lệ',
+              dealValue,
+            },
+            salesUser,
+            null,
+          ),
+        ).rejects.toThrow(
+          new UnprocessableEntityException('Giá trị Deal phải lớn hơn 0.'),
+        );
+
+        expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
+      },
+    );
+
+    it('BR-44 - từ chối tạo Deal khi ngày dự kiến đóng nhỏ hơn ngày hiện tại', async () => {
+      const yesterday = getRelativeLocalDateString(-1);
+
+      await expect(
+        dealsService.create(
+          {
+            customerId: 3,
+            stageId: 1,
+            dealName: 'Deal ngày quá khứ',
+            dealValue: 1_000_000,
+            expectedCloseDate: yesterday,
+          },
+          salesUser,
+          null,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.',
+        ),
+      );
+
+      expect(dealsRepository.createWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-44 - cho phép tạo Deal khi ngày dự kiến đóng là ngày hiện tại', async () => {
+      const today = getRelativeLocalDateString(0);
+
+      dealsRepository.findCustomerAccessible.mockResolvedValue({
+        customerid: 3,
+      });
+
+      dealsRepository.findInitialStage.mockResolvedValue(leadStage);
+
+      dealsRepository.createWithLog.mockResolvedValue({
+        ...deal,
+        stageid: 1,
+        probability: 10,
+        expectedclosedate: new Date(today),
+        expectedrevenue: new Prisma.Decimal(100_000),
+        pipelinestages: {
+          stageid: 1,
+          stagename: 'Lead',
+          stageorder: 1,
+        },
+      });
+
+      const result = await dealsService.create(
+        {
+          customerId: 3,
+          stageId: 1,
+          dealName: 'Deal hôm nay',
+          dealValue: 1_000_000,
+          expectedCloseDate: today,
+        },
+        salesUser,
+        null,
+      );
+
+      const data = dealsRepository.createWithLog.mock.calls[0][0];
+
+      expect(data.expectedclosedate).toEqual(new Date(today));
       expect(result.message).toBe('Tạo Deal thành công.');
     });
 
@@ -881,6 +980,61 @@ describe('DealsService - quản lý Deal', () => {
       expect(dealsRepository.updateWithLog).not.toHaveBeenCalled();
     });
 
+    it('BR-43 - từ chối cập nhật Deal Value bằng 0', async () => {
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+
+      await expect(
+        dealsService.update(7, { dealValue: 0 }, salesUser, null),
+      ).rejects.toThrow(
+        new UnprocessableEntityException('Giá trị Deal phải lớn hơn 0.'),
+      );
+
+      expect(dealsRepository.updateWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-44 - từ chối cập nhật ngày dự kiến đóng nhỏ hơn ngày hiện tại', async () => {
+      const yesterday = getRelativeLocalDateString(-1);
+
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+
+      await expect(
+        dealsService.update(
+          7,
+          { expectedCloseDate: yesterday },
+          salesUser,
+          null,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.',
+        ),
+      );
+
+      expect(dealsRepository.updateWithLog).not.toHaveBeenCalled();
+    });
+
+    it('BR-44 - cho phép cập nhật ngày dự kiến đóng là ngày hiện tại', async () => {
+      const today = getRelativeLocalDateString(0);
+
+      dealsRepository.findOwnedById.mockResolvedValue(deal);
+      dealsRepository.updateWithLog.mockResolvedValue({
+        ...deal,
+        expectedclosedate: new Date(today),
+      });
+
+      const result = await dealsService.update(
+        7,
+        { expectedCloseDate: today },
+        salesUser,
+        null,
+      );
+
+      const data = dealsRepository.updateWithLog.mock.calls[0][1];
+
+      expect(data.expectedclosedate).toEqual(new Date(today));
+      expect(result.message).toBe('Cập nhật Deal thành công.');
+    });
+
     it.each(['Won', 'Lost'])(
       'BR-10 - không cho cập nhật Deal khi đang ở %s',
       async (stageName) => {
@@ -923,6 +1077,7 @@ describe('DealsService - quản lý Deal', () => {
     });
 
     it('cập nhật Deal Value và tính lại Expected Revenue', async () => {
+      const expectedCloseDate = getRelativeLocalDateString(7);
       dealsRepository.findOwnedById.mockResolvedValue(deal);
       dealsRepository.findCustomerAccessible.mockResolvedValue({
         customerid: 4,
@@ -933,7 +1088,7 @@ describe('DealsService - quản lý Deal', () => {
         dealname: 'CRM Enterprise',
         dealvalue: new Prisma.Decimal(20_000_000),
         expectedrevenue: new Prisma.Decimal(10_000_000),
-        expectedclosedate: new Date('2026-10-15'),
+        expectedclosedate: new Date(expectedCloseDate),
       } as DealWithRelations;
       dealsRepository.updateWithLog.mockResolvedValue(updatedDeal);
       const result = await dealsService.update(
@@ -942,7 +1097,7 @@ describe('DealsService - quản lý Deal', () => {
           customerId: 4,
           dealName: '  CRM Enterprise  ',
           dealValue: 20_000_000,
-          expectedCloseDate: '2026-10-15',
+          expectedCloseDate,
         },
         salesUser,
         '127.0.0.1',
@@ -955,7 +1110,7 @@ describe('DealsService - quản lý Deal', () => {
       expect(data.expectedrevenue).toBeDefined();
       expect(data.dealvalue!.toNumber()).toBe(20_000_000);
       expect(data.expectedrevenue!.toNumber()).toBe(10_000_000);
-      expect(data.expectedclosedate).toEqual(new Date('2026-10-15'));
+      expect(data.expectedclosedate).toEqual(new Date(expectedCloseDate));
       expect(actorUserId).toBe(5);
       expect(ipAddress).toBe('127.0.0.1');
       expect(result.message).toBe('Cập nhật Deal thành công.');

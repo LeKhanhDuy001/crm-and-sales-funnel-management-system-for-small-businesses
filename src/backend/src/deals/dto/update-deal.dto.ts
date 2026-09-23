@@ -31,7 +31,7 @@ export class UpdateDealDto {
   @IsNumber({
     maxDecimalPlaces: 2,
   })
-  @Min(0)
+  @Min(1)
   dealValue?: number;
 
   @IsOptional()

@@ -137,6 +137,10 @@ export class DealsService {
     user: AuthenticatedUser,
     ipAddress: string | null,
   ) {
+    // BR-43: Giá trị Deal phải lớn hơn 0.
+    this.validateDealValue(dto.dealValue);
+    // BR-44: Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.
+    this.validateExpectedCloseDate(dto.expectedCloseDate);
     // BR-06: Deal phải có Customer, người phụ trách và Pipeline.
     await this.ensureCustomerAccessible(dto.customerId, user);
     // BR-29: Xác định người phụ trách Deal theo vai trò người tạo.
@@ -206,6 +210,16 @@ export class DealsService {
       throw new UnprocessableEntityException(
         'Deal đã ở giai đoạn Won hoặc Lost nên không thể chỉnh sửa.',
       );
+    }
+
+    if (dto.dealValue !== undefined) {
+      // BR-43: Giá trị Deal phải lớn hơn 0.
+      this.validateDealValue(dto.dealValue);
+    }
+
+    if (dto.expectedCloseDate !== undefined) {
+      // BR-44: Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.
+      this.validateExpectedCloseDate(dto.expectedCloseDate);
     }
 
     if (dto.customerId !== undefined) {
@@ -663,6 +677,33 @@ export class DealsService {
       message: 'Cập nhật giai đoạn Deal thành công.',
       data: this.mapDeal(updatedDeal),
     };
+  }
+
+  private validateDealValue(dealValue: number): void {
+    if (dealValue <= 0) {
+      throw new UnprocessableEntityException('Giá trị Deal phải lớn hơn 0.');
+    }
+  }
+
+  private validateExpectedCloseDate(expectedCloseDate?: string): void {
+    if (!expectedCloseDate) {
+      return;
+    }
+
+    const expectedDate = expectedCloseDate.slice(0, 10);
+    const now = new Date();
+
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    if (expectedDate < today) {
+      throw new UnprocessableEntityException(
+        'Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.',
+      );
+    }
   }
 
   private isTerminalStage(stageName: string): boolean {

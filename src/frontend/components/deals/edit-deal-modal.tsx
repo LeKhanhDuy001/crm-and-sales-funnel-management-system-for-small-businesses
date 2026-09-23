@@ -2,7 +2,7 @@
 
 import { type FormEvent, useState, } from 'react';
 import type { Customer } from '../../modules/customers/customers.types';
-import { validateDealForm, type DealFormErrors, } from '../../modules/deals/deal-form-validation';
+import { getTodayDateString, validateDealForm, type DealFormErrors, } from '../../modules/deals/deal-form-validation';
 import { updateDeal } from '../../modules/deals/deals.service';
 import type { Deal } from '../../modules/deals/deals.types';
 import { ApiError } from '../../services/api';
@@ -17,7 +17,7 @@ interface EditDealModalProps {
   onSuccess: () => void;
 }
 
-export default function EditDealModal({token, deal, customers, onClose, onSuccess,}: EditDealModalProps) {
+export default function EditDealModal({ token, deal, customers, onClose, onSuccess, }: EditDealModalProps) {
   const [errors, setErrors] = useState<DealFormErrors>({});
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +35,7 @@ export default function EditDealModal({token, deal, customers, onClose, onSucces
 
     const expectedCloseDate = String(formData.get('expectedCloseDate',) ?? '',);
 
-    const validationErrors = validateDealForm({customerId, stageId: '', dealName, dealValue,}, false,);
+    const validationErrors = validateDealForm({ customerId, stageId: '', dealName, dealValue, expectedCloseDate, }, false,);
 
     setErrors(validationErrors);
 
@@ -114,7 +114,7 @@ export default function EditDealModal({token, deal, customers, onClose, onSucces
 
           <label>
             Tên Deal *
-            <input name="dealName" defaultValue={deal.dealName}/>
+            <input name="dealName" defaultValue={deal.dealName} />
 
             {errors.dealName && (
               <span className={styles.errorText}>
@@ -125,7 +125,7 @@ export default function EditDealModal({token, deal, customers, onClose, onSucces
 
           <label>
             Giá trị Deal *
-            <input name="dealValue" type="number" min="0" step="0.01"
+            <input name="dealValue" type="number" min="1" step="0.01"
               defaultValue={deal.dealValue}
             />
 
@@ -152,9 +152,18 @@ export default function EditDealModal({token, deal, customers, onClose, onSucces
 
           <label>
             Ngày dự kiến đóng
-            <input name="expectedCloseDate" type="date"
-              defaultValue={deal.expectedCloseDate ? deal.expectedCloseDate.slice(0, 10,) : ''}
+            <input
+              name="expectedCloseDate"
+              type="date"
+              min={getTodayDateString()}
+              defaultValue={deal.expectedCloseDate ? deal.expectedCloseDate.slice(0, 10) : ''}
             />
+
+            {errors.expectedCloseDate && (
+              <span className={styles.errorText}>
+                {errors.expectedCloseDate}
+              </span>
+            )}
           </label>
 
           {submitError && (
