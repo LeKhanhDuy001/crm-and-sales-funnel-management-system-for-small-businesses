@@ -26,7 +26,7 @@ import { AssignTaskDto } from './dto/assign-task.dto';
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly tasksRepository: TasksRepository) { }
+  constructor(private readonly tasksRepository: TasksRepository) {}
 
   /**
    * Lấy danh sách Task theo quyền của người dùng.
@@ -165,6 +165,14 @@ export class TasksService {
     ipAddress?: string,
   ) {
     const currentTask = await this.requireVisibleTask(taskId, user);
+
+    // BR-47: Chỉ Task Pending mới được phép chỉnh sửa.
+    if (currentTask.status !== TASK_STATUS.Pending) {
+      throw new UnprocessableEntityException(
+        'Chỉ Task ở trạng thái Pending mới được phép chỉnh sửa.',
+      );
+    }
+
     const taskData = await this.buildUpdateData(currentTask, dto, user);
     const notifyAssignee =
       currentTask.assigneduserid !== taskData.assignedUserId;
@@ -456,23 +464,23 @@ export class TasksService {
       status: task.status,
       assignedUser: task.users
         ? {
-          userId: task.users.userid,
-          fullName: task.users.fullname,
-          email: task.users.email,
-          role: task.users.roles.rolename,
-        }
+            userId: task.users.userid,
+            fullName: task.users.fullname,
+            email: task.users.email,
+            role: task.users.roles.rolename,
+          }
         : null,
 
       deal: task.deals
         ? {
-          dealId: task.deals.dealid,
-          dealName: task.deals.dealname,
-          customer: {
-            customerId: task.deals.customers.customerid,
-            fullName: task.deals.customers.fullname,
-            company: task.deals.customers.company,
-          },
-        }
+            dealId: task.deals.dealid,
+            dealName: task.deals.dealname,
+            customer: {
+              customerId: task.deals.customers.customerid,
+              fullName: task.deals.customers.fullname,
+              company: task.deals.customers.company,
+            },
+          }
         : null,
     };
   }
@@ -491,6 +499,14 @@ export class TasksService {
     }
 
     const currentTask = await this.requireVisibleTask(taskId, user);
+
+    // BR-47: Chỉ Task Pending mới được phép phân công lại.
+    if (currentTask.status !== TASK_STATUS.Pending) {
+      throw new UnprocessableEntityException(
+        'Chỉ Task ở trạng thái Pending mới được phép phân công.',
+      );
+    }
+
     const assignedUserId = await this.resolveAssignee(dto.assignedUserId, user);
 
     if (currentTask.assigneduserid === assignedUserId) {

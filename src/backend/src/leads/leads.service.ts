@@ -166,7 +166,13 @@ export class LeadsService {
    * @returns Lead sau khi cập nhật.
    */
   async update(leadId: number, dto: UpdateLeadDto, currentUserId: number) {
-    await this.getExistingLead(leadId);
+    const currentLead = await this.getExistingLead(leadId);
+
+    if (currentLead.status === 'Converted') {
+      throw new ConflictException(
+        'Lead đã chuyển đổi thành Customer nên không thể chỉnh sửa.',
+      );
+    }
 
     const email = dto.email?.trim().toLowerCase();
 

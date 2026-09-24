@@ -502,3 +502,78 @@ describe('LeadsService - findOne', () => {
     expect(result.leadId).toBe(lead.leadid);
   });
 });
+
+describe('LeadsService - update', () => {
+  let service: LeadsService;
+
+  const leadsRepository = {
+    findById: jest.fn(),
+    findDuplicate: jest.fn(),
+    findSourceById: jest.fn(),
+    findUserById: jest.fn(),
+    updateWithLog: jest.fn(),
+  };
+
+  const convertedLead = {
+    leadid: 20,
+    sourceid: 1,
+    assigneduserid: 3,
+    fullname: 'Lead đã chuyển đổi',
+    company: 'Công ty ABC',
+    phone: '0901234567',
+    email: 'converted@crm.local',
+    address: 'TP.HCM',
+    status: 'Converted',
+    createddate: new Date(),
+    leadsources: null,
+    users: null,
+    customers: {
+      customerid: 10,
+    },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new LeadsService(leadsRepository as unknown as LeadsRepository);
+  });
+
+  it('không cho chỉnh sửa thông tin Lead đã Converted', async () => {
+    leadsRepository.findById.mockResolvedValue(convertedLead);
+
+    await expect(
+      service.update(
+        20,
+        {
+          fullName: 'Tên mới',
+        },
+        3,
+      ),
+    ).rejects.toThrow(
+      new ConflictException(
+        'Lead đã chuyển đổi thành Customer nên không thể chỉnh sửa.',
+      ),
+    );
+
+    expect(leadsRepository.updateWithLog).not.toHaveBeenCalled();
+  });
+
+  it('không cho Lead Converted chuyển về trạng thái trước đó', async () => {
+    leadsRepository.findById.mockResolvedValue(convertedLead);
+
+    await expect(
+      service.update(
+        20,
+        {
+          status: 'Qualified',
+        },
+        3,
+      ),
+    ).rejects.toThrow(
+      new ConflictException(
+        'Lead đã chuyển đổi thành Customer nên không thể chỉnh sửa.',
+      ),
+    );
+
+    expect(leadsRepository.updateWithLog).not.toHaveBeenCalled();
+  });
+});

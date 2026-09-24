@@ -529,6 +529,30 @@ describe('TasksService', () => {
       ).rejects.toThrow(NotFoundException);
       expect(tasksRepository.updateWithAudit).not.toHaveBeenCalled();
     });
+    it.each([
+      ['InProgress', TASK_STATUS.InProgress],
+      ['Completed', TASK_STATUS.Completed],
+      ['Cancelled', TASK_STATUS.Cancelled],
+    ])('BR47 - không cho chỉnh sửa Task ở trạng thái %s', async (_, status) => {
+      tasksRepository.findVisibleById.mockResolvedValue(makeTask({ status }));
+
+      await expect(
+        tasksService.update(
+          1,
+          {
+            title: 'Task đã sửa',
+          },
+          manager,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Chỉ Task ở trạng thái Pending mới được phép chỉnh sửa.',
+        ),
+      );
+
+      expect(tasksRepository.updateWithAudit).not.toHaveBeenCalled();
+    });
   });
   describe('updateStatus', () => {
     it('BR46, BR18 - chuyển Task từ Pending sang InProgress và ghi Audit Log', async () => {
@@ -891,5 +915,34 @@ describe('TasksService', () => {
       expect(result.message).toBe('Phân công Task thành công.');
       expect(result.data.assignedUser?.userId).toBe(3);
     });
+
+    it.each([
+      ['InProgress', TASK_STATUS.InProgress],
+      ['Completed', TASK_STATUS.Completed],
+      ['Cancelled', TASK_STATUS.Cancelled],
+    ])(
+      'BR47 - không cho phân công lại Task ở trạng thái %s',
+      async (_, status) => {
+        tasksRepository.findVisibleById.mockResolvedValue(makeTask({ status }));
+
+        await expect(
+          tasksService.assign(
+            1,
+            {
+              assignedUserId: 3,
+            },
+            manager,
+            IP_ADDRESS,
+          ),
+        ).rejects.toThrow(
+          new UnprocessableEntityException(
+            'Chỉ Task ở trạng thái Pending mới được phép phân công.',
+          ),
+        );
+
+        expect(tasksRepository.findActiveUserByRole).not.toHaveBeenCalled();
+        expect(tasksRepository.assignWithAudit).not.toHaveBeenCalled();
+      },
+    );
   });
 });
