@@ -114,7 +114,7 @@ Cài dependencies:
 npm install
 ```
 
-Tạo file môi trường từ file mẫu: .env
+Tạo file `.env` từ file mẫu `.env.example`.
 
 Sau đó mở:
 
@@ -130,6 +130,23 @@ Ví dụ:
 DATABASE_URL="postgresql://postgres:your_password@localhost:5432/crm_system"
 JWT_SECRET="your_jwt_secret"
 PORT=3001
+FRONTEND_URL="http://localhost:3000"
+RESEND_API_KEY="your_resend_api_key"
+MAIL_FROM="CRM System <onboarding@resend.dev>"
+```
+
+### Cấu hình Resend
+
+Hệ thống sử dụng Resend để gửi email đặt lại mật khẩu.
+
+1. Tạo tài khoản Resend.
+2. Tạo API key trong tài khoản Resend.
+3. Sao chép API key và cấu hình trong file `src/backend/.env`:
+
+```env
+RESEND_API_KEY="your_resend_api_key"
+MAIL_FROM="CRM System <onboarding@resend.dev>"
+FRONTEND_URL="http://localhost:3000"
 ```
 
 ## 6. Tạo Database
@@ -402,3 +419,10 @@ Customer Care
 
 Người dùng sau khi đăng nhập sẽ được điều hướng đến dashboard
 phù hợp với vai trò của tài khoản.
+
+## Video demo hệ thống
+
+Video demo toàn bộ chức năng của CRM System:
+
+- Thời lượng: 36 phút 49 giây
+- Link video: https://drive.google.com/file/d/1Eyl_WngTb1rya77PHy-wm7wCCM8HPO_s/view?usp=sharing
