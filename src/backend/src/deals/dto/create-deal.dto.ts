@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -14,11 +15,13 @@ export class CreateDealDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(2_147_483_647)
   customerId!: number;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(2_147_483_647)
   stageId!: number;
 
   @IsString()
@@ -30,13 +33,14 @@ export class CreateDealDto {
   @IsNumber({
     maxDecimalPlaces: 2,
   })
-  @Min(0)
+  @Min(1)
   dealValue!: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(2_147_483_647)
   assignedUserId?: number;
 
   @IsOptional()

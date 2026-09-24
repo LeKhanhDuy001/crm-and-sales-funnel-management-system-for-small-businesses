@@ -2,7 +2,7 @@
 
 import { type FormEvent, useMemo, useState, } from 'react';
 import type { Customer } from '../../modules/customers/customers.types';
-import { validateDealForm, type DealFormErrors, } from '../../modules/deals/deal-form-validation';
+import { getTodayDateString, validateDealForm, type DealFormErrors, } from '../../modules/deals/deal-form-validation';
 import { createDeal } from '../../modules/deals/deals.service';
 import type { PipelineStageOption, DealSalesUserOption, } from '../../modules/deals/deals.types';
 import { ApiError } from '../../services/api';
@@ -60,6 +60,7 @@ export default function CreateDealModal({ token, customers, stages, salesUsers =
         stageId,
         dealName,
         dealValue,
+        expectedCloseDate,
       },
       true,
     );
@@ -154,7 +155,12 @@ export default function CreateDealModal({ token, customers, stages, salesUsers =
 
                 {salesUsers.map((sales) => (
                   <option key={sales.userId} value={sales.userId}>
-                    {sales.fullName} - {sales.email}
+                    {sales.fullName}
+                    {' - '}
+                    {sales.openDealCount} Deal đang mở
+                    {' - '}
+                    {sales.openExpectedRevenue.toLocaleString('vi-VN')} VNĐ
+                    {sales.recommended ? ' - Gợi ý' : ''}
                   </option>
                 ))}
               </select>
@@ -188,7 +194,7 @@ export default function CreateDealModal({ token, customers, stages, salesUsers =
 
           <label>
             Giá trị Deal *
-            <input type="number" min="0" step="0.01"
+            <input type="number" min="1" step="0.01"
               value={dealValue}
               onChange={(event) => setDealValue(event.target.value,)}
             />
@@ -241,9 +247,18 @@ export default function CreateDealModal({ token, customers, stages, salesUsers =
 
           <label>
             Ngày dự kiến đóng
-            <input type="date" value={expectedCloseDate}
-              onChange={(event) => setExpectedCloseDate(event.target.value,)}
+            <input
+              type="date"
+              min={getTodayDateString()}
+              value={expectedCloseDate}
+              onChange={(event) => setExpectedCloseDate(event.target.value)}
             />
+
+            {errors.expectedCloseDate && (
+              <span className={styles.errorText}>
+                {errors.expectedCloseDate}
+              </span>
+            )}
           </label>
 
           {submitError && (

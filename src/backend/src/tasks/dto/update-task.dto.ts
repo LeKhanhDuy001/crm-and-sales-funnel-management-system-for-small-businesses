@@ -1,13 +1,16 @@
 import { Type } from 'class-transformer';
+
 import {
   IsIn,
   IsInt,
   IsISO8601,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
+
 import { TASK_PRIORITIES, type TaskPriority } from '../constants/task.constant';
 
 export class UpdateTaskDto {
@@ -15,12 +18,14 @@ export class UpdateTaskDto {
   @Type(() => Number)
   @IsInt({ message: 'Deal không hợp lệ.' })
   @Min(1, { message: 'Deal không hợp lệ.' })
+  @Max(2_147_483_647, { message: 'Deal không hợp lệ.' })
   dealId?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'Người phụ trách không hợp lệ.' })
   @Min(1, { message: 'Người phụ trách không hợp lệ.' })
+  @Max(2_147_483_647, { message: 'Người phụ trách không hợp lệ.' })
   assignedUserId?: number;
 
   @IsOptional()

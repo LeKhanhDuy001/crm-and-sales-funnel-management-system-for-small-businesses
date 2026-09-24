@@ -17,7 +17,6 @@ const LEAD_STATUSES = [
     { value: 'Contacted', label: 'Đã liên hệ', },
     { value: 'Qualified', label: 'Đủ điều kiện', },
     { value: 'Unqualified', label: 'Không phù hợp', },
-    { value: 'Converted', label: 'Đã chuyển đổi', },
 ];
 
 export default function LeadFormModal({ lead, sources, isSubmitting, error, onClose, onSubmit, }: LeadFormModalProps) {

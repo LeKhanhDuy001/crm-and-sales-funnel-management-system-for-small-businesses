@@ -221,6 +221,8 @@ describe('DashboardService - tổng hợp Dashboard theo vai trò', () => {
 
   describe('getSalesManagerDashboard', () => {
     it('BR-09, BR-19 - Sales Manager xem đúng tổng hợp đội Sales và Expected Revenue', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(now);
       dashboardRepository.findUsersByRole.mockResolvedValue([
         {
           userid: 5,
@@ -261,17 +263,18 @@ describe('DashboardService - tổng hợp Dashboard theo vai trò', () => {
           },
         },
       ]);
+
       dashboardRepository.findDealsNeedingAttention.mockResolvedValue([
         {
           dealid: 7,
-          dealname: 'Triển khai CRM',
+          dealname: 'Deal High',
           dealvalue: new Prisma.Decimal(10_000_000),
-          probability: 50,
-          expectedrevenue: new Prisma.Decimal(5_000_000),
-          expectedclosedate: new Date('2026-08-30'),
+          probability: 70,
+          expectedrevenue: new Prisma.Decimal(7_000_000),
+          expectedclosedate: new Date(2026, 7, 29),
           status: 'Open',
           pipelinestages: {
-            stagename: 'Proposal',
+            stagename: 'Negotiation',
           },
           users: {
             fullname: 'Nguyễn Văn Sales',
@@ -279,6 +282,44 @@ describe('DashboardService - tổng hợp Dashboard theo vai trò', () => {
           customers: {
             fullname: 'Nguyễn Văn A',
             company: 'Công ty A',
+          },
+        },
+        {
+          dealid: 8,
+          dealname: 'Deal Medium',
+          dealvalue: new Prisma.Decimal(8_000_000),
+          probability: 50,
+          expectedrevenue: new Prisma.Decimal(4_000_000),
+          expectedclosedate: new Date(2026, 7, 30),
+          status: 'Open',
+          pipelinestages: {
+            stagename: 'Proposal',
+          },
+          users: {
+            fullname: 'Trần Thị Sales',
+          },
+          customers: {
+            fullname: 'Trần Văn B',
+            company: 'Công ty B',
+          },
+        },
+        {
+          dealid: 9,
+          dealname: 'Deal Low',
+          dealvalue: new Prisma.Decimal(5_000_000),
+          probability: 30,
+          expectedrevenue: new Prisma.Decimal(1_500_000),
+          expectedclosedate: new Date(2026, 8, 3),
+          status: 'Open',
+          pipelinestages: {
+            stagename: 'Qualified',
+          },
+          users: {
+            fullname: 'Nguyễn Văn Sales',
+          },
+          customers: {
+            fullname: 'Lê Văn C',
+            company: 'Công ty C',
           },
         },
       ]);
@@ -326,16 +367,30 @@ describe('DashboardService - tổng hợp Dashboard theo vai trò', () => {
           expectedRevenue: 0,
         },
       ]);
+      expect(result.attentionDeals).toHaveLength(3);
+
       expect(result.attentionDeals[0]).toMatchObject({
         dealId: 7,
-        dealName: 'Triển khai CRM',
-        dealValue: 10_000_000,
-        probability: 50,
-        expectedRevenue: 5_000_000,
-        stage: 'Proposal',
-        assignedUser: 'Nguyễn Văn Sales',
-        customer: 'Nguyễn Văn A',
-        company: 'Công ty A',
+        dealName: 'Deal High',
+        daysToClose: 3,
+        carePriority: 'High',
+        priorityReason: 'Deal còn 3 ngày đến ngày dự kiến chốt.',
+      });
+
+      expect(result.attentionDeals[1]).toMatchObject({
+        dealId: 8,
+        dealName: 'Deal Medium',
+        daysToClose: 4,
+        carePriority: 'Medium',
+        priorityReason: 'Deal còn 4 ngày đến ngày dự kiến chốt.',
+      });
+
+      expect(result.attentionDeals[2]).toMatchObject({
+        dealId: 9,
+        dealName: 'Deal Low',
+        daysToClose: 8,
+        carePriority: 'Low',
+        priorityReason: 'Deal còn 8 ngày đến ngày dự kiến chốt.',
       });
     });
 

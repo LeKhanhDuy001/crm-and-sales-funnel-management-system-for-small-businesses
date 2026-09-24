@@ -12,6 +12,7 @@ export class ActivityLogQueryDto {
   @Type(() => Number)
   @IsInt({ message: 'User ID phải là số nguyên.' })
   @Min(1, { message: 'User ID phải lớn hơn 0.' })
+  @Max(2_147_483_647, { message: 'User ID không hợp lệ.' })
   userId?: number;
 
   @ApiPropertyOptional({

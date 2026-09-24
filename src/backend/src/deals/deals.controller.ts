@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -25,6 +24,7 @@ import { DealQueryDto } from './dto/deal-query.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
 import { UpdateDealStageDto } from './dto/update-deal-stage.dto';
 import { AssignDealDto } from './dto/assign-deal.dto';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Deals')
 @ApiBearerAuth('access-token')
@@ -48,7 +48,7 @@ export class DealsController {
   @Get(':id')
   @Roles(Role.SALES, Role.SALES_MANAGER, Role.ADMIN)
   findOne(
-    @Param('id', ParseIntPipe) dealId: number,
+    @Param('id', Int32IdPipe) dealId: number,
     @Req() request: AuthenticatedRequest,
   ) {
     return this.dealsService.findOne(dealId, request.user);
@@ -63,7 +63,7 @@ export class DealsController {
   @Patch(':id/assignment')
   @Roles(Role.SALES_MANAGER, Role.ADMIN)
   assign(
-    @Param('id', ParseIntPipe) dealId: number,
+    @Param('id', Int32IdPipe) dealId: number,
     @Body() dto: AssignDealDto,
     @Req() request: AuthenticatedRequest,
   ) {
@@ -73,7 +73,7 @@ export class DealsController {
   @Patch(':id')
   @Roles(Role.SALES, Role.SALES_MANAGER)
   update(
-    @Param('id', ParseIntPipe) dealId: number,
+    @Param('id', Int32IdPipe) dealId: number,
     @Body() dto: UpdateDealDto,
     @Req() request: AuthenticatedRequest,
   ) {
@@ -89,7 +89,7 @@ export class DealsController {
   @Roles(Role.SALES, Role.SALES_MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
-    @Param('id', ParseIntPipe) dealId: number,
+    @Param('id', Int32IdPipe) dealId: number,
     @Req() request: AuthenticatedRequest,
   ): Promise<void> {
     await this.dealsService.remove(dealId, request.user, request.ip ?? null);
@@ -98,7 +98,7 @@ export class DealsController {
   @Patch(':id/stage')
   @Roles(Role.SALES, Role.SALES_MANAGER, Role.ADMIN)
   async changeStage(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     dealId: number,
 
     @Body()

@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsInt,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -11,6 +12,7 @@ export class CreateQuoteItemDto {
   @Type(() => Number)
   @IsInt({ message: 'Sản phẩm không hợp lệ.' })
   @Min(1, { message: 'Sản phẩm không hợp lệ.' })
+  @Max(2_147_483_647, { message: 'Sản phẩm không hợp lệ.' })
   productId!: number;
 
   @Type(() => Number)
@@ -23,6 +25,7 @@ export class CreateQuoteDto {
   @Type(() => Number)
   @IsInt({ message: 'Deal không hợp lệ.' })
   @Min(1, { message: 'Deal không hợp lệ.' })
+  @Max(2_147_483_647, { message: 'Deal không hợp lệ.' })
   dealId!: number;
 
   @IsArray({ message: 'Danh sách sản phẩm không hợp lệ.' })

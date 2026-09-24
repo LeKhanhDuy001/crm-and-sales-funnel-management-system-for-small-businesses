@@ -8,10 +8,13 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import type { SignOptions } from 'jsonwebtoken';
 import { AuthRepository } from './repositories/auth.repository';
+import { ResetPasswordGuard } from './guards/reset-password.guard';
+import { MailModule } from '../common/mail/mail.module';
 
 @Module({
   imports: [
     UsersModule,
+    MailModule,
 
     PassportModule.register({
       defaultStrategy: 'jwt',
@@ -42,7 +45,7 @@ import { AuthRepository } from './repositories/auth.repository';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, AuthRepository],
+  providers: [AuthService, JwtStrategy, AuthRepository, ResetPasswordGuard],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

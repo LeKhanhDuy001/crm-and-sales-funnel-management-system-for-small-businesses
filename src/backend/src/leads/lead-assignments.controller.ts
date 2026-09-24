@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Query,
   Req,
@@ -18,6 +17,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { AssignLeadDto } from './dto/assign-lead.dto';
 import { LeadAssignmentQueryDto } from './dto/lead-assignment-query.dto';
 import { LeadAssignmentsService } from './lead-assignments.service';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Lead Assignments')
 @ApiBearerAuth('access-token')
@@ -42,7 +42,7 @@ export class LeadAssignmentsController {
 
   @Patch(':leadId')
   assign(
-    @Param('leadId', ParseIntPipe)
+    @Param('leadId', Int32IdPipe)
     leadId: number,
     @Body()
     dto: AssignLeadDto,

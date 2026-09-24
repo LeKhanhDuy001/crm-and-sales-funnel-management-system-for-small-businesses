@@ -5,11 +5,15 @@ import {
   IsNotEmpty,
   IsString,
   MaxLength,
+  Max,
+  Min,
 } from 'class-validator';
 import { ActivityType } from '../enums/activity-type.enum';
 
 export class CreateActivityDto {
   @IsInt()
+  @Min(1)
+  @Max(2_147_483_647)
   dealId!: number;
   @IsEnum(ActivityType, {
     message: 'Loại hoạt động không hợp lệ.',

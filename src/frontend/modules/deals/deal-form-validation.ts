@@ -3,6 +3,7 @@ export interface DealFormValues {
     stageId: string;
     dealName: string;
     dealValue: string;
+    expectedCloseDate: string;
 }
 
 export interface DealFormErrors {
@@ -10,6 +11,17 @@ export interface DealFormErrors {
     stageId?: string;
     dealName?: string;
     dealValue?: string;
+    expectedCloseDate?: string;
+}
+
+export function getTodayDateString(): string {
+    const now = new Date();
+
+    return [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0'),
+    ].join('-');
 }
 
 export function validateDealForm(values: DealFormValues, requireStage: boolean,): DealFormErrors {
@@ -38,9 +50,13 @@ export function validateDealForm(values: DealFormValues, requireStage: boolean,)
 
         if (Number.isNaN(dealValue)) {
             errors.dealValue = 'Giá trị Deal phải là số.';
-        } else if (dealValue < 0) {
-            errors.dealValue = 'Giá trị Deal không được âm.';
+        } else if (dealValue <= 0) {
+            errors.dealValue = 'Giá trị Deal phải lớn hơn 0.';
         }
+    }
+
+    if (values.expectedCloseDate && values.expectedCloseDate < getTodayDateString()) {
+        errors.expectedCloseDate = 'Ngày dự kiến đóng không được nhỏ hơn ngày hiện tại.';
     }
 
     return errors;

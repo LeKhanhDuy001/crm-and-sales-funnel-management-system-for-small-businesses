@@ -1,10 +1,11 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createHash, randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { LoginResponseDto } from './dto/login-response.dto';
@@ -15,16 +16,20 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { action_type } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { AuthRepository } from './repositories/auth.repository';
+import { MailService } from '../common/mail/mail.service';
 
 const NORMAL_SESSION_SECONDS = 60 * 60;
 const REMEMBERED_SESSION_SECONDS = 60 * 60 * 24 * 7;
+const RESET_TOKEN_EXPIRY_MINUTES = 15;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly authRepository: AuthRepository,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -109,60 +114,105 @@ export class AuthService {
   }
 
   /**
-   * Kiểm tra email có tồn tại để thực hiện chức năng quên mật khẩu.
-   *
-   * @param forgotPasswordDto Email cần kiểm tra.
-   * @returns Thông báo khi email hợp lệ.
-   * @throws NotFoundException Khi email không tồn tại.
+   * Đặt lại mật khẩu bằng reset token hợp lệ.
+   * Luôn trả cùng một thông báo để tránh làm lộ email có tồn tại hay không.
    */
   async forgotPassword(
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<{ message: string }> {
     const normalizedEmail = forgotPasswordDto.email.trim().toLowerCase();
 
+    const response = {
+      message: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
+    };
+
     const user = await this.usersService.findByEmail(normalizedEmail);
 
-    if (!user) {
-      throw new NotFoundException('Email không tồn tại trong hệ thống');
+    if (!user || user.status === false) {
+      return response;
     }
 
-    if (user.status === false) {
-      throw new UnauthorizedException('Tài khoản đã bị khóa');
+    const resetToken = randomBytes(32).toString('hex');
+
+    const tokenHash = createHash('sha256').update(resetToken).digest('hex');
+
+    const expiresAt = new Date(
+      Date.now() + RESET_TOKEN_EXPIRY_MINUTES * 60 * 1000,
+    );
+
+    await this.authRepository.deleteUnusedResetTokens(user.userid);
+
+    await this.authRepository.createResetToken(
+      user.userid,
+      tokenHash,
+      expiresAt,
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL?.trim().replace(/\/+$/, '');
+
+    if (!frontendUrl) {
+      await this.authRepository.deleteUnusedResetTokens(user.userid);
+
+      this.logger.error('FRONTEND_URL chưa được cấu hình.');
+
+      return response;
     }
 
-    return { message: 'Email hợp lệ. Bạn có thể đặt lại mật khẩu.' };
+    const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+    try {
+      await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
+    } catch {
+      await this.authRepository.deleteUnusedResetTokens(user.userid);
+
+      this.logger.error(
+        `Không thể gửi email đặt lại mật khẩu cho userId=${user.userid}.`,
+      );
+    }
+
+    return response;
+  }
+
+  async validateResetToken(token: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+
+    const resetToken =
+      await this.authRepository.findResetTokenByHash(tokenHash);
+
+    if (
+      !resetToken ||
+      resetToken.usedat !== null ||
+      resetToken.expiresat <= new Date()
+    ) {
+      throw new BadRequestException('Reset token không hợp lệ hoặc đã hết hạn');
+    }
+
+    return resetToken;
   }
 
   /**
-   * Đặt lại mật khẩu cho người dùng.
-   *
-   * @param resetPasswordDto Email và mật khẩu mới.
-   * @returns Thông báo khi đổi mật khẩu thành công.
-   * @throws BadRequestException Khi hai mật khẩu không giống nhau.
-   * @throws NotFoundException Khi email không tồn tại.
+   * Đặt lại mật khẩu bằng reset token hợp lệ.
    */
   async resetPassword(
     resetPasswordDto: ResetPasswordDto,
   ): Promise<{ message: string }> {
-    const normalizedEmail = resetPasswordDto.email.trim().toLowerCase();
-
     if (resetPasswordDto.newPassword !== resetPasswordDto.confirmPassword) {
       throw new BadRequestException('Mật khẩu xác nhận không khớp');
     }
 
-    const user = await this.usersService.findByEmail(normalizedEmail);
+    const resetToken = await this.validateResetToken(resetPasswordDto.token);
 
-    if (!user) {
-      throw new NotFoundException('Email không tồn tại trong hệ thống');
-    }
+    const user = await this.usersService.findById(resetToken.userid);
 
-    if (user.status === false) {
-      throw new UnauthorizedException('Tài khoản đã bị khóa');
+    if (!user || user.status === false) {
+      throw new BadRequestException('Reset token không hợp lệ hoặc đã hết hạn');
     }
 
     const passwordHash = await bcrypt.hash(resetPasswordDto.newPassword, 12);
 
     await this.usersService.updatePassword(user.userid, passwordHash);
+
+    await this.authRepository.markResetTokenUsed(resetToken.resetid);
 
     return { message: 'Đổi mật khẩu thành công' };
   }

@@ -3,7 +3,8 @@ import AdminDashboardNavigation from './admin-dashboard-navigation';
 import styles from './admin-dashboard-layout.module.css';
 
 interface AdminDashboardLayoutProps {
-  activePage: | 'dashboard' | 'users' | 'products' | 'deals' | 'activity-logs';
+  activePage:
+    | 'dashboard' | 'users' | 'products' | 'deals' | 'pipeline-stages' | 'activity-logs';
 
   children: ReactNode;
 }

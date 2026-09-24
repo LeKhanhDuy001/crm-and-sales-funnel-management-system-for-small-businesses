@@ -60,10 +60,18 @@ export class LeadsService {
    * @param leadId Mã Lead.
    * @returns Thông tin Lead.
    */
-  async findOne(leadId: number) {
+  async findOne(leadId: number, currentUser: AuthenticatedUser) {
     const lead = await this.leadsRepository.findById(leadId);
 
     if (!lead) {
+      throw new NotFoundException('Lead không tồn tại');
+    }
+
+    // Sales chỉ được xem Lead được phân công cho chính mình.
+    if (
+      currentUser.role === Role.SALES &&
+      lead.assigneduserid !== currentUser.userId
+    ) {
       throw new NotFoundException('Lead không tồn tại');
     }
 
@@ -96,8 +104,38 @@ export class LeadsService {
 
     const phone = dto.phone?.trim();
 
-    // BR03: Email hoặc số điện thoại của Lead mới không được trùng với Lead hiện có.
-    await this.ensureContactIsUnique(email, phone);
+    const duplicate = await this.leadsRepository.findDuplicate(email, phone);
+
+    if (duplicate) {
+      if (!dto.mergeDuplicate) {
+        if (email && duplicate.email?.toLowerCase() === email) {
+          throw new ConflictException('Email của Lead đã tồn tại');
+        }
+
+        throw new ConflictException('Số điện thoại của Lead đã tồn tại');
+      }
+
+      await this.ensureReferencesExist(dto.sourceId, dto.assignedUserId);
+
+      // BR03: Gộp vào Lead hiện có, bổ sung dữ liệu còn thiếu và giữ nguyên vòng đời Lead.
+      const mergedLead = await this.leadsRepository.updateWithLog(
+        duplicate.leadid,
+        {
+          sourceid: duplicate.sourceid ?? dto.sourceId ?? null,
+          assigneduserid:
+            duplicate.assigneduserid ?? dto.assignedUserId ?? null,
+          fullname: duplicate.fullname,
+          company: duplicate.company ?? this.normalizeOptional(dto.company),
+          phone: duplicate.phone ?? phone ?? null,
+          email: duplicate.email ?? email ?? null,
+          address: duplicate.address ?? this.normalizeOptional(dto.address),
+          status: duplicate.status ?? this.normalizeOptional(dto.status),
+        },
+        currentUserId,
+      );
+
+      return this.mapLead(mergedLead);
+    }
 
     await this.ensureReferencesExist(dto.sourceId, dto.assignedUserId);
 
@@ -128,7 +166,13 @@ export class LeadsService {
    * @returns Lead sau khi cập nhật.
    */
   async update(leadId: number, dto: UpdateLeadDto, currentUserId: number) {
-    await this.getExistingLead(leadId);
+    const currentLead = await this.getExistingLead(leadId);
+
+    if (currentLead.status === 'Converted') {
+      throw new ConflictException(
+        'Lead đã chuyển đổi thành Customer nên không thể chỉnh sửa.',
+      );
+    }
 
     const email = dto.email?.trim().toLowerCase();
 

@@ -94,8 +94,16 @@ export class TasksService {
    */
   async cancel(taskId: number, user: AuthenticatedUser, ipAddress?: string) {
     const currentTask = await this.requireVisibleTask(taskId, user);
+
     if (currentTask.status === TASK_STATUS.Cancelled) {
       throw new ConflictException('Task này đã được hủy.');
+    }
+
+    // BR-45: Chỉ Task Pending mới được phép xóa.
+    if (currentTask.status !== TASK_STATUS.Pending) {
+      throw new UnprocessableEntityException(
+        'Chỉ Task ở trạng thái Pending mới được phép xóa.',
+      );
     }
 
     const task = await this.tasksRepository.updateStatusWithAudit(
@@ -157,6 +165,14 @@ export class TasksService {
     ipAddress?: string,
   ) {
     const currentTask = await this.requireVisibleTask(taskId, user);
+
+    // BR-47: Chỉ Task Pending mới được phép chỉnh sửa.
+    if (currentTask.status !== TASK_STATUS.Pending) {
+      throw new UnprocessableEntityException(
+        'Chỉ Task ở trạng thái Pending mới được phép chỉnh sửa.',
+      );
+    }
+
     const taskData = await this.buildUpdateData(currentTask, dto, user);
     const notifyAssignee =
       currentTask.assigneduserid !== taskData.assignedUserId;
@@ -185,6 +201,24 @@ export class TasksService {
     ipAddress?: string,
   ) {
     const currentTask = await this.requireVisibleTask(taskId, user);
+
+    // BR-45: Task đã Cancelled không được thay đổi trạng thái.
+    if (currentTask.status === TASK_STATUS.Cancelled) {
+      throw new ConflictException(
+        'Task đã bị hủy nên không thể thay đổi trạng thái.',
+      );
+    }
+
+    // BR-45: Cancelled chỉ được thực hiện thông qua chức năng xóa Task.
+    if (dto.status === TASK_STATUS.Cancelled) {
+      throw new UnprocessableEntityException(
+        'Không thể chuyển trực tiếp Task sang trạng thái Cancelled.',
+      );
+    }
+
+    // BR-46: Task phải chuyển trạng thái theo đúng luồng Pending -> InProgress -> Completed.
+    this.validateStatusTransition(currentTask.status, dto.status);
+
     const task = await this.tasksRepository.updateStatusWithAudit(
       taskId,
       dto.status,
@@ -198,6 +232,39 @@ export class TasksService {
       message: 'Cập nhật trạng thái Task thành công.',
       data: this.mapTask(task),
     };
+  }
+
+  private validateStatusTransition(
+    currentStatus: string | null,
+    nextStatus: string,
+  ): void {
+    if (
+      currentStatus === TASK_STATUS.Pending &&
+      nextStatus === TASK_STATUS.Completed
+    ) {
+      throw new UnprocessableEntityException(
+        'Task ở trạng thái Chờ thực hiện phải chuyển sang Đang thực hiện trước khi hoàn thành.',
+      );
+    }
+
+    if (
+      currentStatus === TASK_STATUS.InProgress &&
+      nextStatus === TASK_STATUS.Pending
+    ) {
+      throw new UnprocessableEntityException(
+        'Task đang thực hiện không được chuyển về trạng thái Chờ thực hiện.',
+      );
+    }
+
+    if (
+      currentStatus === TASK_STATUS.Completed &&
+      (nextStatus === TASK_STATUS.InProgress ||
+        nextStatus === TASK_STATUS.Pending)
+    ) {
+      throw new UnprocessableEntityException(
+        'Task đã hoàn thành không được chuyển về trạng thái trước đó.',
+      );
+    }
   }
 
   private getVisibilityUserId(user: AuthenticatedUser): number | undefined {
@@ -432,6 +499,14 @@ export class TasksService {
     }
 
     const currentTask = await this.requireVisibleTask(taskId, user);
+
+    // BR-47: Chỉ Task Pending mới được phép phân công lại.
+    if (currentTask.status !== TASK_STATUS.Pending) {
+      throw new UnprocessableEntityException(
+        'Chỉ Task ở trạng thái Pending mới được phép phân công.',
+      );
+    }
+
     const assignedUserId = await this.resolveAssignee(dto.assignedUserId, user);
 
     if (currentTask.assigneduserid === assignedUserId) {

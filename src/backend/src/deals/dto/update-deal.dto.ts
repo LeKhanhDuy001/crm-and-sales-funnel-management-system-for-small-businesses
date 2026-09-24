@@ -5,9 +5,11 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
+
 import { Type } from 'class-transformer';
 
 export class UpdateDealDto {
@@ -15,6 +17,7 @@ export class UpdateDealDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(2_147_483_647)
   customerId?: number;
 
   @IsOptional()
@@ -28,7 +31,7 @@ export class UpdateDealDto {
   @IsNumber({
     maxDecimalPlaces: 2,
   })
-  @Min(0)
+  @Min(1)
   dealValue?: number;
 
   @IsOptional()

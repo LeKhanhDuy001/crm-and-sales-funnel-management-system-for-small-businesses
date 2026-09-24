@@ -19,6 +19,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ActivitiesModule } from './activities/activities.module';
+import { PipelineStagesModule } from './pipeline-stages/pipeline-stages.module';
 
 @Module({
   imports: [
@@ -46,6 +47,9 @@ import { ActivitiesModule } from './activities/activities.module';
             scheme: ['http', 'https'],
           })
           .required(),
+        RESEND_API_KEY: Joi.string().trim().min(1).required(),
+
+        MAIL_FROM: Joi.string().trim().min(1).required(),
       }),
       validationOptions: {
         abortEarly: false,
@@ -76,6 +80,7 @@ import { ActivitiesModule } from './activities/activities.module';
     TasksModule,
     NotificationsModule,
     ActivitiesModule,
+    PipelineStagesModule,
   ],
   providers: [
     {

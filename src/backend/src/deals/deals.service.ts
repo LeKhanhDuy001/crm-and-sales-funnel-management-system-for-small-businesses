@@ -64,6 +64,41 @@ export class DealsService {
         : Promise.resolve([]),
     ]);
 
+    const salesUserIds = salesUsers.map((salesUser) => salesUser.userid);
+
+    const workloads =
+      salesUserIds.length > 0
+        ? await this.dealsRepository.groupOpenDealsByAssignedUsers(salesUserIds)
+        : [];
+
+    const workloadMap = new Map(
+      workloads.map((workload) => [
+        workload.assigneduserid,
+        {
+          openDealCount: workload._count._all,
+          openExpectedRevenue: Number(workload._sum.expectedrevenue ?? 0),
+        },
+      ]),
+    );
+
+    // BR-ALLOC-001: Gợi ý Sales có ít Deal đang mở nhất, sau đó ưu tiên tổng Expected Revenue thấp hơn.
+    const recommendedSales = salesUsers
+      .map((salesUser) => {
+        const workload = workloadMap.get(salesUser.userid);
+
+        return {
+          userId: salesUser.userid,
+          openDealCount: workload?.openDealCount ?? 0,
+          openExpectedRevenue: workload?.openExpectedRevenue ?? 0,
+        };
+      })
+      .sort(
+        (a, b) =>
+          a.openDealCount - b.openDealCount ||
+          a.openExpectedRevenue - b.openExpectedRevenue ||
+          a.userId - b.userId,
+      )[0];
+
     return {
       stages: stages.map((stage) => ({
         stageId: stage.stageid,
@@ -71,11 +106,18 @@ export class DealsService {
         stageOrder: stage.stageorder,
         probability: stage.probability,
       })),
-      salesUsers: salesUsers.map((salesUser) => ({
-        userId: salesUser.userid,
-        fullName: salesUser.fullname,
-        email: salesUser.email,
-      })),
+      salesUsers: salesUsers.map((salesUser) => {
+        const workload = workloadMap.get(salesUser.userid);
+
+        return {
+          userId: salesUser.userid,
+          fullName: salesUser.fullname,
+          email: salesUser.email,
+          openDealCount: workload?.openDealCount ?? 0,
+          openExpectedRevenue: workload?.openExpectedRevenue ?? 0,
+          recommended: salesUser.userid === recommendedSales?.userId,
+        };
+      }),
     };
   }
 
@@ -95,6 +137,10 @@ export class DealsService {
     user: AuthenticatedUser,
     ipAddress: string | null,
   ) {
+    // BR-43: Giá trị Deal phải lớn hơn 0.
+    this.validateDealValue(dto.dealValue);
+    // BR-44: Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.
+    this.validateExpectedCloseDate(dto.expectedCloseDate);
     // BR-06: Deal phải có Customer, người phụ trách và Pipeline.
     await this.ensureCustomerAccessible(dto.customerId, user);
     // BR-29: Xác định người phụ trách Deal theo vai trò người tạo.
@@ -159,6 +205,23 @@ export class DealsService {
 
     const currentDeal = await this.findVisibleDeal(dealId, user);
 
+    // BR-10: Deal đã đóng ở Won/Lost không được phép chỉnh sửa.
+    if (this.isTerminalStage(currentDeal.pipelinestages.stagename)) {
+      throw new UnprocessableEntityException(
+        'Deal đã ở giai đoạn Won hoặc Lost nên không thể chỉnh sửa.',
+      );
+    }
+
+    if (dto.dealValue !== undefined) {
+      // BR-43: Giá trị Deal phải lớn hơn 0.
+      this.validateDealValue(dto.dealValue);
+    }
+
+    if (dto.expectedCloseDate !== undefined) {
+      // BR-44: Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.
+      this.validateExpectedCloseDate(dto.expectedCloseDate);
+    }
+
     if (dto.customerId !== undefined) {
       await this.ensureCustomerAccessible(dto.customerId, user);
     }
@@ -191,7 +254,14 @@ export class DealsService {
     user: AuthenticatedUser,
     ipAddress: string | null,
   ): Promise<void> {
-    await this.findVisibleDeal(dealId, user);
+    const currentDeal = await this.findVisibleDeal(dealId, user);
+
+    // BR-10: Deal đã đóng ở Won/Lost không được phép xóa.
+    if (this.isTerminalStage(currentDeal.pipelinestages.stagename)) {
+      throw new UnprocessableEntityException(
+        'Deal đã ở giai đoạn Won hoặc Lost nên không thể xóa.',
+      );
+    }
     const linked = await this.dealsRepository.getLinkedRecordCount(dealId);
     if (!linked) {
       throw new NotFoundException('Không tìm thấy Deal.');
@@ -485,6 +555,13 @@ export class DealsService {
       throw new NotFoundException('Không tìm thấy Deal.');
     }
 
+    // BR-10: Deal đã đóng ở Won/Lost không được phép phân công lại.
+    if (this.isTerminalStage(currentDeal.pipelinestages.stagename)) {
+      throw new UnprocessableEntityException(
+        'Deal đã ở giai đoạn Won hoặc Lost nên không thể phân công lại.',
+      );
+    }
+
     const assignee = await this.dealsRepository.findUserById(
       dto.assignedUserId,
     );
@@ -600,6 +677,33 @@ export class DealsService {
       message: 'Cập nhật giai đoạn Deal thành công.',
       data: this.mapDeal(updatedDeal),
     };
+  }
+
+  private validateDealValue(dealValue: number): void {
+    if (dealValue <= 0) {
+      throw new UnprocessableEntityException('Giá trị Deal phải lớn hơn 0.');
+    }
+  }
+
+  private validateExpectedCloseDate(expectedCloseDate?: string): void {
+    if (!expectedCloseDate) {
+      return;
+    }
+
+    const expectedDate = expectedCloseDate.slice(0, 10);
+    const now = new Date();
+
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    if (expectedDate < today) {
+      throw new UnprocessableEntityException(
+        'Ngày dự kiến đóng Deal không được nhỏ hơn ngày hiện tại.',
+      );
+    }
   }
 
   private isTerminalStage(stageName: string): boolean {

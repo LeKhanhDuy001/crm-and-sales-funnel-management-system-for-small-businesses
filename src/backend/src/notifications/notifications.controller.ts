@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
@@ -14,6 +6,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { NotificationsService } from './notifications.service';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 @ApiTags('Notifications')
 @ApiBearerAuth('access-token')
@@ -49,7 +42,7 @@ export class NotificationsController {
 
   @Patch(':id/read')
   markAsRead(
-    @Param('id', ParseIntPipe)
+    @Param('id', Int32IdPipe)
     notificationId: number,
     @Req()
     request: AuthenticatedRequest,

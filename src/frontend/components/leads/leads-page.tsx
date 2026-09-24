@@ -187,7 +187,33 @@ export default function LeadsPage() {
                     input,
                 );
             } else {
-                await createLead(accessToken, input,);
+                try {
+                    await createLead(accessToken, input,);
+                } catch (caughtError) {
+                    if (
+                        caughtError instanceof ApiError &&
+                        caughtError.statusCode === 409
+                    ) {
+                        const shouldMerge = window.confirm(
+                            `${caughtError.message}\n\nLead có thể đã tồn tại. Bạn có muốn gộp thông tin vào Lead hiện có không?`,
+                        );
+
+                        if (!shouldMerge) {
+                            setFormError(caughtError.message,);
+                            return;
+                        }
+
+                        await createLead(
+                            accessToken,
+                            {
+                                ...input,
+                                mergeDuplicate: true,
+                            },
+                        );
+                    } else {
+                        throw caughtError;
+                    }
+                }
             }
             setIsFormOpen(false);
             setEditingLead(null);

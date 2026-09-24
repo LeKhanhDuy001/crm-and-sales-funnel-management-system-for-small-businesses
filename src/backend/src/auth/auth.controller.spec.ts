@@ -58,7 +58,7 @@ describe('AuthController', () => {
     const forgotPasswordDto: ForgotPasswordDto = { email: 'admin@crm.com' };
 
     const expectedResult = {
-      message: 'Email hợp lệ. Bạn có thể đặt lại mật khẩu.',
+      message: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
     };
 
     authService.forgotPassword.mockResolvedValue(expectedResult);
@@ -72,7 +72,7 @@ describe('AuthController', () => {
 
   it('should call resetPassword with new password data', async () => {
     const resetPasswordDto: ResetPasswordDto = {
-      email: 'admin@crm.com',
+      token: 'a'.repeat(64),
       newPassword: 'NewPassword123',
       confirmPassword: 'NewPassword123',
     };

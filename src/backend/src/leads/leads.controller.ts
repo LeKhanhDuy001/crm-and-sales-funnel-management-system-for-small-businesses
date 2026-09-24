@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -25,6 +24,7 @@ import { LeadQueryDto } from './dto/lead-query.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadsService } from './leads.service';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
+import { Int32IdPipe } from '../common/pipes/int32-id.pipe';
 
 interface AuthenticatedRequest extends Request {
   user: AuthenticatedUser;
@@ -52,8 +52,11 @@ export class LeadsController {
 
   @Get(':id')
   @Roles(Role.MARKETING, Role.SALES)
-  findOne(@Param('id', ParseIntPipe) leadId: number) {
-    return this.leadsService.findOne(leadId);
+  findOne(
+    @Param('id', Int32IdPipe) leadId: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.leadsService.findOne(leadId, request.user);
   }
 
   // BR02: Chỉ Marketing được tạo Lead.
@@ -77,7 +80,7 @@ export class LeadsController {
   @Patch(':id')
   @Roles(Role.MARKETING)
   update(
-    @Param('id', ParseIntPipe) leadId: number,
+    @Param('id', Int32IdPipe) leadId: number,
     @Body() dto: UpdateLeadDto,
     @Req() request: AuthenticatedRequest,
   ) {
@@ -89,7 +92,7 @@ export class LeadsController {
   @Roles(Role.MARKETING)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
-    @Param('id', ParseIntPipe) leadId: number,
+    @Param('id', Int32IdPipe) leadId: number,
     @Req() request: AuthenticatedRequest,
   ): Promise<void> {
     await this.leadsService.remove(leadId, request.user.userId);

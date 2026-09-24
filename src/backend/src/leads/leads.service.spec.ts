@@ -15,6 +15,9 @@ describe('LeadsService - convertLead', () => {
   const leadsRepository = {
     findByIdForConversion: jest.fn(),
     convertToCustomer: jest.fn(),
+    findDuplicate: jest.fn(),
+    createWithLog: jest.fn(),
+    updateWithLog: jest.fn(),
   };
 
   const currentUser: AuthenticatedUser = {
@@ -278,5 +281,299 @@ describe('LeadsService - convertLead', () => {
     );
 
     expect(leadsRepository.convertToCustomer).not.toHaveBeenCalled();
+  });
+
+  // BR03: Email của Lead mới không được trùng với Lead hiện có.
+  it('không cho tạo Lead khi email đã tồn tại', async () => {
+    leadsRepository.findDuplicate.mockResolvedValue({
+      email: 'duplicate@crm.local',
+      phone: '0900000000',
+    });
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng email',
+          email: 'DUPLICATE@CRM.LOCAL',
+          phone: '0911111111',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow(ConflictException);
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng email',
+          email: 'DUPLICATE@CRM.LOCAL',
+          phone: '0911111111',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow('Email của Lead đã tồn tại');
+
+    expect(leadsRepository.findDuplicate).toHaveBeenCalledWith(
+      'duplicate@crm.local',
+      '0911111111',
+    );
+    expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
+  });
+
+  // BR03: Số điện thoại của Lead mới không được trùng với Lead hiện có.
+  it('không cho tạo Lead khi số điện thoại đã tồn tại', async () => {
+    leadsRepository.findDuplicate.mockResolvedValue({
+      email: null,
+      phone: '0901234567',
+    });
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng số điện thoại',
+          phone: '0901234567',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow(ConflictException);
+
+    await expect(
+      service.create(
+        {
+          fullName: 'Lead trùng số điện thoại',
+          phone: '0901234567',
+        },
+        currentUser.userId,
+      ),
+    ).rejects.toThrow('Số điện thoại của Lead đã tồn tại');
+
+    expect(leadsRepository.findDuplicate).toHaveBeenCalledWith(
+      undefined,
+      '0901234567',
+    );
+    expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
+  });
+
+  it('BR03 - gộp Lead trùng khi người dùng xác nhận mergeDuplicate', async () => {
+    const duplicateLead = {
+      leadid: 20,
+      sourceid: 1,
+      assigneduserid: 3,
+      fullname: 'Lead cũ',
+      company: null,
+      phone: null,
+      email: 'duplicate@crm.local',
+      address: 'TP.HCM',
+      status: 'Qualified',
+      createddate: new Date('2026-09-01T00:00:00.000Z'),
+    };
+
+    const mergedLead = {
+      ...duplicateLead,
+      fullname: 'Lead cập nhật',
+      company: 'Công ty mới',
+      leadsources: null,
+      users: null,
+      customers: null,
+    };
+
+    leadsRepository.findDuplicate.mockResolvedValue(duplicateLead);
+    leadsRepository.updateWithLog.mockResolvedValue(mergedLead);
+
+    const result = await service.create(
+      {
+        fullName: 'Lead cập nhật',
+        company: 'Công ty mới',
+        email: 'DUPLICATE@CRM.LOCAL',
+        phone: '0901234567',
+        mergeDuplicate: true,
+      },
+      currentUser.userId,
+    );
+
+    expect(leadsRepository.updateWithLog).toHaveBeenCalledWith(
+      20,
+      expect.objectContaining({
+        fullname: 'Lead cũ',
+        company: 'Công ty mới',
+        phone: '0901234567',
+        email: 'duplicate@crm.local',
+        status: 'Qualified',
+      }),
+      currentUser.userId,
+    );
+
+    expect(leadsRepository.createWithLog).not.toHaveBeenCalled();
+    expect(result.leadId).toBe(20);
+  });
+});
+
+describe('LeadsService - findOne', () => {
+  let service: LeadsService;
+
+  const leadsRepository = {
+    findById: jest.fn(),
+  };
+
+  const salesUser: AuthenticatedUser = {
+    userId: 3,
+    fullName: 'Sales A',
+    email: 'sales.a@crm.local',
+    role: Role.SALES,
+  };
+
+  const marketingUser: AuthenticatedUser = {
+    userId: 6,
+    fullName: 'Marketing',
+    email: 'marketing@crm.local',
+    role: Role.MARKETING,
+  };
+
+  const lead = {
+    leadid: 5,
+    sourceid: 1,
+    assigneduserid: 3,
+    fullname: 'Nguyễn Văn Lead',
+    company: 'Công ty ABC',
+    phone: '0909000001',
+    email: 'lead@example.com',
+    address: 'TP.HCM',
+    status: 'New',
+    createddate: new Date('2026-09-15T00:00:00.000Z'),
+    leadsources: {
+      sourceid: 1,
+      sourcename: 'Website',
+    },
+    users: {
+      userid: 3,
+      fullname: 'Sales A',
+      email: 'sales.a@crm.local',
+    },
+    customers: null,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new LeadsService(leadsRepository as unknown as LeadsRepository);
+  });
+
+  it('cho phép Sales xem Lead được phân công cho chính mình', async () => {
+    leadsRepository.findById.mockResolvedValue(lead);
+
+    const result = await service.findOne(lead.leadid, salesUser);
+
+    expect(leadsRepository.findById).toHaveBeenCalledWith(lead.leadid);
+    expect(result.leadId).toBe(lead.leadid);
+    expect(result.assignedUser?.userId).toBe(salesUser.userId);
+  });
+
+  it('không cho Sales xem Lead được phân công cho Sales khác', async () => {
+    leadsRepository.findById.mockResolvedValue({
+      ...lead,
+      assigneduserid: 4,
+      users: {
+        userid: 4,
+        fullname: 'Sales B',
+        email: 'sales.b@crm.local',
+      },
+    });
+
+    await expect(service.findOne(lead.leadid, salesUser)).rejects.toThrow(
+      NotFoundException,
+    );
+
+    await expect(service.findOne(lead.leadid, salesUser)).rejects.toThrow(
+      'Lead không tồn tại',
+    );
+  });
+
+  it('cho phép Marketing xem chi tiết Lead', async () => {
+    leadsRepository.findById.mockResolvedValue({
+      ...lead,
+      assigneduserid: 4,
+      users: {
+        userid: 4,
+        fullname: 'Sales B',
+        email: 'sales.b@crm.local',
+      },
+    });
+
+    const result = await service.findOne(lead.leadid, marketingUser);
+
+    expect(result.leadId).toBe(lead.leadid);
+  });
+});
+
+describe('LeadsService - update', () => {
+  let service: LeadsService;
+
+  const leadsRepository = {
+    findById: jest.fn(),
+    findDuplicate: jest.fn(),
+    findSourceById: jest.fn(),
+    findUserById: jest.fn(),
+    updateWithLog: jest.fn(),
+  };
+
+  const convertedLead = {
+    leadid: 20,
+    sourceid: 1,
+    assigneduserid: 3,
+    fullname: 'Lead đã chuyển đổi',
+    company: 'Công ty ABC',
+    phone: '0901234567',
+    email: 'converted@crm.local',
+    address: 'TP.HCM',
+    status: 'Converted',
+    createddate: new Date(),
+    leadsources: null,
+    users: null,
+    customers: {
+      customerid: 10,
+    },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new LeadsService(leadsRepository as unknown as LeadsRepository);
+  });
+
+  it('không cho chỉnh sửa thông tin Lead đã Converted', async () => {
+    leadsRepository.findById.mockResolvedValue(convertedLead);
+
+    await expect(
+      service.update(
+        20,
+        {
+          fullName: 'Tên mới',
+        },
+        3,
+      ),
+    ).rejects.toThrow(
+      new ConflictException(
+        'Lead đã chuyển đổi thành Customer nên không thể chỉnh sửa.',
+      ),
+    );
+
+    expect(leadsRepository.updateWithLog).not.toHaveBeenCalled();
+  });
+
+  it('không cho Lead Converted chuyển về trạng thái trước đó', async () => {
+    leadsRepository.findById.mockResolvedValue(convertedLead);
+
+    await expect(
+      service.update(
+        20,
+        {
+          status: 'Qualified',
+        },
+        3,
+      ),
+    ).rejects.toThrow(
+      new ConflictException(
+        'Lead đã chuyển đổi thành Customer nên không thể chỉnh sửa.',
+      ),
+    );
+
+    expect(leadsRepository.updateWithLog).not.toHaveBeenCalled();
   });
 });

@@ -24,6 +24,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import type { Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from './interfaces/authenticated-request.interface';
+import { ResetPasswordGuard } from './guards/reset-password.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -68,6 +69,16 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    default: {
+      limit: 3,
+      ttl: 60_000,
+    },
+  })
+  @ApiTooManyRequestsResponse({
+    description: 'Gửi quá nhiều yêu cầu đặt lại mật khẩu trong thời gian ngắn',
+  })
   forgotPassword(
     @Body()
     forgotPasswordDto: ForgotPasswordDto,
@@ -76,6 +87,17 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @UseGuards(ResetPasswordGuard)
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60_000,
+    },
+  })
+  @ApiTooManyRequestsResponse({
+    description: 'Gửi quá nhiều yêu cầu đặt lại mật khẩu trong thời gian ngắn',
+  })
   resetPassword(
     @Body()
     resetPasswordDto: ResetPasswordDto,

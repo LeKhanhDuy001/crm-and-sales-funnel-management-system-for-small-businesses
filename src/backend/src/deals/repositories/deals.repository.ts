@@ -159,6 +159,30 @@ export class DealsRepository {
     });
   }
 
+  async groupOpenDealsByAssignedUsers(userIds: number[]) {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    return this.prisma.deals.groupBy({
+      by: ['assigneduserid'],
+      where: {
+        assigneduserid: {
+          in: userIds,
+        },
+        status: {
+          notIn: ['Won', 'Lost'],
+        },
+      },
+      _count: {
+        _all: true,
+      },
+      _sum: {
+        expectedrevenue: true,
+      },
+    });
+  }
+
   async findCustomerAccessible(customerId: number, salesUserId: number) {
     return this.prisma.customers.findFirst({
       where: {

@@ -14,6 +14,7 @@ export class LeadQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(2_147_483_647)
   sourceId?: number;
 
   @IsOptional()

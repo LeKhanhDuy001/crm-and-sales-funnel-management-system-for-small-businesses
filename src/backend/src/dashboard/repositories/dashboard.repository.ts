@@ -227,7 +227,7 @@ export class DashboardRepository {
         expectedclosedate: { not: null },
         status: { notIn: ['Won', 'Lost'] },
       },
-      orderBy: { expectedclosedate: 'asc' },
+      orderBy: [{ expectedclosedate: 'asc' }, { expectedrevenue: 'desc' }],
       select: attentionDealSelect,
     });
   }

@@ -32,14 +32,14 @@ export class RolesGuard implements CanActivate {
 
     if (!user) {
       throw new ForbiddenException(
-        'Không tìm thấy thông tin người dùng đã đăng nhập',
+        'Không tìm thấy thông tin người dùng để kiểm tra quyền truy cập.',
       );
     }
 
-    const hasPermission = requiredRoles.includes(user.role);
-
-    if (!hasPermission) {
-      throw new ForbiddenException('Bạn không có quyền truy cập chức năng này');
+    if (!requiredRoles.includes(user.role)) {
+      throw new ForbiddenException(
+        'Bạn không có quyền truy cập chức năng này.',
+      );
     }
 
     return true;

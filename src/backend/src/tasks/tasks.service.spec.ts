@@ -529,15 +529,77 @@ describe('TasksService', () => {
       ).rejects.toThrow(NotFoundException);
       expect(tasksRepository.updateWithAudit).not.toHaveBeenCalled();
     });
+    it.each([
+      ['InProgress', TASK_STATUS.InProgress],
+      ['Completed', TASK_STATUS.Completed],
+      ['Cancelled', TASK_STATUS.Cancelled],
+    ])('BR47 - không cho chỉnh sửa Task ở trạng thái %s', async (_, status) => {
+      tasksRepository.findVisibleById.mockResolvedValue(makeTask({ status }));
+
+      await expect(
+        tasksService.update(
+          1,
+          {
+            title: 'Task đã sửa',
+          },
+          manager,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Chỉ Task ở trạng thái Pending mới được phép chỉnh sửa.',
+        ),
+      );
+
+      expect(tasksRepository.updateWithAudit).not.toHaveBeenCalled();
+    });
   });
   describe('updateStatus', () => {
-    it('BR18 - cập nhật trạng thái Task qua Repository có Audit Log', async () => {
-      const currentTask = makeTask();
+    it('BR46, BR18 - chuyển Task từ Pending sang InProgress và ghi Audit Log', async () => {
+      const currentTask = makeTask({
+        status: TASK_STATUS.Pending,
+      });
+
+      const updatedTask = makeTask({
+        status: TASK_STATUS.InProgress,
+      });
+
+      tasksRepository.findVisibleById.mockResolvedValue(currentTask);
+      tasksRepository.updateStatusWithAudit.mockResolvedValue(updatedTask);
+
+      const result = await tasksService.updateStatus(
+        1,
+        {
+          status: TASK_STATUS.InProgress,
+        },
+        manager,
+        IP_ADDRESS,
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).toHaveBeenCalledWith(
+        1,
+        TASK_STATUS.InProgress,
+        1,
+        currentTask,
+        IP_ADDRESS,
+      );
+
+      expect(result.message).toBe('Cập nhật trạng thái Task thành công.');
+      expect(result.data.status).toBe(TASK_STATUS.InProgress);
+    });
+
+    it('BR46, BR18 - chuyển Task từ InProgress sang Completed và ghi Audit Log', async () => {
+      const currentTask = makeTask({
+        status: TASK_STATUS.InProgress,
+      });
+
       const updatedTask = makeTask({
         status: TASK_STATUS.Completed,
       });
+
       tasksRepository.findVisibleById.mockResolvedValue(currentTask);
       tasksRepository.updateStatusWithAudit.mockResolvedValue(updatedTask);
+
       const result = await tasksService.updateStatus(
         1,
         {
@@ -546,6 +608,7 @@ describe('TasksService', () => {
         manager,
         IP_ADDRESS,
       );
+
       expect(tasksRepository.updateStatusWithAudit).toHaveBeenCalledWith(
         1,
         TASK_STATUS.Completed,
@@ -557,8 +620,165 @@ describe('TasksService', () => {
       expect(result.message).toBe('Cập nhật trạng thái Task thành công.');
       expect(result.data.status).toBe(TASK_STATUS.Completed);
     });
+
+    it('BR46 - không cho Task Pending chuyển trực tiếp sang Completed', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.Pending }),
+      );
+
+      await expect(
+        tasksService.updateStatus(
+          1,
+          {
+            status: TASK_STATUS.Completed,
+          },
+          manager,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Task ở trạng thái Chờ thực hiện phải chuyển sang Đang thực hiện trước khi hoàn thành.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('BR45 - không cho chuyển trực tiếp Task sang Cancelled qua updateStatus', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.Pending }),
+      );
+
+      await expect(
+        tasksService.updateStatus(
+          1,
+          { status: TASK_STATUS.Cancelled },
+          manager,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Không thể chuyển trực tiếp Task sang trạng thái Cancelled.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('BR45 - Task đã Cancelled không được chuyển sang trạng thái khác', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.Cancelled }),
+      );
+
+      await expect(
+        tasksService.updateStatus(
+          1,
+          { status: TASK_STATUS.InProgress },
+          manager,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new ConflictException(
+          'Task đã bị hủy nên không thể thay đổi trạng thái.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('không cho Customer Care cập nhật trạng thái Task không thuộc quyền', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(null);
+
+      await expect(
+        tasksService.updateStatus(
+          99,
+          {
+            status: TASK_STATUS.Completed,
+          },
+          customerCare,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(tasksRepository.findVisibleById).toHaveBeenCalledWith(99, 3);
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('BR46 - không cho Task đang thực hiện chuyển về Chờ thực hiện', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.InProgress }),
+      );
+
+      await expect(
+        tasksService.updateStatus(
+          1,
+          { status: TASK_STATUS.Pending },
+          customerCare,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Task đang thực hiện không được chuyển về trạng thái Chờ thực hiện.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('BR46 - không cho Task đã hoàn thành chuyển về Đang thực hiện', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.Completed }),
+      );
+
+      await expect(
+        tasksService.updateStatus(
+          1,
+          { status: TASK_STATUS.InProgress },
+          customerCare,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Task đã hoàn thành không được chuyển về trạng thái trước đó.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('BR46 - không cho Task đã hoàn thành chuyển về Chờ thực hiện', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.Completed }),
+      );
+
+      await expect(
+        tasksService.updateStatus(
+          1,
+          { status: TASK_STATUS.Pending },
+          customerCare,
+          IP_ADDRESS,
+        ),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Task đã hoàn thành không được chuyển về trạng thái trước đó.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
   });
   describe('cancel', () => {
+    it('không cho Customer Care hủy Task không thuộc quyền', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(null);
+
+      await expect(
+        tasksService.cancel(99, customerCare, IP_ADDRESS),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(tasksRepository.findVisibleById).toHaveBeenCalledWith(99, 3);
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
     it('không cho hủy lại Task đã Cancelled', async () => {
       tasksRepository.findVisibleById.mockResolvedValue(
         makeTask({ status: TASK_STATUS.Cancelled }),
@@ -568,6 +788,39 @@ describe('TasksService', () => {
       );
       expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
     });
+
+    it('BR45 - không cho xóa Task đang thực hiện', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.InProgress }),
+      );
+
+      await expect(
+        tasksService.cancel(1, customerCare, IP_ADDRESS),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Chỉ Task ở trạng thái Pending mới được phép xóa.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
+    it('BR45 - không cho xóa Task đã hoàn thành', async () => {
+      tasksRepository.findVisibleById.mockResolvedValue(
+        makeTask({ status: TASK_STATUS.Completed }),
+      );
+
+      await expect(
+        tasksService.cancel(1, customerCare, IP_ADDRESS),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Chỉ Task ở trạng thái Pending mới được phép xóa.',
+        ),
+      );
+
+      expect(tasksRepository.updateStatusWithAudit).not.toHaveBeenCalled();
+    });
+
     it('BR18 - hủy Task bằng cách chuyển trạng thái sang Cancelled', async () => {
       const currentTask = makeTask();
       const cancelledTask = makeTask({ status: TASK_STATUS.Cancelled });
@@ -662,5 +915,34 @@ describe('TasksService', () => {
       expect(result.message).toBe('Phân công Task thành công.');
       expect(result.data.assignedUser?.userId).toBe(3);
     });
+
+    it.each([
+      ['InProgress', TASK_STATUS.InProgress],
+      ['Completed', TASK_STATUS.Completed],
+      ['Cancelled', TASK_STATUS.Cancelled],
+    ])(
+      'BR47 - không cho phân công lại Task ở trạng thái %s',
+      async (_, status) => {
+        tasksRepository.findVisibleById.mockResolvedValue(makeTask({ status }));
+
+        await expect(
+          tasksService.assign(
+            1,
+            {
+              assignedUserId: 3,
+            },
+            manager,
+            IP_ADDRESS,
+          ),
+        ).rejects.toThrow(
+          new UnprocessableEntityException(
+            'Chỉ Task ở trạng thái Pending mới được phép phân công.',
+          ),
+        );
+
+        expect(tasksRepository.findActiveUserByRole).not.toHaveBeenCalled();
+        expect(tasksRepository.assignWithAudit).not.toHaveBeenCalled();
+      },
+    );
   });
 });
